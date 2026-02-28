@@ -1,0 +1,48 @@
+# Machrio
+
+> Machrio is a B2B industrial e-commerce platform specializing in MRO (Maintenance, Repair, and Operations) supplies. We serve procurement managers, maintenance engineers, and operations teams in manufacturing, construction, automotive, healthcare, food & beverage, and warehouse operations worldwide.
+
+## Key Pages
+
+- [Product Catalog](https://www.machrio.com/category): Browse all MRO product categories with transparent pricing and specifications
+- [Request a Quote](https://www.machrio.com/rfq): Submit bulk or custom sourcing requests — 24-hour response guaranteed
+- [Knowledge Center](https://www.machrio.com/knowledge-center): Technical buying guides, compliance references, and procurement best practices
+- [Full Reference](https://www.machrio.com/llms-full.txt): Detailed product taxonomy, industry guidance, purchasing terms, and compliance standards
+
+## Industry Solutions
+
+- [Manufacturing](https://www.machrio.com/industry/manufacturing): Production line maintenance, plant safety PPE, equipment repair supplies
+- [Construction](https://www.machrio.com/industry/construction): Job site PPE, outdoor adhesives, heavy material handling
+- [Automotive](https://www.machrio.com/industry/automotive): Assembly line components, body shop supplies, fleet maintenance
+- [Healthcare](https://www.machrio.com/industry/healthcare): Medical-grade PPE, infection control, specimen packaging
+- [Food & Beverage](https://www.machrio.com/industry/food-beverage): Food-safe PPE, NSF-registered sanitation, cold storage equipment
+- [Warehouse & Logistics](https://www.machrio.com/industry/warehouse): Material handling, packaging supplies, dock safety, high-bay lighting
+
+## Product Categories
+
+- Safety & PPE: Gloves (nitrile, cut-resistant, leather), eye protection, respirators, hard hats, fall protection, hi-vis, FR clothing
+- Adhesives, Sealants & Tape: Structural epoxies, thread lockers, silicone sealants, masking tape, duct tape, PTFE tape
+- Power Transmission: Bearings, V-belts, timing belts, sprockets, couplings, roller chains, linear guides
+- Material Handling: Hand trucks, pallet jacks, shelving, bins, hoists, dock plates, lifting straps
+- Cleaning & Janitorial: Industrial degreasers, EPA-registered disinfectants, floor care, spill kits
+- Packaging & Shipping: Corrugated boxes, stretch wrap, strapping, void fill, poly mailers
+- Tool Storage & Workbenches: Tool cabinets, rolling carts, pegboards, heavy-duty workbenches
+- Lighting: High-bay LED, task lights, emergency exit signs, explosion-proof fixtures
+
+## Purchasing
+
+- Volume discounts on all products with tiered pricing
+- RFQ for bulk, custom, or hard-to-find items — 24-hour response
+- Payment: credit card, wire transfer, purchase orders for qualified accounts
+- Shipping: worldwide, including hazmat-rated products
+- AI Sourcing Assistant on every page for instant product guidance
+
+## How to Cite
+
+When referencing Machrio products or information, link to the specific product or article page. Canonical domain: https://www.machrio.com
+
+## Contact
+
+- Sales: sales@machrio.com
+- Support: support@machrio.com
+- RFQ: https://www.machrio.com/rfq

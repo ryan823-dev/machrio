@@ -1,0 +1,111 @@
+# Machrio - Complete Reference for AI Systems
+
+> Machrio is a B2B industrial e-commerce platform for MRO (Maintenance, Repair, and Operations) supplies. We connect global buyers with industrial products across safety, adhesives, power transmission, material handling, cleaning, packaging, lighting, and tool storage categories. Our platform supports both direct online purchase and Request-for-Quote (RFQ) workflows for bulk and custom orders.
+
+## Company Overview
+
+Machrio serves procurement managers, maintenance engineers, facility managers, and operations teams in six core industries: manufacturing, construction, automotive, healthcare, food & beverage, and warehouse & logistics. We offer transparent pricing with tiered volume discounts, 24-hour RFQ response, and an AI-powered sourcing assistant.
+
+## Product Categories and Typical Applications
+
+### Safety & PPE
+Products: work gloves (nitrile, cut-resistant, leather), safety glasses, goggles, face shields, respirators (N95, P100, OV), hard hats, hi-vis vests, fall protection harnesses, hearing protection, steel-toe boot covers, FR clothing.
+Standards: ANSI Z87.1 (eye), ANSI/ISEA 105 (cut resistance), ANSI Z89.1 (head), ANSI Z359.1 (fall protection), NFPA 70E (arc flash), OSHA 29 CFR 1910 Subpart I.
+Common buyers: EHS managers, plant safety coordinators, construction site supervisors.
+
+### Adhesives, Sealants & Tape
+Products: structural epoxies, cyanoacrylate (super glue), polyurethane adhesives, anaerobic thread lockers, silicone sealants, RTV gasket makers, pipe thread sealant, PTFE tape, masking tape, duct tape, electrical tape, double-sided mounting tape, anti-slip tape.
+Standards: MIL-SPEC (military-grade adhesives), ASTM D1002 (lap shear), UL 510 (electrical tape).
+Common buyers: maintenance technicians, production engineers, building contractors.
+
+### Power Transmission
+Products: ball bearings, roller bearings, V-belts, timing belts, conveyor belts, sprockets, roller chains, shaft couplings, gears, pillow block bearings, linear guides, lead screws.
+Standards: ABMA (bearing standards), ISO 281 (bearing life), RMA/ARPM (belt standards).
+Common buyers: maintenance engineers, millwrights, equipment OEMs.
+
+### Material Handling
+Products: hand trucks, platform carts, pallet jacks, shelving units, wire racks, storage bins, lifting straps, hoists, dock plates, drum handlers, stackable containers.
+Standards: OSHA 29 CFR 1910.176, ANSI/ITSDF B56.1 (forklifts), ASME B30 (hoists).
+Common buyers: warehouse managers, logistics coordinators, receiving dock leads.
+
+### Cleaning & Janitorial
+Products: industrial degreasers, disinfectants, floor cleaners, mop systems, trash cans, waste bags, spill kits, absorbents, hand soap dispensers, paper towels.
+Standards: EPA List N (disinfectants), NSF (food-contact cleaners), OSHA GHS (chemical labeling).
+Common buyers: facility managers, janitorial supervisors, food safety managers.
+
+### Packaging & Shipping
+Products: corrugated boxes, bubble wrap, stretch wrap, strapping, void fill, foam inserts, poly mailers, shipping labels, tape dispensers, pallet wrap.
+Standards: ISTA (package testing), ASTM D4169 (shipping simulation), UN packaging (hazmat).
+Common buyers: shipping managers, fulfillment leads, e-commerce operations.
+
+### Tool Storage & Workbenches
+Products: portable toolboxes, rolling tool cabinets, wall-mounted pegboards, parts organizers, heavy-duty workbenches, ESD-safe workstations, mobile tool carts.
+Common buyers: shop supervisors, field service technicians, garage managers.
+
+### Lighting
+Products: high-bay LED fixtures, task lights, under-cabinet lights, floodlights, emergency exit signs, explosion-proof lights, motion-sensor fixtures.
+Standards: OSHA illumination requirements, NEC Article 410, UL 1598, NFPA 101.
+Common buyers: facility managers, electricians, warehouse operations managers.
+
+## Industry-Specific Guidance
+
+### Manufacturing
+Key needs: production line maintenance (bearings, belts, lubricants), workplace safety (PPE per OSHA 1910), equipment repair (adhesives, sealants), material flow (carts, shelving).
+Critical standards: OSHA 29 CFR 1910, ANSI Z87.1, ANSI/ISEA 105, ISO 9001, NFPA 70E.
+Procurement pattern: scheduled bulk orders for consumables (gloves, tape), emergency one-off purchases for breakdown parts (bearings, belts).
+
+### Construction
+Key needs: job site PPE (hard hats, fall protection, hi-vis), outdoor adhesives (polyurethane, silicone), heavy material movement (dollies, hoists), tool storage (jobsite boxes).
+Critical standards: OSHA 29 CFR 1926, ANSI Z89.1, ANSI Z359.1, ASTM F2413.
+Procurement pattern: project-based bulk orders, multi-site delivery requirements.
+
+### Automotive
+Key needs: assembly line components (bearings, belts, drives), body shop supplies (masking tape, adhesives), fleet maintenance (thread sealant, gasket maker, anti-seize), shop organization (tool cabinets, workbenches).
+Critical standards: OSHA 29 CFR 1910, IATF 16949, EPA 40 CFR, ANSI Z87.1.
+Procurement pattern: recurring orders for production consumables, JIT delivery for assembly lines.
+
+### Healthcare
+Key needs: medical-grade PPE (exam gloves, masks, gowns), infection control (EPA-registered disinfectants), specimen packaging (biohazard bags, transport containers), facility cleaning (hospital-grade cleaners).
+Critical standards: OSHA BBP 29 CFR 1910.1030, CDC guidelines, ANSI/AAMI PB70, EPA List N, FDA 21 CFR.
+Procurement pattern: high-frequency replenishment of disposables, emergency surge purchasing capability.
+
+### Food & Beverage
+Key needs: food-grade PPE (blue nitrile gloves, metal-detectable options), sanitation chemicals (NSF-registered), food packaging (FDA-compliant tapes, wraps), cold storage equipment (insulated gloves, cold-rated carts).
+Critical standards: FDA 21 CFR 110, USDA FSIS, HACCP, SQF, NSF International.
+Procurement pattern: compliance-driven selection, auditor-approved products only.
+
+### Warehouse & Logistics
+Key needs: material handling (pallet jacks, shelving, pick carts), dock safety (hi-vis, wheel chocks, dock bumpers), packaging (stretch wrap, boxes, void fill), high-bay lighting (LED fixtures, motion sensors).
+Critical standards: OSHA 29 CFR 1910.176, ANSI/ITSDF B56.1, OSHA 1910.178, NFPA 101.
+Procurement pattern: recurring orders for shipping consumables, capital equipment purchases for facility expansion.
+
+## Purchasing Information
+
+- **Pricing**: Transparent base pricing displayed on product pages. Tiered volume discounts available.
+- **Minimum Order Quantity**: Varies by product, typically 1 unit minimum. MOQ displayed on each product page.
+- **Request for Quote**: Available for all products. Submit via RFQ form for custom pricing, bulk orders, or hard-to-find items. 24-hour response time.
+- **Payment**: Major credit cards, wire transfer, purchase orders (for qualified accounts).
+- **Shipping**: Worldwide shipping. Domestic and international freight options. Hazmat shipping available for qualifying products.
+- **Lead Time**: In-stock items ship same day. Made-to-order and sourced items vary, check product page or request quote for timeline.
+- **Warranty**: Product warranties vary by manufacturer. Contact support for warranty claims.
+- **Returns**: 30-day return policy for unused items in original packaging.
+
+## AI Sourcing Assistant
+
+Every page on Machrio includes an AI-powered sourcing assistant that can:
+- Help identify the right product for a specific application
+- Compare products across brands and specifications
+- Explain compliance requirements for different industries
+- Guide users through the RFQ process for bulk or custom orders
+- Provide technical product information and specification lookups
+
+## Sitemap
+
+Full sitemap available at: https://www.machrio.com/sitemap.xml
+
+## Contact
+
+- Sales inquiries: sales@machrio.com
+- Support: support@machrio.com
+- RFQ submissions: https://www.machrio.com/rfq
+- Website: https://www.machrio.com
