@@ -2,6 +2,8 @@ import { buildConfig } from 'payload'
 import { mongooseAdapter } from '@payloadcms/db-mongodb'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { vercelBlobStorage } from '@payloadcms/storage-vercel-blob'
+import { zh } from '@payloadcms/translations/languages/zh'
+import { en } from '@payloadcms/translations/languages/en'
 import path from 'path'
 import sharp from 'sharp'
 import { fileURLToPath } from 'url'
@@ -42,6 +44,16 @@ export default buildConfig({
     meta: {
       titleSuffix: '- Machrio Admin',
     },
+    components: {
+      graphics: {
+        Logo: '/src/components/admin/Logo#Logo',
+        Icon: '/src/components/admin/Icon#Icon',
+      },
+    },
+  },
+  i18n: {
+    supportedLanguages: { zh, en },
+    fallbackLanguage: 'en',
   },
   collections: [
     Users,
