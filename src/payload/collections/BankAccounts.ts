@@ -2,9 +2,13 @@ import type { CollectionConfig } from 'payload'
 
 export const BankAccounts: CollectionConfig = {
   slug: 'bank-accounts',
+  labels: {
+    singular: '银行账户',
+    plural: '银行账户',
+  },
   admin: {
     useAsTitle: 'accountName',
-    group: 'Sales',
+    group: '销售',
     defaultColumns: ['accountName', 'country', 'currency', 'bankName', 'isActive'],
   },
   fields: [

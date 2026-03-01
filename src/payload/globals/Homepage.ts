@@ -2,8 +2,9 @@ import type { GlobalConfig } from 'payload'
 
 export const Homepage: GlobalConfig = {
   slug: 'homepage',
+  label: '首页',
   admin: {
-    group: 'Content',
+    group: '内容',
   },
   fields: [
     // Announcement Bar

@@ -2,9 +2,13 @@ import type { CollectionConfig } from 'payload'
 
 export const FreeShippingRules: CollectionConfig = {
   slug: 'free-shipping-rules',
+  labels: {
+    singular: '包邮规则',
+    plural: '包邮规则',
+  },
   admin: {
     useAsTitle: 'name',
-    group: 'Marketing',
+    group: '营销',
     defaultColumns: ['name', 'minimumAmount', 'countryCode', 'isActive'],
   },
   fields: [

@@ -2,8 +2,12 @@ import type { CollectionConfig } from 'payload'
 
 export const AccountSessions: CollectionConfig = {
   slug: 'account-sessions',
+  labels: {
+    singular: '登录会话',
+    plural: '登录会话',
+  },
   admin: {
-    group: 'Account',
+    group: '账户',
     defaultColumns: ['email', 'expiresAt', 'createdAt'],
   },
   fields: [

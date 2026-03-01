@@ -2,9 +2,13 @@ import type { CollectionConfig } from 'payload'
 
 export const Products: CollectionConfig = {
   slug: 'products',
+  labels: {
+    singular: '产品',
+    plural: '产品',
+  },
   admin: {
     useAsTitle: 'name',
-    group: 'Catalog',
+    group: '产品目录',
     defaultColumns: ['name', 'sku', 'primaryCategory', 'brand', 'status'],
   },
   versions: {

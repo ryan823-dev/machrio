@@ -2,9 +2,13 @@ import type { CollectionConfig } from 'payload'
 
 export const ShippingRates: CollectionConfig = {
   slug: 'shipping-rates',
+  labels: {
+    singular: '运费',
+    plural: '运费',
+  },
   admin: {
     useAsTitle: 'displayName',
-    group: 'Logistics',
+    group: '物流',
     defaultColumns: ['displayName', 'countryCode', 'baseWeight', 'baseRate', 'additionalRate', 'handlingFee', 'isActive'],
   },
   fields: [

@@ -10,6 +10,7 @@ export const Icon: React.FC = () => {
         width: '25px',
         height: '25px',
         borderRadius: '5px',
+        objectFit: 'contain',
       }}
     />
   )

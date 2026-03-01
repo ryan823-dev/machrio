@@ -2,9 +2,13 @@ import type { CollectionConfig } from 'payload'
 
 export const Pages: CollectionConfig = {
   slug: 'pages',
+  labels: {
+    singular: '页面',
+    plural: '页面',
+  },
   admin: {
     useAsTitle: 'title',
-    group: 'Content',
+    group: '内容',
     defaultColumns: ['title', 'slug', 'pageType', 'status', 'updatedAt'],
   },
   versions: {

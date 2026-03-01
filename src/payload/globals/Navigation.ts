@@ -2,8 +2,9 @@ import type { GlobalConfig } from 'payload'
 
 export const Navigation: GlobalConfig = {
   slug: 'navigation',
+  label: '导航菜单',
   admin: {
-    group: 'Settings',
+    group: '设置',
   },
   fields: [
     // Main Navigation

@@ -2,8 +2,9 @@ import type { GlobalConfig } from 'payload'
 
 export const SiteSettings: GlobalConfig = {
   slug: 'site-settings',
+  label: '网站设置',
   admin: {
-    group: 'Settings',
+    group: '设置',
   },
   fields: [
     // Basic Info

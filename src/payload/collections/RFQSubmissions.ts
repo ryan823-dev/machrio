@@ -2,9 +2,13 @@ import type { CollectionConfig } from 'payload'
 
 export const RFQSubmissions: CollectionConfig = {
   slug: 'rfq-submissions',
+  labels: {
+    singular: '询价提交',
+    plural: '询价提交',
+  },
   admin: {
     useAsTitle: 'displayTitle',
-    group: 'Sales',
+    group: '销售',
     defaultColumns: ['displayTitle', 'status', 'submittedAt'],
   },
   fields: [

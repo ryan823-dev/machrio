@@ -2,9 +2,13 @@ import type { CollectionConfig } from 'payload'
 
 export const Industries: CollectionConfig = {
   slug: 'industries',
+  labels: {
+    singular: '行业',
+    plural: '行业',
+  },
   admin: {
     useAsTitle: 'name',
-    group: 'Content',
+    group: '内容',
     defaultColumns: ['name', 'slug', 'status', 'updatedAt'],
   },
   versions: {

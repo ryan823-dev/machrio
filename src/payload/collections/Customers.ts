@@ -2,9 +2,13 @@ import type { CollectionConfig } from 'payload'
 
 export const Customers: CollectionConfig = {
   slug: 'customers',
+  labels: {
+    singular: '客户',
+    plural: '客户',
+  },
   admin: {
     useAsTitle: 'company',
-    group: 'Sales',
+    group: '销售',
     defaultColumns: ['company', 'name', 'email', 'source', 'tags', 'createdAt'],
   },
   fields: [

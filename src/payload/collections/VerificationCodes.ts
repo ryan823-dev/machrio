@@ -2,8 +2,12 @@ import type { CollectionConfig } from 'payload'
 
 export const VerificationCodes: CollectionConfig = {
   slug: 'verification-codes',
+  labels: {
+    singular: '验证码',
+    plural: '验证码',
+  },
   admin: {
-    group: 'Account',
+    group: '账户',
     defaultColumns: ['email', 'verified', 'attempts', 'expiresAt', 'createdAt'],
   },
   fields: [

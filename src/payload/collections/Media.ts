@@ -2,8 +2,12 @@ import type { CollectionConfig } from 'payload'
 
 export const Media: CollectionConfig = {
   slug: 'media',
+  labels: {
+    singular: '媒体',
+    plural: '媒体',
+  },
   admin: {
-    group: 'Admin',
+    group: '管理',
   },
   upload: {
     staticDir: '../public/media',

@@ -2,9 +2,13 @@ import type { CollectionConfig } from 'payload'
 
 export const Redirects: CollectionConfig = {
   slug: 'redirects',
+  labels: {
+    singular: '重定向',
+    plural: '重定向',
+  },
   admin: {
     useAsTitle: 'from',
-    group: 'Settings',
+    group: '设置',
     defaultColumns: ['from', 'to', 'type', 'isActive'],
   },
   fields: [

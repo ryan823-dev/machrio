@@ -7,8 +7,12 @@ import type { CollectionConfig } from 'payload'
  */
 export const ProductViews: CollectionConfig = {
   slug: 'productViews',
+  labels: {
+    singular: '浏览记录',
+    plural: '浏览记录',
+  },
   admin: {
-    group: 'Analytics',
+    group: '数据分析',
     useAsTitle: 'product',
     defaultColumns: ['product', 'sessionId', 'viewedAt'],
     description: 'Product view logs for recommendation engine',

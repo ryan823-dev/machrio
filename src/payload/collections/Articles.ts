@@ -2,9 +2,13 @@ import type { CollectionConfig } from 'payload'
 
 export const Articles: CollectionConfig = {
   slug: 'articles',
+  labels: {
+    singular: '文章',
+    plural: '文章',
+  },
   admin: {
     useAsTitle: 'title',
-    group: 'Content',
+    group: '内容',
     defaultColumns: ['title', 'category', 'status', 'publishedAt'],
     description: 'Blog posts, buying guides, and knowledge articles for SEO and content marketing',
   },

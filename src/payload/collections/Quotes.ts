@@ -2,9 +2,13 @@ import type { CollectionConfig } from 'payload'
 
 export const Quotes: CollectionConfig = {
   slug: 'quotes',
+  labels: {
+    singular: '报价单',
+    plural: '报价单',
+  },
   admin: {
     useAsTitle: 'quoteNumber',
-    group: 'Sales',
+    group: '销售',
     defaultColumns: ['quoteNumber', 'customer', 'status', 'total', 'validUntil', 'createdAt'],
   },
   fields: [

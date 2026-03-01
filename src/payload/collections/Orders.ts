@@ -2,9 +2,13 @@ import type { CollectionConfig } from 'payload'
 
 export const Orders: CollectionConfig = {
   slug: 'orders',
+  labels: {
+    singular: '订单',
+    plural: '订单',
+  },
   admin: {
     useAsTitle: 'orderNumber',
-    group: 'Sales',
+    group: '销售',
     defaultColumns: ['orderNumber', 'customer.company', 'status', 'paymentStatus', 'total', 'createdAt'],
   },
   fields: [

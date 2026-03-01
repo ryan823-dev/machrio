@@ -2,9 +2,13 @@ import type { CollectionConfig } from 'payload'
 
 export const ContactSubmissions: CollectionConfig = {
   slug: 'contact-submissions',
+  labels: {
+    singular: '联系表单',
+    plural: '联系表单',
+  },
   admin: {
     useAsTitle: 'displayTitle',
-    group: 'Sales',
+    group: '销售',
     defaultColumns: ['displayTitle', 'subject', 'status', 'submittedAt'],
   },
   fields: [

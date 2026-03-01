@@ -2,9 +2,13 @@ import type { CollectionConfig } from 'payload'
 
 export const ShippingMethods: CollectionConfig = {
   slug: 'shipping-methods',
+  labels: {
+    singular: '配送方式',
+    plural: '配送方式',
+  },
   admin: {
     useAsTitle: 'name',
-    group: 'Logistics',
+    group: '物流',
     defaultColumns: ['name', 'code', 'transitDays', 'isActive', 'sortOrder'],
   },
   fields: [
