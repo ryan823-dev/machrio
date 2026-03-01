@@ -22,7 +22,7 @@ export function ExpandableIntro({ content, truncateLength = 280 }: ExpandableInt
     : content.slice(0, truncateLength).replace(/\s+\S*$/, '') + '...'
 
   return (
-    <div className="mt-3 max-w-4xl text-sm leading-relaxed text-secondary-600">
+    <div className="mt-3 text-sm leading-relaxed text-secondary-600">
       <p>{displayContent}</p>
       {needsTruncation && (
         <button

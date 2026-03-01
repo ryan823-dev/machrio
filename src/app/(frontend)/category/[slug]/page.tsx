@@ -622,7 +622,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
         <section className="mt-12 border-t border-secondary-200 pt-8">
           {/* Description (richText) */}
           {hasRichTextContent(category.description) && (
-            <div className="mb-10 max-w-3xl">
+            <div className="mb-10">
               <div
                 className="prose prose-sm prose-secondary max-w-none text-secondary-600"
                 dangerouslySetInnerHTML={{ __html: lexicalToHtml(category.description) }}
@@ -632,7 +632,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
 
           {/* Buying Guide (richText - Lexical format) */}
           {hasRichTextContent(category.buyingGuide) && (
-            <div className="mb-10 max-w-3xl">
+            <div className="mb-10">
               <h2 className="mb-4 text-lg font-bold text-secondary-900">
                 How to Choose the Right {category.name}
               </h2>
@@ -656,7 +656,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
 
           {/* SEO Content (richText) */}
           {hasRichTextContent(category.seoContent) && (
-            <div className="mt-10 max-w-3xl">
+            <div className="mt-10">
               <div
                 className="prose prose-sm prose-secondary max-w-none text-secondary-600"
                 dangerouslySetInnerHTML={{ __html: lexicalToHtml(category.seoContent) }}
