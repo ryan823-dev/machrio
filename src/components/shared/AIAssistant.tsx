@@ -194,7 +194,7 @@ export function AIAssistant() {
             </div>
             <div>
               <h3 className="text-sm font-semibold">AI Sourcing Assistant</h3>
-              <p className="text-xs text-primary-200">Tell me what you need - I'll find it</p>
+              <p className="text-xs text-primary-200">Tell me what you need - I&apos;ll find it</p>
             </div>
           </div>
 

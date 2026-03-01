@@ -73,6 +73,8 @@ export interface Config {
     brands: Brand;
     media: Media;
     orders: Order;
+    customers: Customer;
+    quotes: Quote;
     'bank-accounts': BankAccount;
     'rfq-submissions': RfqSubmission;
     'contact-submissions': ContactSubmission;
@@ -83,6 +85,9 @@ export interface Config {
     'account-sessions': AccountSession;
     productViews: ProductView;
     articles: Article;
+    pages: Page;
+    industries: Industry;
+    redirects: Redirect;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -96,6 +101,8 @@ export interface Config {
     brands: BrandsSelect<false> | BrandsSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     orders: OrdersSelect<false> | OrdersSelect<true>;
+    customers: CustomersSelect<false> | CustomersSelect<true>;
+    quotes: QuotesSelect<false> | QuotesSelect<true>;
     'bank-accounts': BankAccountsSelect<false> | BankAccountsSelect<true>;
     'rfq-submissions': RfqSubmissionsSelect<false> | RfqSubmissionsSelect<true>;
     'contact-submissions': ContactSubmissionsSelect<false> | ContactSubmissionsSelect<true>;
@@ -106,6 +113,9 @@ export interface Config {
     'account-sessions': AccountSessionsSelect<false> | AccountSessionsSelect<true>;
     productViews: ProductViewsSelect<false> | ProductViewsSelect<true>;
     articles: ArticlesSelect<false> | ArticlesSelect<true>;
+    pages: PagesSelect<false> | PagesSelect<true>;
+    industries: IndustriesSelect<false> | IndustriesSelect<true>;
+    redirects: RedirectsSelect<false> | RedirectsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -115,8 +125,16 @@ export interface Config {
     defaultIDType: string;
   };
   fallbackLocale: null;
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    homepage: Homepage;
+    'site-settings': SiteSetting;
+    navigation: Navigation;
+  };
+  globalsSelect: {
+    homepage: HomepageSelect<false> | HomepageSelect<true>;
+    'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
+    navigation: NavigationSelect<false> | NavigationSelect<true>;
+  };
   locale: null;
   user: User;
   jobs: {
@@ -625,6 +643,14 @@ export interface Order {
   orderNumber: string;
   status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
   paymentStatus: 'unpaid' | 'paid' | 'refunded';
+  /**
+   * How this order was created
+   */
+  source?: ('direct' | 'rfq') | null;
+  /**
+   * Link to customer profile
+   */
+  customerRef?: (string | null) | Customer;
   customer: {
     name: string;
     email: string;
@@ -723,6 +749,249 @@ export interface Order {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "customers".
+ */
+export interface Customer {
+  id: string;
+  /**
+   * Company name
+   */
+  company: string;
+  /**
+   * Primary contact name
+   */
+  name: string;
+  /**
+   * Primary email (unique identifier)
+   */
+  email: string;
+  phone?: string | null;
+  /**
+   * Job title
+   */
+  title?: string | null;
+  /**
+   * How this customer was first acquired
+   */
+  source?: ('direct' | 'rfq' | 'contact' | 'manual') | null;
+  /**
+   * Saved shipping addresses
+   */
+  shippingAddresses?:
+    | {
+        /**
+         * e.g., Headquarters, Warehouse
+         */
+        label?: string | null;
+        address: string;
+        city: string;
+        state: string;
+        postalCode: string;
+        /**
+         * Country code, e.g. US, CA, HK
+         */
+        country: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Invoice / billing information
+   */
+  billingInfo?: {
+    /**
+     * Legal entity name for invoicing
+     */
+    companyLegalName?: string | null;
+    /**
+     * Tax ID / VAT number
+     */
+    taxId?: string | null;
+    billingAddress?: string | null;
+  };
+  /**
+   * e.g., VIP, Key Account, Follow Up
+   */
+  tags?: string[] | null;
+  /**
+   * Internal notes (not visible to customer)
+   */
+  notes?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "quotes".
+ */
+export interface Quote {
+  id: string;
+  quoteNumber: string;
+  status: 'draft' | 'sent' | 'accepted' | 'converted' | 'expired' | 'rejected';
+  /**
+   * Source RFQ inquiry (leave empty for proactive quotes)
+   */
+  rfq?: (string | null) | RfqSubmission;
+  customer: string | Customer;
+  items: {
+    product: string | Product;
+    /**
+     * Snapshot of product name
+     */
+    productName: string;
+    sku: string;
+    quantity: number;
+    /**
+     * Quoted unit price
+     */
+    unitPrice: number;
+    /**
+     * quantity × unitPrice
+     */
+    lineTotal: number;
+    /**
+     * Lead time, special conditions, etc.
+     */
+    notes?: string | null;
+    id?: string | null;
+  }[];
+  subtotal: number;
+  shippingCost?: number | null;
+  tax?: number | null;
+  total: number;
+  currency?: ('USD' | 'CAD') | null;
+  /**
+   * Quote expiry date
+   */
+  validUntil: string;
+  /**
+   * Payment terms, delivery conditions, etc.
+   */
+  terms?: string | null;
+  /**
+   * Order created from this quote
+   */
+  convertedOrder?: (string | null) | Order;
+  /**
+   * Sales representative
+   */
+  assignedTo?: (string | null) | User;
+  /**
+   * Internal notes (not visible to customer)
+   */
+  notes?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "rfq-submissions".
+ */
+export interface RfqSubmission {
+  id: string;
+  displayTitle?: string | null;
+  submittedAt: string;
+  customer: {
+    name: string;
+    email: string;
+    phone?: string | null;
+    company: string;
+    /**
+     * Job title
+     */
+    title?: string | null;
+  };
+  inquiry: {
+    /**
+     * Products the customer is inquiring about
+     */
+    products?: (string | Product)[] | null;
+    /**
+     * Requested quantity
+     */
+    quantity?: number | null;
+    /**
+     * Customer message/requirements
+     */
+    message: string;
+    /**
+     * Specification documents, drawings, etc.
+     */
+    attachments?: (string | Media)[] | null;
+  };
+  /**
+   * Link to customer profile
+   */
+  customerRef?: (string | null) | Customer;
+  /**
+   * Quote created from this inquiry
+   */
+  quote?: (string | null) | Quote;
+  status: 'new' | 'contacted' | 'quoted' | 'converted' | 'lost';
+  /**
+   * Sales representative
+   */
+  assignedTo?: (string | null) | User;
+  /**
+   * Internal notes (not visible to customer)
+   */
+  notes?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  source?: {
+    /**
+     * Page where form was submitted
+     */
+    page?: string | null;
+    /**
+     * Referrer URL
+     */
+    referrer?: string | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "bank-accounts".
  */
 export interface BankAccount {
@@ -787,78 +1056,6 @@ export interface BankAccount {
    * Lower numbers appear first
    */
   sortOrder?: number | null;
-  updatedAt: string;
-  createdAt: string;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "rfq-submissions".
- */
-export interface RfqSubmission {
-  id: string;
-  displayTitle?: string | null;
-  submittedAt: string;
-  customer: {
-    name: string;
-    email: string;
-    phone?: string | null;
-    company: string;
-    /**
-     * Job title
-     */
-    title?: string | null;
-  };
-  inquiry: {
-    /**
-     * Products the customer is inquiring about
-     */
-    products?: (string | Product)[] | null;
-    /**
-     * Requested quantity
-     */
-    quantity?: number | null;
-    /**
-     * Customer message/requirements
-     */
-    message: string;
-    /**
-     * Specification documents, drawings, etc.
-     */
-    attachments?: (string | Media)[] | null;
-  };
-  status: 'new' | 'contacted' | 'quoted' | 'converted' | 'lost';
-  /**
-   * Sales representative
-   */
-  assignedTo?: (string | null) | User;
-  /**
-   * Internal notes (not visible to customer)
-   */
-  notes?: {
-    root: {
-      type: string;
-      children: {
-        type: any;
-        version: number;
-        [k: string]: unknown;
-      }[];
-      direction: ('ltr' | 'rtl') | null;
-      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-      indent: number;
-      version: number;
-    };
-    [k: string]: unknown;
-  } | null;
-  source?: {
-    /**
-     * Page where form was submitted
-     */
-    page?: string | null;
-    /**
-     * Referrer URL
-     */
-    referrer?: string | null;
-  };
   updatedAt: string;
   createdAt: string;
 }
@@ -1134,6 +1331,189 @@ export interface Article {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "pages".
+ */
+export interface Page {
+  id: string;
+  title: string;
+  /**
+   * URL path, e.g., about, faq, privacy
+   */
+  slug: string;
+  status: 'draft' | 'published';
+  /**
+   * Determines the rendering template
+   */
+  pageType: 'standard' | 'faq' | 'about' | 'contact' | 'support';
+  /**
+   * Optional hero/banner image at the top of the page
+   */
+  heroImage?: (string | null) | Media;
+  /**
+   * Main page content (Lexical rich text editor)
+   */
+  content: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  /**
+   * FAQ question-answer pairs (generates FAQPage JSON-LD)
+   */
+  faqItems?:
+    | {
+        question: string;
+        answer: {
+          root: {
+            type: string;
+            children: {
+              type: any;
+              version: number;
+              [k: string]: unknown;
+            }[];
+            direction: ('ltr' | 'rtl') | null;
+            format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+            indent: number;
+            version: number;
+          };
+          [k: string]: unknown;
+        };
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Contact information displayed on the page
+   */
+  contactInfo?: {
+    email?: string | null;
+    phone?: string | null;
+    address?: string | null;
+    businessHours?: string | null;
+  };
+  /**
+   * SEO overrides for this page
+   */
+  seo?: {
+    metaTitle?: string | null;
+    metaDescription?: string | null;
+    ogImage?: (string | null) | Media;
+    /**
+     * Prevent this page from being indexed by search engines
+     */
+    noIndex?: boolean | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "industries".
+ */
+export interface Industry {
+  id: string;
+  /**
+   * e.g., Manufacturing, Construction
+   */
+  name: string;
+  slug: string;
+  status: 'draft' | 'published';
+  heroImage?: (string | null) | Media;
+  /**
+   * Industry overview
+   */
+  description: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  };
+  /**
+   * Industry pain points / challenges
+   */
+  challenges?:
+    | {
+        title: string;
+        description: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * How Machrio addresses these challenges
+   */
+  solutions?:
+    | {
+        title: string;
+        description: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Product categories relevant to this industry
+   */
+  featuredCategories?: (string | Category)[] | null;
+  /**
+   * Industry-specific FAQ (generates FAQPage schema)
+   */
+  faq?:
+    | {
+        question: string;
+        answer: string;
+        id?: string | null;
+      }[]
+    | null;
+  seo?: {
+    metaTitle?: string | null;
+    metaDescription?: string | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "redirects".
+ */
+export interface Redirect {
+  id: string;
+  /**
+   * Source path, e.g., /old-page
+   */
+  from: string;
+  /**
+   * Destination path, e.g., /new-page
+   */
+  to: string;
+  type: '301' | '302';
+  isActive?: boolean | null;
+  /**
+   * Reason for redirect
+   */
+  notes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -1181,6 +1561,14 @@ export interface PayloadLockedDocument {
         value: string | Order;
       } | null)
     | ({
+        relationTo: 'customers';
+        value: string | Customer;
+      } | null)
+    | ({
+        relationTo: 'quotes';
+        value: string | Quote;
+      } | null)
+    | ({
         relationTo: 'bank-accounts';
         value: string | BankAccount;
       } | null)
@@ -1219,6 +1607,18 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'articles';
         value: string | Article;
+      } | null)
+    | ({
+        relationTo: 'pages';
+        value: string | Page;
+      } | null)
+    | ({
+        relationTo: 'industries';
+        value: string | Industry;
+      } | null)
+    | ({
+        relationTo: 'redirects';
+        value: string | Redirect;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -1484,6 +1884,8 @@ export interface OrdersSelect<T extends boolean = true> {
   orderNumber?: T;
   status?: T;
   paymentStatus?: T;
+  source?: T;
+  customerRef?: T;
   customer?:
     | T
     | {
@@ -1540,6 +1942,74 @@ export interface OrdersSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "customers_select".
+ */
+export interface CustomersSelect<T extends boolean = true> {
+  company?: T;
+  name?: T;
+  email?: T;
+  phone?: T;
+  title?: T;
+  source?: T;
+  shippingAddresses?:
+    | T
+    | {
+        label?: T;
+        address?: T;
+        city?: T;
+        state?: T;
+        postalCode?: T;
+        country?: T;
+        id?: T;
+      };
+  billingInfo?:
+    | T
+    | {
+        companyLegalName?: T;
+        taxId?: T;
+        billingAddress?: T;
+      };
+  tags?: T;
+  notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "quotes_select".
+ */
+export interface QuotesSelect<T extends boolean = true> {
+  quoteNumber?: T;
+  status?: T;
+  rfq?: T;
+  customer?: T;
+  items?:
+    | T
+    | {
+        product?: T;
+        productName?: T;
+        sku?: T;
+        quantity?: T;
+        unitPrice?: T;
+        lineTotal?: T;
+        notes?: T;
+        id?: T;
+      };
+  subtotal?: T;
+  shippingCost?: T;
+  tax?: T;
+  total?: T;
+  currency?: T;
+  validUntil?: T;
+  terms?: T;
+  convertedOrder?: T;
+  assignedTo?: T;
+  notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "bank-accounts_select".
  */
 export interface BankAccountsSelect<T extends boolean = true> {
@@ -1585,6 +2055,8 @@ export interface RfqSubmissionsSelect<T extends boolean = true> {
         message?: T;
         attachments?: T;
       };
+  customerRef?: T;
+  quote?: T;
   status?: T;
   assignedTo?: T;
   notes?: T;
@@ -1728,6 +2200,99 @@ export interface ArticlesSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "pages_select".
+ */
+export interface PagesSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
+  status?: T;
+  pageType?: T;
+  heroImage?: T;
+  content?: T;
+  faqItems?:
+    | T
+    | {
+        question?: T;
+        answer?: T;
+        id?: T;
+      };
+  contactInfo?:
+    | T
+    | {
+        email?: T;
+        phone?: T;
+        address?: T;
+        businessHours?: T;
+      };
+  seo?:
+    | T
+    | {
+        metaTitle?: T;
+        metaDescription?: T;
+        ogImage?: T;
+        noIndex?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "industries_select".
+ */
+export interface IndustriesSelect<T extends boolean = true> {
+  name?: T;
+  slug?: T;
+  status?: T;
+  heroImage?: T;
+  description?: T;
+  challenges?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        id?: T;
+      };
+  solutions?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        id?: T;
+      };
+  featuredCategories?: T;
+  faq?:
+    | T
+    | {
+        question?: T;
+        answer?: T;
+        id?: T;
+      };
+  seo?:
+    | T
+    | {
+        metaTitle?: T;
+        metaDescription?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "redirects_select".
+ */
+export interface RedirectsSelect<T extends boolean = true> {
+  from?: T;
+  to?: T;
+  type?: T;
+  isActive?: T;
+  notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv_select".
  */
 export interface PayloadKvSelect<T extends boolean = true> {
@@ -1765,6 +2330,272 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "homepage".
+ */
+export interface Homepage {
+  id: string;
+  /**
+   * Top announcement bar displayed across the site
+   */
+  announcement?: {
+    /**
+     * Announcement message
+     */
+    text?: string | null;
+    /**
+     * Click destination URL (optional)
+     */
+    linkUrl?: string | null;
+    isActive?: boolean | null;
+  };
+  /**
+   * Homepage hero carousel banners
+   */
+  heroBanners?:
+    | {
+        image: string | Media;
+        title?: string | null;
+        subtitle?: string | null;
+        /**
+         * CTA button text, e.g., Shop Now
+         */
+        buttonText?: string | null;
+        linkUrl: string;
+        isActive?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Categories shown in Browse Categories section (overrides default displayOrder)
+   */
+  featuredCategories?: (string | Category)[] | null;
+  /**
+   * Mid-page promotional banner
+   */
+  promotionBanner?: {
+    image?: (string | null) | Media;
+    title?: string | null;
+    linkUrl?: string | null;
+    isActive?: boolean | null;
+  };
+  /**
+   * Homepage SEO overrides
+   */
+  seo?: {
+    metaTitle?: string | null;
+    metaDescription?: string | null;
+  };
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-settings".
+ */
+export interface SiteSetting {
+  id: string;
+  siteName?: string | null;
+  logo?: (string | null) | Media;
+  favicon?: (string | null) | Media;
+  contact?: {
+    email?: string | null;
+    phone?: string | null;
+    address?: string | null;
+    /**
+     * e.g., Mon-Fri 9AM-6PM EST
+     */
+    businessHours?: string | null;
+  };
+  socialLinks?:
+    | {
+        platform: 'linkedin' | 'facebook' | 'twitter' | 'instagram' | 'youtube';
+        url: string;
+        isActive?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  footer?: {
+    /**
+     * e.g., © 2026 Machrio. All rights reserved.
+     */
+    copyrightText?: string | null;
+    /**
+     * Additional footer text or legal notice
+     */
+    additionalText?: string | null;
+  };
+  /**
+   * Fallback SEO values when page-level SEO is not set
+   */
+  defaultSeo?: {
+    metaTitle?: string | null;
+    metaDescription?: string | null;
+    /**
+     * Default Open Graph image
+     */
+    ogImage?: (string | null) | Media;
+  };
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "navigation".
+ */
+export interface Navigation {
+  id: string;
+  /**
+   * Top navigation bar links
+   */
+  mainNav?:
+    | {
+        label: string;
+        url: string;
+        openInNewTab?: boolean | null;
+        isActive?: boolean | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Footer navigation groups
+   */
+  footerNav?:
+    | {
+        /**
+         * Column heading, e.g., Customer Service, Company
+         */
+        groupTitle: string;
+        links?:
+          | {
+              label: string;
+              url: string;
+              isActive?: boolean | null;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "homepage_select".
+ */
+export interface HomepageSelect<T extends boolean = true> {
+  announcement?:
+    | T
+    | {
+        text?: T;
+        linkUrl?: T;
+        isActive?: T;
+      };
+  heroBanners?:
+    | T
+    | {
+        image?: T;
+        title?: T;
+        subtitle?: T;
+        buttonText?: T;
+        linkUrl?: T;
+        isActive?: T;
+        id?: T;
+      };
+  featuredCategories?: T;
+  promotionBanner?:
+    | T
+    | {
+        image?: T;
+        title?: T;
+        linkUrl?: T;
+        isActive?: T;
+      };
+  seo?:
+    | T
+    | {
+        metaTitle?: T;
+        metaDescription?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "site-settings_select".
+ */
+export interface SiteSettingsSelect<T extends boolean = true> {
+  siteName?: T;
+  logo?: T;
+  favicon?: T;
+  contact?:
+    | T
+    | {
+        email?: T;
+        phone?: T;
+        address?: T;
+        businessHours?: T;
+      };
+  socialLinks?:
+    | T
+    | {
+        platform?: T;
+        url?: T;
+        isActive?: T;
+        id?: T;
+      };
+  footer?:
+    | T
+    | {
+        copyrightText?: T;
+        additionalText?: T;
+      };
+  defaultSeo?:
+    | T
+    | {
+        metaTitle?: T;
+        metaDescription?: T;
+        ogImage?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "navigation_select".
+ */
+export interface NavigationSelect<T extends boolean = true> {
+  mainNav?:
+    | T
+    | {
+        label?: T;
+        url?: T;
+        openInNewTab?: T;
+        isActive?: T;
+        id?: T;
+      };
+  footerNav?:
+    | T
+    | {
+        groupTitle?: T;
+        links?:
+          | T
+          | {
+              label?: T;
+              url?: T;
+              isActive?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

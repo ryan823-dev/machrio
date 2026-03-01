@@ -63,6 +63,7 @@ export function RecentlyViewed({
       const stored = localStorage.getItem(STORAGE_KEY)
       if (stored) {
         const items: ViewedProduct[] = JSON.parse(stored)
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setProducts(
           items.filter((item) => item.slug !== excludeSlug).slice(0, maxDisplay)
         )

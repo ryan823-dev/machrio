@@ -490,9 +490,12 @@ export default function AccountPage() {
   useEffect(() => {
     const session = getSession()
     if (session) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setEmail(session.email)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setStep('dashboard')
     }
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setChecking(false)
   }, [])
 

@@ -74,6 +74,7 @@ export function AlsoViewed({ productId, maxDisplay = 6 }: AlsoViewedProps) {
 
   useEffect(() => {
     if (!productId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false)
       return
     }

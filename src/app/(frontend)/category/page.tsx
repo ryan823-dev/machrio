@@ -38,8 +38,20 @@ async function getTopLevelCategories() {
           limit: 50,
         })
 
-        // Count products in this category + all subcategories
+        // Count products in this category + all subcategories + grandchildren
         const allIds = [cat.id, ...children.docs.map(c => c.id)]
+        // Also get level-3 categories (grandchildren)
+        const grandchildrenResults = await Promise.all(
+          children.docs.map(child =>
+            payload.find({
+              collection: 'categories',
+              where: { parent: { equals: child.id } },
+              limit: 200,
+            })
+          )
+        )
+        const grandchildren = grandchildrenResults.flatMap(r => r.docs)
+        allIds.push(...grandchildren.map(c => c.id))
         let productCount = 0
         try {
           const countResult = await payload.count({

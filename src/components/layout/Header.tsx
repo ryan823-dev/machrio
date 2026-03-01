@@ -1,12 +1,14 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useCart } from '@/contexts/CartContext'
 
+const HISTORY_KEY = 'machrio_search_history'
+const MAX_HISTORY = 5
+
 const mainNav = [
-  { label: 'All Categories', href: '/category' },
   { label: 'Industries', href: '/industry/manufacturing' },
   { label: 'New Arrivals', href: '/category?sort=newest' },
   { label: 'Volume Pricing', href: '/deals' },
@@ -14,38 +16,135 @@ const mainNav = [
   { label: 'Request a Quote', href: '/rfq' },
 ]
 
+interface NavCategory {
+  name: string
+  slug: string
+  subcategories: { name: string; slug: string }[]
+}
+
+interface ProductSuggestion {
+  name: string
+  slug: string
+  categorySlug: string
+  sku: string
+  imageUrl: string | null
+  price: number | null
+  currency: string
+  brand: string | null
+}
+
+interface CategorySuggestion {
+  name: string
+  slug: string
+  productCount: number
+}
+
+interface BrandSuggestion {
+  name: string
+  slug: string
+}
+
+function highlightMatch(text: string, query: string): React.ReactNode {
+  if (!query || query.length < 2) return text
+  const regex = new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi')
+  const parts = text.split(regex)
+  if (parts.length === 1) return text
+  return parts.map((part, i) =>
+    regex.test(part) ? <strong key={i} className="font-semibold text-secondary-900">{part}</strong> : part
+  )
+}
+
+function getSearchHistory(): string[] {
+  try {
+    const stored = localStorage.getItem(HISTORY_KEY)
+    if (stored) {
+      const parsed = JSON.parse(stored)
+      if (Array.isArray(parsed)) return parsed.slice(0, MAX_HISTORY)
+    }
+  } catch { /* ignore */ }
+  return []
+}
+
+function addToSearchHistory(query: string) {
+  try {
+    const history = getSearchHistory().filter(h => h.toLowerCase() !== query.toLowerCase())
+    history.unshift(query)
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(history.slice(0, MAX_HISTORY)))
+  } catch { /* ignore */ }
+}
+
 export function Header() {
   const { itemCount } = useCart()
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState('')
-  const [suggestions, setSuggestions] = useState<Array<{
-    name: string; slug: string; categorySlug: string; sku: string;
-    imageUrl: string | null; price: number | null; currency: string;
-  }>>([])
-  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [products, setProducts] = useState<ProductSuggestion[]>([])
+  const [categories, setCategories] = useState<CategorySuggestion[]>([])
+  const [brands, setBrands] = useState<BrandSuggestion[]>([])
+  const [showDropdown, setShowDropdown] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [searchHistory, setSearchHistory] = useState<string[]>([])
+  const [showHistory, setShowHistory] = useState(false)
   const searchRef = useRef<HTMLDivElement>(null)
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Categories mega-menu state
+  const [navCategories, setNavCategories] = useState<NavCategory[]>([])
+  const [showMegaMenu, setShowMegaMenu] = useState(false)
+  const megaMenuRef = useRef<HTMLDivElement>(null)
+  const megaMenuTimeout = useRef<NodeJS.Timeout | null>(null)
+
+  const hasSuggestions = products.length > 0 || categories.length > 0 || brands.length > 0
+
+  // Load search history on mount
+  useEffect(() => {
+    setSearchHistory(getSearchHistory())
+  }, [])
+
+  // Load nav categories on mount
+  useEffect(() => {
+    fetch('/api/categories/nav')
+      .then(res => res.json())
+      .then(data => setNavCategories(data.categories || []))
+      .catch(() => {})
+  }, [])
+
+  // Close mega-menu on outside click
+  useEffect(() => {
+    function handleClickOutsideMega(e: MouseEvent) {
+      if (megaMenuRef.current && !megaMenuRef.current.contains(e.target as Node)) {
+        setShowMegaMenu(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutsideMega)
+    return () => document.removeEventListener('mousedown', handleClickOutsideMega)
+  }, [])
 
   // Debounced fetch suggestions
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
 
     if (searchQuery.trim().length < 2) {
-      setSuggestions([])
-      setShowSuggestions(false)
+      setProducts([])
+      setCategories([])
+      setBrands([])
+      setShowDropdown(false)
       return
     }
 
+    setShowHistory(false)
     debounceRef.current = setTimeout(async () => {
       setIsLoading(true)
       try {
         const res = await fetch(`/api/search/suggest?q=${encodeURIComponent(searchQuery.trim())}`)
         const data = await res.json()
-        setSuggestions(data.suggestions || [])
-        setShowSuggestions(true)
+        setProducts(data.products || [])
+        setCategories(data.categories || [])
+        setBrands(data.brands || [])
+        setShowDropdown(true)
       } catch {
-        setSuggestions([])
+        setProducts([])
+        setCategories([])
+        setBrands([])
       } finally {
         setIsLoading(false)
       }
@@ -60,7 +159,8 @@ export function Header() {
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
-        setShowSuggestions(false)
+        setShowDropdown(false)
+        setShowHistory(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -71,17 +171,37 @@ export function Header() {
     e.preventDefault()
     const query = searchQuery.trim()
     if (query) {
-      setShowSuggestions(false)
+      addToSearchHistory(query)
+      setSearchHistory(getSearchHistory())
+      setShowDropdown(false)
+      setShowHistory(false)
       router.push(`/search?q=${encodeURIComponent(query)}`)
     }
   }
+
+  const handleFocus = () => {
+    if (searchQuery.trim().length >= 2 && hasSuggestions) {
+      setShowDropdown(true)
+    } else if (searchQuery.trim().length < 2 && searchHistory.length > 0) {
+      setShowHistory(true)
+    }
+  }
+
+  const handleHistoryClick = (q: string) => {
+    setSearchQuery(q)
+    setShowHistory(false)
+    addToSearchHistory(q)
+    setSearchHistory(getSearchHistory())
+    router.push(`/search?q=${encodeURIComponent(q)}`)
+  }
+
+  const trimmedQuery = useMemo(() => searchQuery.trim(), [searchQuery])
 
   return (
     <header className="sticky top-0 z-50 border-b border-secondary-200 bg-white">
       {/* Top bar */}
       <div className="bg-gradient-to-r from-primary-900 via-primary-800 to-primary-900 text-white">
         <div className="container-main flex items-center justify-between py-2.5">
-          {/* Left: Value props */}
           <div className="flex items-center gap-6 text-sm">
             <span className="flex items-center gap-1.5 font-medium">
               <svg className="h-4 w-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
@@ -104,7 +224,6 @@ export function Header() {
               Free Quotes in 24h
             </span>
           </div>
-          {/* Right: Contact */}
           <div className="flex items-center gap-5 text-sm">
             <a href="mailto:sales@machrio.com" className="flex items-center gap-1.5 hover:text-amber-300 transition-colors">
               <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
@@ -122,7 +241,6 @@ export function Header() {
 
       {/* Main header */}
       <div className="container-main flex items-center gap-6 py-3">
-        {/* Logo */}
         <Link href="/" className="flex-shrink-0">
           <span className="text-2xl font-bold text-primary-800">
             Mach<span className="text-amber-500">rio</span>
@@ -136,7 +254,7 @@ export function Header() {
               type="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true) }}
+              onFocus={handleFocus}
               placeholder="Search products, brands, SKUs..."
               className="input-field w-full py-2.5 pl-4 pr-10"
               autoComplete="off"
@@ -145,61 +263,144 @@ export function Header() {
               type="submit"
               className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary-400 hover:text-primary-600"
             >
-              <svg
-                className="h-4 w-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </button>
 
-            {/* Autocomplete dropdown */}
-            {showSuggestions && (suggestions.length > 0 || isLoading) && (
+            {/* Search history dropdown */}
+            {showHistory && searchHistory.length > 0 && !showDropdown && (
               <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-lg border border-secondary-200 bg-white shadow-lg">
-                {isLoading && suggestions.length === 0 ? (
+                <div className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-secondary-400">
+                  Recent Searches
+                </div>
+                {searchHistory.map((h, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleHistoryClick(h)}
+                    className="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-secondary-700 transition-colors hover:bg-secondary-50"
+                  >
+                    <svg className="h-4 w-4 flex-shrink-0 text-secondary-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {h}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {/* Autocomplete dropdown */}
+            {showDropdown && (hasSuggestions || isLoading) && (
+              <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-lg border border-secondary-200 bg-white shadow-lg">
+                {isLoading && !hasSuggestions ? (
                   <div className="px-4 py-3 text-sm text-secondary-400">Searching...</div>
                 ) : (
                   <>
-                    {suggestions.map((item) => (
-                      <Link
-                        key={item.slug}
-                        href={`/product/${item.categorySlug}/${item.slug}`}
-                        onClick={() => { setShowSuggestions(false); setSearchQuery('') }}
-                        className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-secondary-50"
-                      >
-                        {item.imageUrl ? (
-                          <img src={item.imageUrl} alt="" className="h-10 w-10 rounded object-contain" />
-                        ) : (
-                          <div className="flex h-10 w-10 items-center justify-center rounded bg-secondary-100 text-secondary-300">
-                            <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-                            </svg>
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="truncate text-sm font-medium text-secondary-800">{item.name}</p>
-                          <p className="text-xs text-secondary-400">SKU: {item.sku}</p>
+                    {/* Products section */}
+                    {products.length > 0 && (
+                      <div>
+                        <div className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-secondary-400">
+                          Products
                         </div>
-                        {item.price && (
-                          <span className="flex-shrink-0 text-sm font-semibold text-secondary-900">
-                            ${item.price.toFixed(2)}
-                          </span>
-                        )}
-                      </Link>
-                    ))}
+                        {products.map((item) => (
+                          <Link
+                            key={item.slug}
+                            href={`/product/${item.categorySlug}/${item.slug}`}
+                            onClick={() => { setShowDropdown(false); setSearchQuery('') }}
+                            className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-secondary-50"
+                          >
+                            {item.imageUrl ? (
+                              <img src={item.imageUrl} alt="" className="h-10 w-10 rounded object-contain" />
+                            ) : (
+                              <div className="flex h-10 w-10 items-center justify-center rounded bg-secondary-100 text-secondary-300">
+                                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 20 20">
+                                  <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                                </svg>
+                              </div>
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <p className="truncate text-sm text-secondary-700">
+                                {highlightMatch(item.name, trimmedQuery)}
+                              </p>
+                              <p className="text-xs text-secondary-400">
+                                {item.brand && <span>{item.brand} | </span>}
+                                SKU: {item.sku}
+                              </p>
+                            </div>
+                            {item.price && (
+                              <span className="flex-shrink-0 text-sm font-semibold text-secondary-900">
+                                ${item.price.toFixed(2)}
+                              </span>
+                            )}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Categories section */}
+                    {categories.length > 0 && (
+                      <div className={products.length > 0 ? 'border-t border-secondary-100' : ''}>
+                        <div className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-secondary-400">
+                          Categories
+                        </div>
+                        {categories.map((cat) => (
+                          <Link
+                            key={cat.slug}
+                            href={`/category/${cat.slug}`}
+                            onClick={() => { setShowDropdown(false); setSearchQuery('') }}
+                            className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-secondary-50"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-8 w-8 items-center justify-center rounded bg-primary-50 text-primary-600">
+                                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                </svg>
+                              </div>
+                              <span className="text-sm text-secondary-700">{highlightMatch(cat.name, trimmedQuery)}</span>
+                            </div>
+                            <span className="rounded-full bg-secondary-100 px-2 py-0.5 text-xs text-secondary-500">
+                              {cat.productCount} products
+                            </span>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Brands section */}
+                    {brands.length > 0 && (
+                      <div className={(products.length > 0 || categories.length > 0) ? 'border-t border-secondary-100' : ''}>
+                        <div className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-secondary-400">
+                          Brands
+                        </div>
+                        {brands.map((brand) => (
+                          <Link
+                            key={brand.slug}
+                            href={`/search?q=${encodeURIComponent(brand.name)}`}
+                            onClick={() => { setShowDropdown(false); setSearchQuery('') }}
+                            className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-secondary-50"
+                          >
+                            <div className="flex h-8 w-8 items-center justify-center rounded bg-amber-50 text-amber-600">
+                              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" />
+                              </svg>
+                            </div>
+                            <span className="text-sm text-secondary-700">{highlightMatch(brand.name, trimmedQuery)}</span>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* View all results link */}
                     <Link
-                      href={`/search?q=${encodeURIComponent(searchQuery.trim())}`}
-                      onClick={() => { setShowSuggestions(false) }}
+                      href={`/search?q=${encodeURIComponent(trimmedQuery)}`}
+                      onClick={() => {
+                        addToSearchHistory(trimmedQuery)
+                        setSearchHistory(getSearchHistory())
+                        setShowDropdown(false)
+                      }}
                       className="block border-t border-secondary-100 px-4 py-2.5 text-center text-sm font-medium text-primary-600 hover:bg-primary-50"
                     >
-                      View all results for &ldquo;{searchQuery.trim()}&rdquo;
+                      View all results for &ldquo;{trimmedQuery}&rdquo;
                     </Link>
                   </>
                 )}
@@ -233,6 +434,75 @@ export function Header() {
       {/* Navigation */}
       <nav className="border-t border-secondary-100 bg-secondary-50">
         <div className="container-main flex items-center gap-1">
+          {/* Categories mega-menu trigger */}
+          <div
+            ref={megaMenuRef}
+            className="relative"
+            onMouseEnter={() => {
+              if (megaMenuTimeout.current) clearTimeout(megaMenuTimeout.current)
+              setShowMegaMenu(true)
+            }}
+            onMouseLeave={() => {
+              megaMenuTimeout.current = setTimeout(() => setShowMegaMenu(false), 200)
+            }}
+          >
+            <button
+              className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-secondary-700 transition-colors hover:bg-primary-50 hover:text-primary-700"
+              onClick={() => setShowMegaMenu(!showMegaMenu)}
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+              All Categories
+              <svg className={`h-3 w-3 transition-transform ${showMegaMenu ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {/* Mega-menu dropdown */}
+            {showMegaMenu && navCategories.length > 0 && (
+              <div className="absolute left-0 top-full z-50 w-[720px] rounded-b-lg border border-t-0 border-secondary-200 bg-white shadow-xl">
+                <div className="grid grid-cols-3 gap-0 p-4">
+                  {navCategories.map((cat) => (
+                    <div key={cat.slug} className="py-2">
+                      <Link
+                        href={`/category/${cat.slug}`}
+                        onClick={() => setShowMegaMenu(false)}
+                        className="block text-sm font-semibold text-secondary-900 hover:text-primary-700"
+                      >
+                        {cat.name}
+                      </Link>
+                      {cat.subcategories.length > 0 && (
+                        <ul className="mt-1.5 space-y-1">
+                          {cat.subcategories.map((sub) => (
+                            <li key={sub.slug}>
+                              <Link
+                                href={`/category/${sub.slug}`}
+                                onClick={() => setShowMegaMenu(false)}
+                                className="block text-xs text-secondary-500 hover:text-primary-600"
+                              >
+                                {sub.name}
+                              </Link>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div className="border-t border-secondary-100 px-4 py-2.5">
+                  <Link
+                    href="/category"
+                    onClick={() => setShowMegaMenu(false)}
+                    className="text-sm font-medium text-primary-600 hover:text-primary-800"
+                  >
+                    View All Categories &rarr;
+                  </Link>
+                </div>
+              </div>
+            )}
+          </div>
+
           {mainNav.map((item) => (
             <Link
               key={item.href}

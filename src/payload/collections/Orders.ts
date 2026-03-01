@@ -59,7 +59,33 @@ export const Orders: CollectionConfig = {
       admin: { position: 'sidebar' },
     },
 
-    // Customer Info
+    // Order Source
+    {
+      name: 'source',
+      type: 'select',
+      defaultValue: 'direct',
+      options: [
+        { label: 'Direct Order', value: 'direct' },
+        { label: 'From RFQ/Quote', value: 'rfq' },
+      ],
+      admin: {
+        position: 'sidebar',
+        description: 'How this order was created',
+      },
+    },
+
+    // Customer Reference (link to Customers collection)
+    {
+      name: 'customerRef',
+      type: 'relationship',
+      relationTo: 'customers',
+      admin: {
+        position: 'sidebar',
+        description: 'Link to customer profile',
+      },
+    },
+
+    // Customer Info (snapshot at time of order)
     {
       name: 'customer',
       type: 'group',

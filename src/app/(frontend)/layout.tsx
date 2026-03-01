@@ -5,6 +5,7 @@ import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { AIAssistant } from '@/components/shared/AIAssistant'
 import { CartProvider } from '@/contexts/CartContext'
+import { CompareProvider } from '@/contexts/CompareContext'
 import { AIAssistantVisibilityProvider } from '@/contexts/AIAssistantVisibilityContext'
 
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID
@@ -123,12 +124,14 @@ export default function FrontendLayout({ children }: { children: React.ReactNode
         )}
         <div className="flex min-h-screen flex-col">
           <CartProvider>
-            <AIAssistantVisibilityProvider>
-              <Header />
-              <main className="flex-1">{children}</main>
-              <Footer />
-              <AIAssistant />
-            </AIAssistantVisibilityProvider>
+            <CompareProvider>
+              <AIAssistantVisibilityProvider>
+                <Header />
+                <main className="flex-1">{children}</main>
+                <Footer />
+                <AIAssistant />
+              </AIAssistantVisibilityProvider>
+            </CompareProvider>
           </CartProvider>
         </div>
       </body>

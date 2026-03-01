@@ -384,7 +384,7 @@ export function HeroAIChat() {
       <div className="flex-1 overflow-y-auto p-4 space-y-3 min-h-[200px] max-h-[280px]">
         {messages.length === 0 ? (
           <div className="text-center py-4">
-            <p className="text-primary-200 text-sm mb-4">Tell me what you need, I'll help you find it!</p>
+            <p className="text-primary-200 text-sm mb-4">Tell me what you need, I&apos;ll help you find it!</p>
             <div className="flex flex-wrap justify-center gap-2">
               <button 
                 onClick={() => handleQuickAction('I want to find products')}

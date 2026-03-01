@@ -59,14 +59,21 @@ async function getSubcategories(categoryId: string) {
       limit: 50,
     })
 
-    // Get product counts for each subcategory
+    // Get product counts for each subcategory (including grandchildren)
     const subcats = await Promise.all(
       children.docs.map(async (child) => {
         try {
+          // Get grandchildren to include in count
+          const grandchildren = await payload.find({
+            collection: 'categories',
+            where: { parent: { equals: child.id } },
+            limit: 200,
+          })
+          const allIds = [child.id, ...grandchildren.docs.map(gc => gc.id)]
           const count = await payload.count({
             collection: 'products',
             where: {
-              primaryCategory: { equals: child.id },
+              primaryCategory: { in: allIds },
               status: { equals: 'published' },
             },
           })
@@ -95,7 +102,8 @@ async function getProducts(categoryId: string, childIds: string[], page: number,
       },
       limit: PRODUCTS_PER_PAGE,
       page,
-      sort: '-createdAt',
+      sort,
+      depth: 2,
     })
 
     return result
@@ -322,7 +330,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   // Get subcategories
   const subcategories = await getSubcategories(category.id)
 
-  // Re-fetch child category IDs for product query
+  // Re-fetch child category IDs for product query (include grandchildren for level-1 categories)
   let childCategoryIds: string[] = []
   try {
     const payload = await getPayload({ config })
@@ -332,6 +340,20 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
       limit: 50,
     })
     childCategoryIds = children.docs.map(c => c.id)
+    // Also get grandchildren (level 3) where products actually live
+    if (children.docs.length > 0) {
+      const grandchildrenResults = await Promise.all(
+        children.docs.map(child =>
+          payload.find({
+            collection: 'categories',
+            where: { parent: { equals: child.id } },
+            limit: 200,
+          })
+        )
+      )
+      const grandchildIds = grandchildrenResults.flatMap(r => r.docs.map(c => c.id))
+      childCategoryIds = [...childCategoryIds, ...grandchildIds]
+    }
   } catch { /* ignore */ }
 
   // Map sort param to Payload sort string
@@ -405,25 +427,23 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
       {itemListSchema && <StructuredData data={itemListSchema} />}
 
       {/* Category Hero */}
-      <div className="mb-6 lg:ml-[244px]">
+      <div className="mb-6">
         <h1 className="text-2xl font-bold text-secondary-900">{category.name}</h1>
         {category.introContent ? (
           <ExpandableIntro content={category.introContent as string} />
         ) : (
-          <p className="mt-2 max-w-4xl text-sm leading-relaxed text-secondary-600">
+          <p className="mt-2 text-sm leading-relaxed text-secondary-600">
             {descriptionText}
           </p>
         )}
       </div>
 
       {/* Buying Guide Banner */}
-      <div className="lg:ml-[244px]"><CategoryBuyingGuide categorySlug={slug} /></div>
+      <CategoryBuyingGuide categorySlug={slug} />
 
       {/* Subcategory cards */}
       {subcategories.length > 0 && (
-        <div className="lg:ml-[244px]">
         <SubcategoryGrid items={subcategories} parentSlug={slug} />
-        </div>
       )}
 
       {/* Filter + Products Layout */}

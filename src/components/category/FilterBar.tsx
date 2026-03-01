@@ -39,8 +39,11 @@ export function FilterBar({ categorySlug, brands, priceRange, totalProducts }: F
   const currentView = searchParams.get('view') || 'list'
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelectedBrand(searchParams.get('brand') || '')
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMinPrice(searchParams.get('minPrice') || '')
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMaxPrice(searchParams.get('maxPrice') || '')
   }, [searchParams])
 

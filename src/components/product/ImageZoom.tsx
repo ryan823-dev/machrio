@@ -25,7 +25,7 @@ export function ImageZoom({ src, alt }: ImageZoomProps) {
       {/* Hover zoom container */}
       <div
         ref={containerRef}
-        className="relative cursor-zoom-in overflow-hidden rounded-lg"
+        className="relative cursor-zoom-in overflow-hidden"
         onMouseEnter={() => setIsZoomed(true)}
         onMouseLeave={() => setIsZoomed(false)}
         onMouseMove={handleMouseMove}
@@ -34,14 +34,14 @@ export function ImageZoom({ src, alt }: ImageZoomProps) {
         <img
           src={src}
           alt={alt}
-          className="w-full object-contain transition-transform duration-200" decoding="async" fetchPriority="high"
+          className="h-full w-full object-contain transition-transform duration-200" decoding="async" fetchPriority="high"
           style={isZoomed ? {
             transform: 'scale(2)',
             transformOrigin: `${position.x}% ${position.y}%`,
           } : undefined}
         />
       </div>
-      <p className="mt-2 text-center text-xs text-secondary-400">Hover to zoom</p>
+      <p className="py-2 text-center text-xs text-secondary-400">Hover to zoom</p>
     </>
   )
 }

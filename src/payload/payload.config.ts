@@ -22,6 +22,15 @@ import { VerificationCodes } from './collections/VerificationCodes'
 import { AccountSessions } from './collections/AccountSessions'
 import { ProductViews } from './collections/ProductViews'
 import { Articles } from './collections/Articles'
+import { Customers } from './collections/Customers'
+import { Quotes } from './collections/Quotes'
+import { Pages } from './collections/Pages'
+import { Industries } from './collections/Industries'
+import { Redirects } from './collections/Redirects'
+
+import { Homepage } from './globals/Homepage'
+import { SiteSettings } from './globals/SiteSettings'
+import { Navigation } from './globals/Navigation'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -41,6 +50,8 @@ export default buildConfig({
     Brands,
     Media,
     Orders,
+    Customers,
+    Quotes,
     BankAccounts,
     RFQSubmissions,
     ContactSubmissions,
@@ -51,6 +62,14 @@ export default buildConfig({
     AccountSessions,
     ProductViews,
     Articles,
+    Pages,
+    Industries,
+    Redirects,
+  ],
+  globals: [
+    Homepage,
+    SiteSettings,
+    Navigation,
   ],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || 'default-secret-change-me',

@@ -89,6 +89,7 @@ async function searchProductsFromPayload(query: string, category?: string, limit
     // If Payload returns results, use them
     if (results.docs.length > 0) {
       return results.docs.map(p => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const prod = p as any
         const catObj = prod.primaryCategory && typeof prod.primaryCategory === 'object'
           ? prod.primaryCategory : null

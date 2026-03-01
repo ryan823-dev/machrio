@@ -32,7 +32,7 @@ const categoryIcons: Record<string, string> = {
   'material-handling': '📦',
   'safety': '🛡️',
   'packaging-shipping': '📬',
-  'cleaning-janitorial': '🧹',
+  'cleaning-and-janitorial': '🧹',
   'lighting': '💡',
   'power-transmission': '⚙️',
   'tool-storage-workbenches': '🗄️',
@@ -50,14 +50,14 @@ const industries = [
 
 // Fallback categories when Payload not ready
 const fallbackCategories = [
-  { name: 'Adhesives & Sealants & Tape', slug: 'adhesives-sealants-tape', featured: true, displayOrder: 1 },
+  { name: 'Safety', slug: 'safety', featured: true, displayOrder: 1 },
   { name: 'Material Handling', slug: 'material-handling', featured: true, displayOrder: 2 },
-  { name: 'Safety', slug: 'safety', featured: true, displayOrder: 3 },
-  { name: 'Packaging & Shipping', slug: 'packaging-shipping', featured: true, displayOrder: 4 },
-  { name: 'Cleaning and Janitorial', slug: 'cleaning-janitorial', featured: true, displayOrder: 5 },
+  { name: 'Packaging & Shipping', slug: 'packaging-shipping', featured: true, displayOrder: 3 },
+  { name: 'Adhesives & Sealants & Tape', slug: 'adhesives-sealants-tape', featured: true, displayOrder: 4 },
+  { name: 'Cleaning and Janitorial', slug: 'cleaning-and-janitorial', featured: true, displayOrder: 5 },
   { name: 'Lighting', slug: 'lighting', featured: true, displayOrder: 6 },
-  { name: 'Power Transmission', slug: 'power-transmission', featured: true, displayOrder: 7 },
-  { name: 'Tool Storage & Workbenches', slug: 'tool-storage-workbenches', featured: true, displayOrder: 8 },
+  { name: 'Tool Storage & Workbenches', slug: 'tool-storage-workbenches', featured: true, displayOrder: 7 },
+  { name: 'Power Transmission', slug: 'power-transmission', featured: true, displayOrder: 8 },
   { name: 'Plumbing & Pumps', slug: 'plumbing-pumps', featured: true, displayOrder: 9 },
 ]
 
@@ -79,7 +79,7 @@ async function getCategoriesWithCounts() {
       return fallbackCategories.map(c => ({ ...c, productCount: 0 }))
     }
 
-    // For each category, count products including subcategories
+    // For each category, count products including all descendant subcategories (level 2 + level 3)
     const results = await Promise.all(
       categories.docs.map(async (cat) => {
         try {
@@ -88,7 +88,18 @@ async function getCategoriesWithCounts() {
             where: { parent: { equals: cat.id } },
             limit: 100,
           })
-          const allCategoryIds = [cat.id, ...children.docs.map(c => c.id)]
+          // Also get grandchildren (level 3 categories where products actually live)
+          const grandchildrenResults = await Promise.all(
+            children.docs.map(child =>
+              payload.find({
+                collection: 'categories',
+                where: { parent: { equals: child.id } },
+                limit: 200,
+              })
+            )
+          )
+          const grandchildren = grandchildrenResults.flatMap(r => r.docs)
+          const allCategoryIds = [cat.id, ...children.docs.map(c => c.id), ...grandchildren.map(c => c.id)]
           const count = await payload.count({
             collection: 'products',
             where: {

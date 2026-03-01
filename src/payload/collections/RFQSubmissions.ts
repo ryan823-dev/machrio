@@ -117,6 +117,29 @@ export const RFQSubmissions: CollectionConfig = {
       ],
     },
 
+    // Customer Reference (link to Customers collection)
+    {
+      name: 'customerRef',
+      type: 'relationship',
+      relationTo: 'customers',
+      admin: {
+        position: 'sidebar',
+        description: 'Link to customer profile',
+      },
+    },
+
+    // Quote generated from this RFQ
+    {
+      name: 'quote',
+      type: 'relationship',
+      relationTo: 'quotes',
+      admin: {
+        position: 'sidebar',
+        readOnly: true,
+        description: 'Quote created from this inquiry',
+      },
+    },
+
     // Status Tracking
     {
       name: 'status',
