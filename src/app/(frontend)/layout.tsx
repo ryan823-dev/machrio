@@ -8,6 +8,7 @@ import { AIAssistant } from '@/components/shared/AIAssistant'
 import { CartProvider } from '@/contexts/CartContext'
 import { CompareProvider } from '@/contexts/CompareContext'
 import { AIAssistantVisibilityProvider } from '@/contexts/AIAssistantVisibilityContext'
+import { WebVitalsReporter } from '@/components/shared/WebVitalsReporter'
 
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID
 const SITE_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://www.machrio.com'
@@ -132,6 +133,7 @@ export default function FrontendLayout({ children }: { children: React.ReactNode
                 <Footer />
                 <WhatsAppButton />
                 <AIAssistant />
+                <WebVitalsReporter />
               </AIAssistantVisibilityProvider>
             </CompareProvider>
           </CartProvider>

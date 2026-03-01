@@ -284,8 +284,9 @@ function mapProductToCard(product: Record<string, unknown>) {
   }
 }
 
-export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: CategoryPageProps): Promise<Metadata> {
   const { slug } = await params
+  const resolvedSearchParams = await searchParams
   const data = await getCategoryBySlug(slug)
   if (!data) return { title: 'Category Not Found' }
 
@@ -297,11 +298,17 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
 
   const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'https://machrio.com'
 
+  // SEO: noindex pages with sort/filter params to prevent duplicate content
+  // Only clean category pages and pagination are indexable
+  const hasFilterParams = !!(resolvedSearchParams.brand || resolvedSearchParams.minPrice || resolvedSearchParams.maxPrice || resolvedSearchParams.sort)
+
   return {
     title,
     description,
     alternates: { canonical: `/category/${slug}/` },
-    robots: { index: true, follow: true },
+    robots: hasFilterParams
+      ? { index: false, follow: true }
+      : { index: true, follow: true },
     openGraph: {
       title,
       description,

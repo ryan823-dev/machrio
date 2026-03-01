@@ -13,7 +13,7 @@ interface FilterBarProps {
 // View toggle icon components
 function GridIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
     </svg>
   )
@@ -21,7 +21,7 @@ function GridIcon({ className }: { className?: string }) {
 
 function ListIcon({ className }: { className?: string }) {
   return (
-    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
     </svg>
   )
@@ -98,16 +98,18 @@ export function FilterBar({ categorySlug, brands, priceRange, totalProducts }: F
   const hasActiveFilters = selectedBrand || minPrice || maxPrice
 
   const filterContent = (
-    <div className="space-y-5">
+    <div className="space-y-5" role="group" aria-label="Product filters">
       {/* Brands */}
       {brands.length > 0 && (
-        <div>
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-secondary-500">Brand</h3>
-          <div className="space-y-1">
+        <fieldset>
+          <legend className="mb-2 text-xs font-semibold uppercase tracking-wider text-secondary-500">Brand</legend>
+          <div className="space-y-1" role="group" aria-label="Filter by brand">
             {brands.slice(0, 12).map((brand) => (
               <button
                 key={brand.slug}
+                type="button"
                 onClick={() => handleBrandClick(brand.slug)}
+                aria-pressed={selectedBrand === brand.slug}
                 className={`flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-sm transition-colors ${
                   selectedBrand === brand.slug
                     ? 'bg-primary-50 font-medium text-primary-700'
@@ -115,48 +117,56 @@ export function FilterBar({ categorySlug, brands, priceRange, totalProducts }: F
                 }`}
               >
                 <span className="truncate">{brand.name}</span>
-                <span className="ml-2 flex-shrink-0 text-xs text-secondary-400">{brand.count}</span>
+                <span className="ml-2 flex-shrink-0 text-xs text-secondary-400" aria-label={`${brand.count} products`}>{brand.count}</span>
               </button>
             ))}
           </div>
-        </div>
+        </fieldset>
       )}
 
       {/* Price Range */}
-      <div>
-        <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-secondary-500">Price Range</h3>
+      <fieldset>
+        <legend className="mb-2 text-xs font-semibold uppercase tracking-wider text-secondary-500">Price Range</legend>
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
-            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-secondary-400">$</span>
+            <label htmlFor="filter-min-price" className="sr-only">Minimum price</label>
+            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-secondary-400" aria-hidden="true">$</span>
             <input
+              id="filter-min-price"
               type="number"
               value={minPrice}
               onChange={(e) => setMinPrice(e.target.value)}
               placeholder={priceRange.min > 0 ? String(Math.floor(priceRange.min)) : '0'}
               min="0"
+              aria-label="Minimum price in dollars"
               className="input-field w-full py-1.5 pl-5 pr-2 text-sm"
             />
           </div>
-          <span className="text-secondary-400">—</span>
+          <span className="text-secondary-400" aria-hidden="true">—</span>
+          <span className="sr-only">to</span>
           <div className="relative flex-1">
-            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-secondary-400">$</span>
+            <label htmlFor="filter-max-price" className="sr-only">Maximum price</label>
+            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-secondary-400" aria-hidden="true">$</span>
             <input
+              id="filter-max-price"
               type="number"
               value={maxPrice}
               onChange={(e) => setMaxPrice(e.target.value)}
               placeholder={priceRange.max > 0 ? String(Math.ceil(priceRange.max)) : '999'}
               min="0"
+              aria-label="Maximum price in dollars"
               className="input-field w-full py-1.5 pl-5 pr-2 text-sm"
             />
           </div>
         </div>
         <button
+          type="button"
           onClick={handlePriceApply}
           className="mt-2 w-full rounded-lg bg-primary-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-primary-700"
         >
           Apply Price
         </button>
-      </div>
+      </fieldset>
 
       {/* Availability */}
       <div>
@@ -169,6 +179,7 @@ export function FilterBar({ categorySlug, brands, priceRange, totalProducts }: F
       {/* Clear filters */}
       {hasActiveFilters && (
         <button
+          type="button"
           onClick={clearFilters}
           className="w-full rounded-lg border border-secondary-300 px-3 py-2 text-xs font-medium text-secondary-600 hover:bg-secondary-50"
         >
@@ -184,68 +195,79 @@ export function FilterBar({ categorySlug, brands, priceRange, totalProducts }: F
       <div className="mb-4 flex items-center justify-between lg:hidden">
           <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={() => setIsMobileOpen(!isMobileOpen)}
+              aria-expanded={isMobileOpen}
+              aria-controls="mobile-filter-panel"
               className="flex items-center gap-2 rounded-lg border border-secondary-200 bg-white px-3 py-2 text-sm font-medium text-secondary-700"
             >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
               </svg>
               Filters
               {hasActiveFilters && (
-                <span className="rounded-full bg-primary-100 px-1.5 py-0.5 text-[10px] font-bold text-primary-700">!</span>
+                <span className="rounded-full bg-primary-100 px-1.5 py-0.5 text-[10px] font-bold text-primary-700" aria-label="Filters active">!</span>
               )}
             </button>
             {/* Mobile view toggle */}
-            <div className="flex items-center rounded-lg border border-secondary-200 bg-white p-0.5">
+            <div className="flex items-center rounded-lg border border-secondary-200 bg-white p-0.5" role="group" aria-label="View options">
               <button
+                type="button"
                 onClick={() => handleViewChange('list')}
+                aria-pressed={currentView === 'list'}
+                aria-label="List view"
                 className={`rounded-md p-1.5 transition-colors ${
                   currentView === 'list'
                     ? 'bg-primary-100 text-primary-700'
                     : 'text-secondary-400 hover:text-secondary-600'
                 }`}
-                title="List view"
               >
                 <ListIcon className="h-4 w-4" />
               </button>
               <button
+                type="button"
                 onClick={() => handleViewChange('grid')}
+                aria-pressed={currentView === 'grid'}
+                aria-label="Grid view"
                 className={`rounded-md p-1.5 transition-colors ${
                   currentView === 'grid'
                     ? 'bg-primary-100 text-primary-700'
                     : 'text-secondary-400 hover:text-secondary-600'
                 }`}
-                title="Grid view"
               >
                 <GridIcon className="h-4 w-4" />
               </button>
             </div>
             <span className="text-sm text-secondary-500">{totalProducts} products</span>
           </div>
-          <select
-            value={currentSort}
-            onChange={(e) => {
-              const params = new URLSearchParams(searchParams.toString())
-              if (e.target.value) {
-                params.set('sort', e.target.value)
-              } else {
-                params.delete('sort')
-              }
-              params.delete('page')
-              router.push(`/category/${categorySlug}?${params.toString()}`)
-            }}
-            className="rounded-lg border border-secondary-200 bg-white px-3 py-2 text-sm text-secondary-700"
-          >
-            <option value="">Newest</option>
-            <option value="price-asc">Price: Low to High</option>
-            <option value="price-desc">Price: High to Low</option>
-            <option value="name">Name: A to Z</option>
-          </select>
+          <div>
+            <label htmlFor="mobile-sort-select" className="sr-only">Sort products</label>
+            <select
+              id="mobile-sort-select"
+              value={currentSort}
+              onChange={(e) => {
+                const params = new URLSearchParams(searchParams.toString())
+                if (e.target.value) {
+                  params.set('sort', e.target.value)
+                } else {
+                  params.delete('sort')
+                }
+                params.delete('page')
+                router.push(`/category/${categorySlug}?${params.toString()}`)
+              }}
+              className="rounded-lg border border-secondary-200 bg-white px-3 py-2 text-sm text-secondary-700"
+            >
+              <option value="">Newest</option>
+              <option value="price-asc">Price: Low to High</option>
+              <option value="price-desc">Price: High to Low</option>
+              <option value="name">Name: A to Z</option>
+            </select>
+          </div>
         </div>
 
         {/* Mobile: Collapsible filter panel */}
         {isMobileOpen && (
-          <div className="mb-4 rounded-lg border border-secondary-200 bg-white p-4 lg:hidden">
+          <div id="mobile-filter-panel" className="mb-4 rounded-lg border border-secondary-200 bg-white p-4 lg:hidden">
             {filterContent}
           </div>
         )}
@@ -314,75 +336,93 @@ export function DesktopSortBar({
       <div className="flex items-center gap-2">
         <span className="text-sm text-secondary-500">{totalProducts} products</span>
         {hasActiveFilters && (
-          <>
+          <div role="list" aria-label="Applied filters" className="flex items-center gap-2">
             {selectedBrand && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700">
+              <span role="listitem" className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700">
                 {brands.find(b => b.slug === selectedBrand)?.name || selectedBrand}
-                <button onClick={clearBrand} className="ml-0.5 hover:text-red-600">
-                  <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button 
+                  type="button"
+                  onClick={clearBrand} 
+                  aria-label={`Remove filter: ${brands.find(b => b.slug === selectedBrand)?.name || selectedBrand}`}
+                  className="ml-0.5 hover:text-red-600"
+                >
+                  <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </span>
             )}
             {(minPrice || maxPrice) && (
-              <span className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700">
+              <span role="listitem" className="inline-flex items-center gap-1 rounded-full bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700">
                 ${minPrice || '0'} - ${maxPrice || '...'}
-                <button onClick={clearPrice} className="ml-0.5 hover:text-red-600">
-                  <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <button 
+                  type="button"
+                  onClick={clearPrice} 
+                  aria-label="Remove price filter"
+                  className="ml-0.5 hover:text-red-600"
+                >
+                  <svg className="h-3 w-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </span>
             )}
-          </>
+          </div>
         )}
       </div>
       <div className="flex items-center gap-3">
         {/* View toggle buttons */}
-        <div className="flex items-center rounded-lg border border-secondary-200 bg-white p-0.5">
+        <div className="flex items-center rounded-lg border border-secondary-200 bg-white p-0.5" role="group" aria-label="View options">
           <button
+            type="button"
             onClick={() => handleViewChange('list')}
+            aria-pressed={currentView === 'list'}
+            aria-label="List view"
             className={`rounded-md p-1.5 transition-colors ${
               currentView === 'list'
                 ? 'bg-primary-100 text-primary-700'
                 : 'text-secondary-400 hover:text-secondary-600'
             }`}
-            title="List view"
           >
             <ListIcon className="h-4 w-4" />
           </button>
           <button
+            type="button"
             onClick={() => handleViewChange('grid')}
+            aria-pressed={currentView === 'grid'}
+            aria-label="Grid view"
             className={`rounded-md p-1.5 transition-colors ${
               currentView === 'grid'
                 ? 'bg-primary-100 text-primary-700'
                 : 'text-secondary-400 hover:text-secondary-600'
             }`}
-            title="Grid view"
           >
             <GridIcon className="h-4 w-4" />
           </button>
         </div>
-        <select
-          value={currentSort}
-          onChange={(e) => {
-            const params = new URLSearchParams(searchParams.toString())
-            if (e.target.value) {
-              params.set('sort', e.target.value)
-            } else {
-              params.delete('sort')
-            }
-            params.delete('page')
-            router.push(`/category/${categorySlug}?${params.toString()}`)
-          }}
-          className="rounded-lg border border-secondary-200 bg-white px-3 py-1.5 text-sm text-secondary-700"
-        >
-          <option value="">Newest</option>
-          <option value="price-asc">Price: Low to High</option>
-          <option value="price-desc">Price: High to Low</option>
-          <option value="name">Name: A to Z</option>
-        </select>
+        <div>
+          <label htmlFor="desktop-sort-select" className="sr-only">Sort products</label>
+          <select
+            id="desktop-sort-select"
+            value={currentSort}
+            onChange={(e) => {
+              const params = new URLSearchParams(searchParams.toString())
+              if (e.target.value) {
+                params.set('sort', e.target.value)
+              } else {
+                params.delete('sort')
+              }
+              params.delete('page')
+              router.push(`/category/${categorySlug}?${params.toString()}`)
+            }}
+            className="rounded-lg border border-secondary-200 bg-white px-3 py-1.5 text-sm text-secondary-700"
+          >
+            <option value="">Newest</option>
+            <option value="price-asc">Price: Low to High</option>
+            <option value="price-desc">Price: High to Low</option>
+            <option value="name">Name: A to Z</option>
+          </select>
+        </div>
       </div>
     </div>
   )

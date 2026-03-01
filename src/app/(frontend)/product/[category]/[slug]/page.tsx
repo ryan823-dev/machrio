@@ -412,7 +412,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const brandId = brandObj?.id as string || null
   const relatedProducts = await getRelatedProducts(p.id as string, categoryId, brandId, basePrice)
 
-  // Schema.org
+  // Schema.org - Enhanced Product Schema with complete offers
+  // Note: aggregateRating and review are intentionally omitted until real review system is launched (P3)
   const productSchema = {
     '@context': 'https://schema.org',
     '@type': 'Product',
@@ -420,7 +421,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
     description: shortDescription,
     sku: p.sku,
     mpn: p.sku,
-    brand: { '@type': 'Brand', name: brandName },
+    ...(p.gtin13 ? { gtin13: p.gtin13 as string } : {}),
+    brand: {
+      '@type': 'Brand',
+      name: brandName,
+      ...(brandSlug && { url: `${serverUrl}/brand/${brandSlug}` }),
+    },
     ...(catName && { category: catName }),
     ...(imageUrl && { image: imageUrl }),
     offers: basePrice
@@ -428,21 +434,69 @@ export default async function ProductPage({ params }: ProductPageProps) {
           '@type': 'Offer',
           price: basePrice,
           priceCurrency: currency,
-          priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          // Extended to 90 days for SEO stability
+          priceValidUntil: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
           availability: availability === 'in-stock'
             ? 'https://schema.org/InStock'
             : availability === 'made-to-order'
             ? 'https://schema.org/PreOrder'
+            : availability === 'out-of-stock'
+            ? 'https://schema.org/OutOfStock'
             : 'https://schema.org/LimitedAvailability',
           url: `${serverUrl}/product/${catSlug || 'products'}/${p.slug}/`,
           seller: { '@type': 'Organization', name: 'Machrio', url: serverUrl },
           itemCondition: 'https://schema.org/NewCondition',
+          // Shipping details for Rich Results
+          shippingDetails: {
+            '@type': 'OfferShippingDetails',
+            shippingRate: {
+              '@type': 'MonetaryAmount',
+              value: 0,
+              currency: 'USD',
+            },
+            shippingDestination: {
+              '@type': 'DefinedRegion',
+              addressCountry: 'US',
+            },
+            deliveryTime: {
+              '@type': 'ShippingDeliveryTime',
+              handlingTime: {
+                '@type': 'QuantitativeValue',
+                minValue: 1,
+                maxValue: availability === 'in-stock' ? 2 : 5,
+                unitCode: 'DAY',
+              },
+              transitTime: {
+                '@type': 'QuantitativeValue',
+                minValue: 2,
+                maxValue: 7,
+                unitCode: 'DAY',
+              },
+            },
+          },
+          // Return policy for trust signals
+          hasMerchantReturnPolicy: {
+            '@type': 'MerchantReturnPolicy',
+            applicableCountry: 'US',
+            returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+            merchantReturnDays: 30,
+            returnMethod: 'https://schema.org/ReturnByMail',
+            returnFees: 'https://schema.org/FreeReturn',
+          },
         }
       : {
           '@type': 'Offer',
           availability: 'https://schema.org/InStock',
           url: `${serverUrl}/product/${catSlug || 'products'}/${p.slug}/`,
-          seller: { '@type': 'Organization', name: 'Machrio' },
+          seller: { '@type': 'Organization', name: 'Machrio', url: serverUrl },
+          itemCondition: 'https://schema.org/NewCondition',
+          hasMerchantReturnPolicy: {
+            '@type': 'MerchantReturnPolicy',
+            applicableCountry: 'US',
+            returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+            merchantReturnDays: 30,
+            returnMethod: 'https://schema.org/ReturnByMail',
+          },
         },
     ...(weightKg && {
       weight: {

@@ -18,6 +18,9 @@ export default function robots(): MetadataRoute.Robots {
           '/checkout',
           '/checkout/*',
           '/order/*',
+          // SEO: Exclude search results and filtered/sorted pages from crawling
+          '/search',
+          '/search?*',
         ],
       },
     ],

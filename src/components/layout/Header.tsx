@@ -1,12 +1,45 @@
 'use client'
 
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useCart } from '@/contexts/CartContext'
 
 const HISTORY_KEY = 'machrio_search_history'
 const MAX_HISTORY = 5
+
+// Accessibility: Focus trap utility for mega-menu
+function useFocusTrap(isActive: boolean, containerRef: React.RefObject<HTMLElement | null>) {
+  useEffect(() => {
+    if (!isActive || !containerRef.current) return
+
+    const container = containerRef.current
+    const focusableElements = container.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )
+    const firstElement = focusableElements[0]
+    const lastElement = focusableElements[focusableElements.length - 1]
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return
+
+      if (e.shiftKey) {
+        if (document.activeElement === firstElement) {
+          e.preventDefault()
+          lastElement?.focus()
+        }
+      } else {
+        if (document.activeElement === lastElement) {
+          e.preventDefault()
+          firstElement?.focus()
+        }
+      }
+    }
+
+    container.addEventListener('keydown', handleKeyDown)
+    return () => container.removeEventListener('keydown', handleKeyDown)
+  }, [isActive, containerRef])
+}
 
 const mainNav = [
   { label: 'Industries', href: '/industry/manufacturing' },
@@ -91,9 +124,28 @@ export function Header() {
   const [navCategories, setNavCategories] = useState<NavCategory[]>([])
   const [showMegaMenu, setShowMegaMenu] = useState(false)
   const megaMenuRef = useRef<HTMLDivElement>(null)
+  const megaMenuPanelRef = useRef<HTMLDivElement>(null)
+  const megaMenuButtonRef = useRef<HTMLButtonElement>(null)
   const megaMenuTimeout = useRef<NodeJS.Timeout | null>(null)
+  
+  // Accessibility: Track previous cart count for aria-live announcements
+  const [cartAnnouncement, setCartAnnouncement] = useState('')
+  const prevItemCount = useRef(itemCount)
 
   const hasSuggestions = products.length > 0 || categories.length > 0 || brands.length > 0
+
+  // Accessibility: Focus trap for mega-menu
+  useFocusTrap(showMegaMenu, megaMenuPanelRef)
+
+  // Accessibility: Announce cart updates
+  useEffect(() => {
+    if (prevItemCount.current !== itemCount && itemCount > 0) {
+      setCartAnnouncement(`Cart updated: ${itemCount} ${itemCount === 1 ? 'item' : 'items'} in cart`)
+      const timeout = setTimeout(() => setCartAnnouncement(''), 3000)
+      return () => clearTimeout(timeout)
+    }
+    prevItemCount.current = itemCount
+  }, [itemCount])
 
   // Load search history on mount
   useEffect(() => {
@@ -195,6 +247,23 @@ export function Header() {
     router.push(`/search?q=${encodeURIComponent(q)}`)
   }
 
+  // Accessibility: Keyboard navigation for mega-menu
+  const handleMegaMenuKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      setShowMegaMenu(false)
+      megaMenuButtonRef.current?.focus()
+    } else if (e.key === 'ArrowDown' && !showMegaMenu) {
+      e.preventDefault()
+      setShowMegaMenu(true)
+    }
+  }, [showMegaMenu])
+
+  // Accessibility: Close mega-menu and return focus to trigger button
+  const closeMegaMenu = useCallback(() => {
+    setShowMegaMenu(false)
+    megaMenuButtonRef.current?.focus()
+  }, [])
+
   const trimmedQuery = useMemo(() => searchQuery.trim(), [searchQuery])
 
   return (
@@ -249,8 +318,13 @@ export function Header() {
 
         {/* Search */}
         <div ref={searchRef} className="flex flex-1 items-center">
-          <form onSubmit={handleSearch} className="relative w-full max-w-2xl">
+          <form onSubmit={handleSearch} className="relative w-full max-w-2xl" role="search">
+            {/* Accessibility: Screen reader label for search input */}
+            <label htmlFor="header-search-input" className="sr-only">
+              Search products, brands, and SKUs
+            </label>
             <input
+              id="header-search-input"
               type="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -258,15 +332,27 @@ export function Header() {
               placeholder="Search products, brands, SKUs..."
               className="input-field w-full py-2.5 pl-4 pr-10"
               autoComplete="off"
+              aria-label="Search products, brands, and SKUs"
+              aria-describedby={showDropdown && hasSuggestions ? 'search-suggestions-status' : undefined}
+              aria-expanded={showDropdown && hasSuggestions}
+              aria-controls={showDropdown && hasSuggestions ? 'search-suggestions-dropdown' : undefined}
+              aria-haspopup="listbox"
             />
             <button
               type="submit"
               className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary-400 hover:text-primary-600"
+              aria-label="Submit search"
             >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </button>
+
+            {/* Accessibility: Live region for search status */}
+            <div id="search-suggestions-status" className="sr-only" aria-live="polite">
+              {isLoading && 'Searching...'}
+              {!isLoading && hasSuggestions && `${products.length} products, ${categories.length} categories, ${brands.length} brands found`}
+            </div>
 
             {/* Search history dropdown */}
             {showHistory && searchHistory.length > 0 && !showDropdown && (
@@ -291,7 +377,12 @@ export function Header() {
 
             {/* Autocomplete dropdown */}
             {showDropdown && (hasSuggestions || isLoading) && (
-              <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-lg border border-secondary-200 bg-white shadow-lg">
+              <div 
+                id="search-suggestions-dropdown"
+                role="listbox"
+                aria-label="Search suggestions"
+                className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-lg border border-secondary-200 bg-white shadow-lg"
+              >
                 {isLoading && !hasSuggestions ? (
                   <div className="px-4 py-3 text-sm text-secondary-400">Searching...</div>
                 ) : (
@@ -411,28 +502,41 @@ export function Header() {
 
         {/* Right actions */}
         <div className="flex items-center gap-4">
-          <Link href="/account" className="flex flex-col items-center text-xs text-secondary-600 hover:text-primary-700">
-            <svg className="mb-0.5 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <Link 
+            href="/account" 
+            className="flex flex-col items-center text-xs text-secondary-600 hover:text-primary-700"
+            aria-label="My account"
+          >
+            <svg className="mb-0.5 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
             Account
           </Link>
-          <Link href="/cart" className="relative flex flex-col items-center text-xs text-secondary-600 hover:text-primary-700">
-            <svg className="mb-0.5 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <Link 
+            href="/cart" 
+            className="relative flex flex-col items-center text-xs text-secondary-600 hover:text-primary-700"
+            aria-label={`Shopping cart${itemCount > 0 ? `, ${itemCount} ${itemCount === 1 ? 'item' : 'items'}` : ', empty'}`}
+          >
+            <svg className="mb-0.5 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" />
             </svg>
-            Cart
+            <span aria-hidden="true">Cart</span>
+            <span className="sr-only">{itemCount > 0 ? `${itemCount} items in cart` : 'Cart is empty'}</span>
             {itemCount > 0 && (
-              <span className="absolute -right-2 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white">
+              <span className="absolute -right-2 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white" aria-hidden="true">
                 {itemCount}
               </span>
             )}
           </Link>
+          {/* Accessibility: Live region for cart updates */}
+          <div aria-live="polite" aria-atomic="true" className="sr-only">
+            {cartAnnouncement}
+          </div>
         </div>
       </div>
 
       {/* Navigation */}
-      <nav className="border-t border-secondary-100 bg-secondary-50">
+      <nav className="border-t border-secondary-100 bg-secondary-50" aria-label="Main navigation">
         <div className="container-main flex items-center gap-1">
           {/* Categories mega-menu trigger */}
           <div
@@ -447,38 +551,55 @@ export function Header() {
             }}
           >
             <button
+              ref={megaMenuButtonRef}
+              type="button"
               className="flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium text-secondary-700 transition-colors hover:bg-primary-50 hover:text-primary-700"
               onClick={() => setShowMegaMenu(!showMegaMenu)}
+              onKeyDown={handleMegaMenuKeyDown}
+              aria-expanded={showMegaMenu}
+              aria-controls="mega-menu-panel"
+              aria-haspopup="true"
             >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
               All Categories
-              <svg className={`h-3 w-3 transition-transform ${showMegaMenu ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className={`h-3 w-3 transition-transform ${showMegaMenu ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </button>
 
             {/* Mega-menu dropdown */}
             {showMegaMenu && navCategories.length > 0 && (
-              <div className="absolute left-0 top-full z-50 w-[720px] rounded-b-lg border border-t-0 border-secondary-200 bg-white shadow-xl">
+              <div 
+                id="mega-menu-panel"
+                ref={megaMenuPanelRef}
+                role="menu"
+                aria-label="Product categories"
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') closeMegaMenu()
+                }}
+                className="absolute left-0 top-full z-50 w-[720px] rounded-b-lg border border-t-0 border-secondary-200 bg-white shadow-xl"
+              >
                 <div className="grid grid-cols-3 gap-0 p-4">
                   {navCategories.map((cat) => (
-                    <div key={cat.slug} className="py-2">
+                    <div key={cat.slug} className="py-2" role="none">
                       <Link
                         href={`/category/${cat.slug}`}
-                        onClick={() => setShowMegaMenu(false)}
+                        onClick={closeMegaMenu}
+                        role="menuitem"
                         className="block text-sm font-semibold text-secondary-900 hover:text-primary-700"
                       >
                         {cat.name}
                       </Link>
                       {cat.subcategories.length > 0 && (
-                        <ul className="mt-1.5 space-y-1">
+                        <ul className="mt-1.5 space-y-1" role="menu" aria-label={`${cat.name} subcategories`}>
                           {cat.subcategories.map((sub) => (
-                            <li key={sub.slug}>
+                            <li key={sub.slug} role="none">
                               <Link
                                 href={`/category/${sub.slug}`}
-                                onClick={() => setShowMegaMenu(false)}
+                                onClick={closeMegaMenu}
+                                role="menuitem"
                                 className="block text-xs text-secondary-500 hover:text-primary-600"
                               >
                                 {sub.name}
@@ -493,7 +614,8 @@ export function Header() {
                 <div className="border-t border-secondary-100 px-4 py-2.5">
                   <Link
                     href="/category"
-                    onClick={() => setShowMegaMenu(false)}
+                    onClick={closeMegaMenu}
+                    role="menuitem"
                     className="text-sm font-medium text-primary-600 hover:text-primary-800"
                   >
                     View All Categories &rarr;
