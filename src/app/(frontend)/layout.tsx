@@ -3,6 +3,7 @@ import Script from 'next/script'
 import '@/styles/globals.css'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
+import { WhatsAppButton } from '@/components/shared/WhatsAppButton'
 import { AIAssistant } from '@/components/shared/AIAssistant'
 import { CartProvider } from '@/contexts/CartContext'
 import { CompareProvider } from '@/contexts/CompareContext'
@@ -129,6 +130,7 @@ export default function FrontendLayout({ children }: { children: React.ReactNode
                 <Header />
                 <main className="flex-1">{children}</main>
                 <Footer />
+                <WhatsAppButton />
                 <AIAssistant />
               </AIAssistantVisibilityProvider>
             </CompareProvider>
