@@ -15,6 +15,63 @@ import { ExpandableIntro } from '@/components/category/ExpandableIntro'
 
 export const dynamic = 'force-dynamic'
 
+// ---------------------------------------------------------------------------
+// Lexical richText rendering helpers
+// ---------------------------------------------------------------------------
+
+function extractChildren(children: unknown[]): string {
+  if (!Array.isArray(children)) return ''
+  return children
+    .map((node) => {
+      const n = node as Record<string, unknown>
+      if (n.type === 'text') return n.text as string
+      if (n.children) return extractChildren(n.children as unknown[])
+      return ''
+    })
+    .join('')
+}
+
+function lexicalToHtml(richText: unknown): string {
+  if (!richText || typeof richText !== 'object') return ''
+  const root = (richText as Record<string, unknown>).root as Record<string, unknown> | undefined
+  if (!root || !Array.isArray(root.children)) return ''
+  return (root.children as Record<string, unknown>[])
+    .map((node) => {
+      if (node.type === 'paragraph') {
+        const text = extractChildren(node.children as unknown[])
+        return text ? `<p>${text}</p>` : ''
+      }
+      if (node.type === 'heading') {
+        const tag = (node.tag as string) || 'h3'
+        const text = extractChildren(node.children as unknown[])
+        return text ? `<${tag}>${text}</${tag}>` : ''
+      }
+      if (node.type === 'list') {
+        const listTag = node.listType === 'number' ? 'ol' : 'ul'
+        const items = (node.children as Record<string, unknown>[])
+          .map((item) => {
+            const text = extractChildren(item.children as unknown[])
+            return text ? `<li>${text}</li>` : ''
+          })
+          .filter(Boolean)
+          .join('')
+        return items ? `<${listTag}>${items}</${listTag}>` : ''
+      }
+      return ''
+    })
+    .filter(Boolean)
+    .join('\n')
+}
+
+/** Check if a Lexical richText field has actual content */
+function hasRichTextContent(richText: unknown): boolean {
+  if (!richText || typeof richText !== 'object') return false
+  const root = (richText as Record<string, unknown>).root as Record<string, unknown> | undefined
+  if (!root || !Array.isArray(root.children)) return false
+  const text = extractChildren(root.children as unknown[])
+  return text.trim().length > 0
+}
+
 const PRODUCTS_PER_PAGE = 24
 
 interface CategoryPageProps {
@@ -563,22 +620,26 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
 
       {totalDocs > 0 && (
         <section className="mt-12 border-t border-secondary-200 pt-8">
-          {/* Buying Guide */}
-          {category.buyingGuide && (
+          {/* Description (richText) */}
+          {hasRichTextContent(category.description) && (
+            <div className="mb-10 max-w-3xl">
+              <div
+                className="prose prose-sm prose-secondary max-w-none text-secondary-600"
+                dangerouslySetInnerHTML={{ __html: lexicalToHtml(category.description) }}
+              />
+            </div>
+          )}
+
+          {/* Buying Guide (richText - Lexical format) */}
+          {hasRichTextContent(category.buyingGuide) && (
             <div className="mb-10 max-w-3xl">
               <h2 className="mb-4 text-lg font-bold text-secondary-900">
                 How to Choose the Right {category.name}
               </h2>
-              <div className="prose prose-sm prose-secondary max-w-none text-secondary-600">
-                {/* Render richText as HTML - simplified for now */}
-                {Array.isArray(category.buyingGuide) && category.buyingGuide.map((block: Record<string, unknown>, idx: number) => {
-                  if (block.type === 'paragraph' && Array.isArray(block.children)) {
-                    const text = block.children.map((child: Record<string, unknown>) => child.text || '').join('')
-                    return text ? <p key={idx}>{text}</p> : null
-                  }
-                  return null
-                })}
-              </div>
+              <div
+                className="prose prose-sm prose-secondary max-w-none text-secondary-600"
+                dangerouslySetInnerHTML={{ __html: lexicalToHtml(category.buyingGuide) }}
+              />
             </div>
           )}
 
@@ -593,8 +654,21 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
             />
           )}
 
-          {/* Fallback About section if no buying guide or FAQ */}
-          {!category.buyingGuide && (!Array.isArray(category.faq) || category.faq.length === 0) && (
+          {/* SEO Content (richText) */}
+          {hasRichTextContent(category.seoContent) && (
+            <div className="mt-10 max-w-3xl">
+              <div
+                className="prose prose-sm prose-secondary max-w-none text-secondary-600"
+                dangerouslySetInnerHTML={{ __html: lexicalToHtml(category.seoContent) }}
+              />
+            </div>
+          )}
+
+          {/* Fallback About section if no content at all */}
+          {!hasRichTextContent(category.description) &&
+           !hasRichTextContent(category.buyingGuide) &&
+           (!Array.isArray(category.faq) || category.faq.length === 0) &&
+           !hasRichTextContent(category.seoContent) && (
             <div className="max-w-3xl text-sm leading-relaxed text-secondary-500">
               <h2 className="mb-3 text-lg font-semibold text-secondary-800">
                 About {category.name}
