@@ -350,8 +350,10 @@ export async function generateMetadata({ params, searchParams }: CategoryPagePro
   const { category, parent } = data
   const parentName = parent ? `${parent.name} - ` : ''
   const title = `${category.name} | ${parentName}Machrio Industrial Supplies`
+  
+  // SEO-optimized meta description with keyword-rich fallback
   const description = category.shortDescription ||
-    `Shop ${category.name} from Machrio. Industrial-grade products with transparent pricing and fast shipping.`
+    generateCategoryDescription(category.name, parent?.name)
 
   const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'https://machrio.com'
 
@@ -377,6 +379,36 @@ export async function generateMetadata({ params, searchParams }: CategoryPagePro
       description,
     },
   }
+}
+
+/**
+ * Generate SEO-optimized meta description for categories without shortDescription
+ * AEO: Structured for AI extraction with clear value propositions
+ */
+function generateCategoryDescription(categoryName: string, parentName?: string): string {
+  const categoryLower = categoryName.toLowerCase()
+  const parentContext = parentName ? ` in ${parentName}` : ''
+  
+  // Category-specific descriptions for top-level categories
+  const categoryDescriptions: Record<string, string> = {
+    'safety': `Shop industrial safety equipment including PPE, fall protection, eye & face protection, hearing protection, and workplace safety supplies. OSHA-compliant products with same-day shipping.`,
+    'material handling': `Browse material handling equipment: casters, wheels, lifting devices, hoists, and transport solutions for warehouse and manufacturing. Industrial-grade quality with bulk pricing.`,
+    'packaging & shipping': `Find packaging and shipping supplies: protective packaging, strapping, packing tape, cable ties, and shipping materials. Volume discounts available for B2B buyers.`,
+    'adhesives & sealants & tape': `Industrial adhesives, sealants, and specialty tapes for manufacturing, construction, and maintenance. Professional-grade bonding solutions with technical support.`,
+    'cleaning and janitorial': `Janitorial supplies and industrial cleaning products: facility cleaning, air filtration, floor care, and sanitation equipment. Bulk ordering with fast delivery.`,
+    'lighting': `Industrial lighting solutions: task lights, jobsite lighting, flashlights, and facility lighting. Energy-efficient options for workplace illumination.`,
+    'tool storage & workbenches': `Shop tool storage and workbenches: industrial shelving, storage cabinets, workstations, and shop organization. Heavy-duty construction for demanding environments.`,
+    'power transmission': `Power transmission components: seals, gaskets, bearings, belts, and drive components. OEM-quality replacement parts with technical specifications.`,
+    'plumbing & pumps': `Plumbing and pump supplies: valves, hose fittings, pipes, and fluid handling equipment. Industrial-grade components for commercial applications.`,
+  }
+  
+  // Check for exact match first
+  if (categoryDescriptions[categoryLower]) {
+    return categoryDescriptions[categoryLower]
+  }
+  
+  // Generate description for subcategories
+  return `Browse ${categoryName}${parentContext} at Machrio. Industrial-grade products with transparent pricing, bulk discounts, and same-day shipping. Request quotes for volume orders.`
 }
 
 export default async function CategoryPage({ params, searchParams }: CategoryPageProps) {

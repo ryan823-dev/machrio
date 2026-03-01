@@ -139,21 +139,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Dynamic pages from Payload CMS
   let categoryPages: MetadataRoute.Sitemap = []
   let productPages: MetadataRoute.Sitemap = []
-  let brandPages: MetadataRoute.Sitemap = []
   let articlePages: MetadataRoute.Sitemap = []
 
   try {
     const payload = await getPayload({ config })
 
-    // Fetch all published categories
+    // Fetch all categories
     const categories = await payload.find({
       collection: 'categories',
       limit: 500,
-      where: {
-        // Only include categories that should be indexed
-      },
     })
-
     categoryPages = categories.docs.map((category) => ({
       url: `${baseUrl}/category/${category.slug}`,
       lastModified: new Date(category.updatedAt),
@@ -161,40 +156,57 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.8,
     }))
 
-    // Fetch all published products
-    const products = await payload.find({
-      collection: 'products',
-      limit: 5000,
-      where: {
-        status: { equals: 'published' },
-      },
-      depth: 1, // Include category relationship
-    })
+    // Fetch products in batches to handle large catalogs
+    // Build a category slug map for URL construction
+    const categorySlugMap = new Map<string, string>()
+    for (const cat of categories.docs) {
+      categorySlugMap.set(cat.id, cat.slug)
+    }
 
-    productPages = products.docs.map((product) => {
-      const categorySlug = typeof product.primaryCategory === 'object' 
-        ? product.primaryCategory?.slug 
-        : 'products'
-      return {
-        url: `${baseUrl}/product/${categorySlug}/${product.slug}`,
-        lastModified: new Date(product.updatedAt),
-        changeFrequency: 'weekly' as const,
-        priority: 0.7,
+    // Fetch products with pagination to avoid memory issues
+    const BATCH_SIZE = 500
+    let hasMore = true
+    let page = 1
+    
+    while (hasMore && page <= 20) { // Max 10,000 products (20 pages * 500)
+      const products = await payload.find({
+        collection: 'products',
+        limit: BATCH_SIZE,
+        page,
+        where: {
+          status: { equals: 'published' },
+        },
+        depth: 1, // Include category relationship
+      })
+      
+      for (const product of products.docs) {
+        // Resolve category slug for product URL
+        let categorySlug = 'products'
+        const primaryCategory = product.primaryCategory
+        if (primaryCategory && typeof primaryCategory === 'object') {
+          const cat = primaryCategory as unknown as Record<string, unknown>
+          // If category has a parent, use parent slug; otherwise use category slug
+          const parentRef = cat.parent
+          if (parentRef && typeof parentRef === 'object') {
+            categorySlug = (parentRef as Record<string, unknown>).slug as string || 'products'
+          } else if (parentRef && typeof parentRef === 'string') {
+            categorySlug = categorySlugMap.get(parentRef) || cat.slug as string || 'products'
+          } else {
+            categorySlug = cat.slug as string || 'products'
+          }
+        }
+        
+        productPages.push({
+          url: `${baseUrl}/product/${categorySlug}/${product.slug}`,
+          lastModified: new Date(product.updatedAt),
+          changeFrequency: 'weekly' as const,
+          priority: 0.7,
+        })
       }
-    })
-
-    // Fetch all brands
-    const brands = await payload.find({
-      collection: 'brands',
-      limit: 500,
-    })
-
-    brandPages = brands.docs.map((brand) => ({
-      url: `${baseUrl}/brand/${brand.slug}`,
-      lastModified: new Date(brand.updatedAt),
-      changeFrequency: 'monthly' as const,
-      priority: 0.6,
-    }))
+      
+      hasMore = products.hasNextPage
+      page++
+    }
 
     // Fetch all published articles
     const articles = await payload.find({
@@ -202,7 +214,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       limit: 1000,
       where: { status: { equals: 'published' } },
     })
-
     articlePages = articles.docs.map((article) => ({
       url: `${baseUrl}/knowledge-center/${article.slug}`,
       lastModified: new Date(article.updatedAt),
@@ -211,15 +222,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }))
 
   } catch (error) {
+    // Log error for debugging but continue with static pages
     console.error('Sitemap generation error:', error)
-    // Return static pages only if CMS is unavailable
   }
 
   return [
     ...staticPages,
     ...categoryPages,
     ...productPages,
-    ...brandPages,
     ...articlePages,
   ]
 }
