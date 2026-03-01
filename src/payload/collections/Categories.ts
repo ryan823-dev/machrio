@@ -126,6 +126,13 @@ export const Categories: CollectionConfig = {
       },
     },
     {
+      name: 'iconEmoji',
+      type: 'text',
+      admin: {
+        description: 'Emoji icon for category cards (e.g. 🛡️, 📦)',
+      },
+    },
+    {
       name: 'featured',
       type: 'checkbox',
       defaultValue: false,

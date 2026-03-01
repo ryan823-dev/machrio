@@ -73,7 +73,7 @@ async function getTopLevelCategories() {
           id: cat.id,
           name: cat.name,
           slug: cat.slug,
-          icon: (cat as unknown as Record<string, unknown>).icon as string || '',
+          icon: (cat as unknown as Record<string, unknown>).iconEmoji as string || '',
           shortDescription: cat.shortDescription || '',
           productCount,
           subcategories,
