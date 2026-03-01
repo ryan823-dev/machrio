@@ -49,6 +49,13 @@ export default buildConfig({
         Logo: '/src/components/admin/Logo#Logo',
         Icon: '/src/components/admin/Icon#Icon',
       },
+      views: {
+        bulkImport: {
+          Component: '/src/components/admin/BulkImportView#BulkImportView',
+          path: '/bulk-import',
+          exact: true,
+        },
+      },
     },
   },
   i18n: {

@@ -10,6 +10,9 @@ export const Products: CollectionConfig = {
     useAsTitle: 'name',
     group: '产品目录',
     defaultColumns: ['name', 'sku', 'primaryCategory', 'brand', 'status'],
+    components: {
+      beforeListTable: ['/src/components/admin/ProductListHeader#ProductListHeader'],
+    },
   },
   versions: {
     drafts: true,
