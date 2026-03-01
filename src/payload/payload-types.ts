@@ -274,6 +274,10 @@ export interface Category {
    */
   icon?: (string | null) | Media;
   /**
+   * Emoji icon for category cards (e.g. 🛡️, 📦)
+   */
+  iconEmoji?: string | null;
+  /**
    * Show on homepage
    */
   featured?: boolean | null;
@@ -1707,6 +1711,7 @@ export interface CategoriesSelect<T extends boolean = true> {
       };
   heroImage?: T;
   icon?: T;
+  iconEmoji?: T;
   featured?: T;
   displayOrder?: T;
   facetGroups?:
