@@ -1,88 +1,122 @@
 import { NextResponse } from 'next/server'
 import * as XLSX from 'xlsx'
 
+// Template headers matching Machrio_Import_Template.xlsx (37 columns)
+const HEADERS = [
+  { key: 'SKU', desc: 'Unique product ID' },
+  { key: 'Name', desc: 'Product title, max 120 chars' },
+  { key: 'L1 Category', desc: 'Top level category name' },
+  { key: 'L2 Category', desc: 'Second level category name' },
+  { key: 'L3 Category', desc: 'Third level category name' },
+  { key: 'Short Description', desc: '50-100 words summary' },
+  { key: 'Full Description', desc: '200-500 words, supports HTML' },
+  { key: 'Primary Image URL', desc: 'Main product image URL' },
+  { key: 'Additional Images', desc: 'Comma-separated image URLs' },
+  { key: 'Price (USD)', desc: 'Base price in USD' },
+  { key: 'Min Order Qty', desc: 'Minimum order quantity' },
+  { key: 'Package Qty', desc: 'Items per package' },
+  { key: 'Package Unit', desc: 'Each/Pair/Box/Case/Roll' },
+  { key: 'Lead Time', desc: '2-3 weeks / In Stock / etc' },
+  { key: 'Availability', desc: 'In Stock / Made to Order' },
+  { key: 'Status', desc: 'Draft / Active' },
+  { key: 'Purchase Mode', desc: 'Buy Online + RFQ / RFQ Only' },
+  { key: 'Spec 1 Name', desc: 'Specification attribute name' },
+  { key: 'Spec 1 Value', desc: 'Specification attribute value' },
+  { key: 'Spec 2 Name', desc: 'Specification attribute name' },
+  { key: 'Spec 2 Value', desc: 'Specification attribute value' },
+  { key: 'Spec 3 Name', desc: 'Specification attribute name' },
+  { key: 'Spec 3 Value', desc: 'Specification attribute value' },
+  { key: 'Spec 4 Name', desc: 'Specification attribute name' },
+  { key: 'Spec 4 Value', desc: 'Specification attribute value' },
+  { key: 'Spec 5 Name', desc: 'Specification attribute name' },
+  { key: 'Spec 5 Value', desc: 'Specification attribute value' },
+  { key: 'Spec 6 Name', desc: 'Specification attribute name' },
+  { key: 'Spec 6 Value', desc: 'Specification attribute value' },
+  { key: 'Spec 7 Name', desc: 'Specification attribute name' },
+  { key: 'Spec 7 Value', desc: 'Specification attribute value' },
+  { key: 'Spec 8 Name', desc: 'Specification attribute name' },
+  { key: 'Spec 8 Value', desc: 'Specification attribute value' },
+  { key: 'Spec 9 Name', desc: 'Specification attribute name' },
+  { key: 'Spec 9 Value', desc: 'Specification attribute value' },
+  { key: 'Meta Title', desc: 'SEO title, max 70 chars + | Machrio' },
+  { key: 'Meta Description', desc: 'SEO description, max 160 chars' },
+]
+
+// Sample product data
+const SAMPLE_PRODUCT: Record<string, string> = {
+  'SKU': 'MACH-HP4853',
+  'Name': 'Cut Resistant Gloves, ANSI A4 / EN 388:2016, Size 9, Nitrile Coated, HPPE/Glass Fiber, Pkg Qty 12',
+  'L1 Category': 'Safety',
+  'L2 Category': 'Hand & Arm Protection',
+  'L3 Category': 'Safety Gloves',
+  'Short Description': 'Cut-resistant safety gloves with ANSI A4 rating and nitrile palm coating for secure grip in wet or oily conditions. Constructed with HPPE fiber and seamless knit design for comfort during extended wear.',
+  'Full Description': '<p>These Cut Resistant Gloves provide ANSI Cut Level A4 protection, ideal for handling sharp materials in manufacturing, glass handling, and metal fabrication.</p><h3>Key Features</h3><ul><li>ANSI A4 cut resistance rating</li><li>Nitrile palm coating for enhanced grip</li><li>HPPE and glass fiber construction</li><li>Seamless knit design for comfort</li></ul>',
+  'Primary Image URL': 'https://example.com/images/HP4853.jpg',
+  'Additional Images': '',
+  'Price (USD)': '49.99',
+  'Min Order Qty': '1',
+  'Package Qty': '12',
+  'Package Unit': 'Pair',
+  'Lead Time': '2-3 weeks',
+  'Availability': 'In Stock',
+  'Status': 'Draft',
+  'Purchase Mode': 'Buy Online + RFQ',
+  'Spec 1 Name': 'Size',
+  'Spec 1 Value': '9',
+  'Spec 2 Name': 'Material',
+  'Spec 2 Value': 'HPPE and Glass Fiber Blend',
+  'Spec 3 Name': 'Standards',
+  'Spec 3 Value': 'EN 388:2016',
+  'Spec 4 Name': 'ANSI/ISEA Rating',
+  'Spec 4 Value': 'A4',
+  'Spec 5 Name': 'Coating',
+  'Spec 5 Value': 'Nitrile',
+  'Spec 6 Name': 'Cuff Style',
+  'Spec 6 Value': 'Knit Wrist',
+  'Spec 7 Name': 'Glove Length',
+  'Spec 7 Value': '10 inches',
+  'Spec 8 Name': 'Color',
+  'Spec 8 Value': 'Gray/Black',
+  'Spec 9 Name': '',
+  'Spec 9 Value': '',
+  'Meta Title': 'Cut Resistant Gloves, ANSI A4 / EN 388:2016, Size 9 | Machrio',
+  'Meta Description': 'Buy Safety Gloves at competitive prices. ANSI A4 rated cut resistant gloves with nitrile coating. Free quotes available. Shop industrial safety supplies at Machrio.com',
+}
+
 export async function GET() {
-  // Create template workbook
-  const templateData = [
-    {
-      name: '示例产品名称',
-      sku: 'SKU-001',
-      shortDescription: '产品简短描述 (必填，用于产品卡片和SEO)',
-      fullDescription: '产品详细描述 (可选，支持更长的文本)',
-      primaryCategory: '分类名称 (必须与系统中的分类名称一致)',
-      brand: '品牌名称 (必须与系统中的品牌名称一致)',
-      basePrice: 99.99,
-      status: 'draft',
-      availability: 'contact',
-      purchaseMode: 'both',
-      material: '材料1, 材料2',
-      size: 'S, M, L, XL',
-      color: '黑色, 白色',
-      externalImageUrl: 'https://example.com/image.jpg',
-      packageQty: 100,
-      packageUnit: 'box',
-    },
-  ]
+  // Build description row (Row 2 in Excel - field descriptions)
+  const descRow: Record<string, string> = {}
+  HEADERS.forEach(h => { descRow[h.key] = h.desc })
 
-  const worksheet = XLSX.utils.json_to_sheet(templateData)
-  
-  // Set column widths
-  worksheet['!cols'] = [
-    { wch: 30 }, // name
-    { wch: 15 }, // sku
-    { wch: 50 }, // shortDescription
-    { wch: 50 }, // fullDescription
-    { wch: 20 }, // primaryCategory
-    { wch: 20 }, // brand
-    { wch: 12 }, // basePrice
-    { wch: 12 }, // status
-    { wch: 15 }, // availability
-    { wch: 15 }, // purchaseMode
-    { wch: 25 }, // material
-    { wch: 20 }, // size
-    { wch: 20 }, // color
-    { wch: 40 }, // externalImageUrl
-    { wch: 12 }, // packageQty
-    { wch: 12 }, // packageUnit
-  ]
+  // Data array: Row 1 = descriptions, Row 2 = sample product
+  const data = [descRow, SAMPLE_PRODUCT]
 
-  // Add instructions sheet
-  const instructionsData = [
-    { 字段: 'name', 说明: '产品名称', 必填: '是', 示例: '安全手套 - 丁腈材质' },
-    { 字段: 'sku', 说明: '产品SKU编号 (唯一)', 必填: '是', 示例: 'GLV-NIT-001' },
-    { 字段: 'shortDescription', 说明: '简短描述 (50字以上)', 必填: '是', 示例: '高品质丁腈手套...' },
-    { 字段: 'fullDescription', 说明: '详细描述 (300字以上)', 必填: '否', 示例: '产品详细介绍...' },
-    { 字段: 'primaryCategory', 说明: '主分类名称', 必填: '是', 示例: 'Safety Gloves' },
-    { 字段: 'brand', 说明: '品牌名称', 必填: '是', 示例: '3M' },
-    { 字段: 'basePrice', 说明: '基础价格 (USD)', 必填: '否', 示例: '12.99' },
-    { 字段: 'status', 说明: '状态: draft/published', 必填: '否', 示例: 'draft' },
-    { 字段: 'availability', 说明: '库存: in-stock/made-to-order/contact', 必填: '否', 示例: 'contact' },
-    { 字段: 'purchaseMode', 说明: '购买方式: both/buy-online/rfq-only', 必填: '否', 示例: 'both' },
-    { 字段: 'material', 说明: '材料 (逗号分隔)', 必填: '否', 示例: 'Nitrile, Latex' },
-    { 字段: 'size', 说明: '尺寸 (逗号分隔)', 必填: '否', 示例: 'S, M, L, XL' },
-    { 字段: 'color', 说明: '颜色 (逗号分隔)', 必填: '否', 示例: 'Blue, Black' },
-    { 字段: 'externalImageUrl', 说明: '外部图片URL', 必填: '否', 示例: 'https://...' },
-    { 字段: 'packageQty', 说明: '包装数量 (留空则自动从产品名中解析 Pkg Qty)', 必填: '否', 示例: '100' },
-    { 字段: 'packageUnit', 说明: '包装单位 (box, case, pack, roll)', 必填: '否', 示例: 'box' },
-  ]
-  const instructionsSheet = XLSX.utils.json_to_sheet(instructionsData)
-  instructionsSheet['!cols'] = [
-    { wch: 20 },
-    { wch: 40 },
-    { wch: 8 },
-    { wch: 30 },
-  ]
+  // Create worksheet with headers
+  const worksheet = XLSX.utils.json_to_sheet(data, { 
+    header: HEADERS.map(h => h.key) 
+  })
 
+  // Set column widths for better readability
+  worksheet['!cols'] = HEADERS.map(h => {
+    if (h.key.includes('Description')) return { wch: 50 }
+    if (h.key === 'Name') return { wch: 60 }
+    if (h.key.includes('URL') || h.key.includes('Images')) return { wch: 40 }
+    if (h.key.includes('Meta')) return { wch: 45 }
+    if (h.key.includes('Category')) return { wch: 25 }
+    return { wch: 18 }
+  })
+
+  // Create workbook
   const workbook = XLSX.utils.book_new()
-  XLSX.utils.book_append_sheet(workbook, worksheet, '产品数据')
-  XLSX.utils.book_append_sheet(workbook, instructionsSheet, '字段说明')
+  XLSX.utils.book_append_sheet(workbook, worksheet, 'Products')
 
+  // Generate buffer
   const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' })
 
   return new NextResponse(buffer, {
     headers: {
       'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      'Content-Disposition': 'attachment; filename="product-import-template.xlsx"',
+      'Content-Disposition': 'attachment; filename="Machrio_Import_Template.xlsx"',
     },
   })
 }
