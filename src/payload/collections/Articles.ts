@@ -58,6 +58,37 @@ export const Articles: CollectionConfig = {
       admin: { description: 'Full article content. Use headings (H2, H3) for structure.' },
     },
 
+    // ── AEO: Quick Answer ──
+    {
+      name: 'quickAnswer',
+      type: 'textarea',
+      maxLength: 300,
+      admin: {
+        description: 'Direct answer in ~50 words. AI engines (ChatGPT, Perplexity, Google SGE) prioritize this for citations. Leave empty to skip.',
+      },
+    },
+
+    // ── AEO: FAQ ──
+    {
+      name: 'faq',
+      type: 'array',
+      admin: {
+        description: 'FAQ pairs generate FAQPage Schema for Google Rich Results and AI engine extraction.',
+      },
+      fields: [
+        {
+          name: 'question',
+          type: 'text',
+          required: true,
+        },
+        {
+          name: 'answer',
+          type: 'textarea',
+          required: true,
+        },
+      ],
+    },
+
     // ── Classification ──
     {
       name: 'category',

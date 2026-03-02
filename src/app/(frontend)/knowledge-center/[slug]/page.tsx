@@ -5,6 +5,7 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 import { StructuredData } from '@/components/shared/StructuredData'
+import { FAQSchema, FAQSection } from '@/components/shared/FAQSchema'
 
 // ---------------------------------------------------------------------------
 // Lexical richText helpers (shared pattern from product page)
@@ -264,6 +265,10 @@ export default async function ArticlePage({
   const featuredImage = article.featuredImage as Record<string, unknown> | null
   const imageUrl = featuredImage?.url as string | undefined
 
+  // AEO fields
+  const quickAnswer = (article.quickAnswer as string) || ''
+  const faqItems = (article.faq as { question: string; answer: string }[] | undefined) || []
+
   // Related products
   const relatedProducts = (article.relatedProducts as Record<string, unknown>[] | null) || []
 
@@ -318,7 +323,11 @@ export default async function ArticlePage({
     },
     speakable: {
       '@type': 'SpeakableSpecification',
-      cssSelector: ['[data-speakable="headline"]', '[data-speakable="summary"]'],
+      cssSelector: [
+        '[data-speakable="headline"]',
+        '[data-speakable="summary"]',
+        ...(quickAnswer ? ['[data-speakable="quick-answer"]'] : []),
+      ],
     },
   }
 
@@ -373,6 +382,14 @@ export default async function ArticlePage({
         </div>
       )}
 
+      {/* ── Quick Answer (AEO) ── */}
+      {quickAnswer && (
+        <div data-speakable="quick-answer" className="mt-6 rounded-lg border border-primary-200 bg-primary-50 px-5 py-4">
+          <h2 className="text-sm font-semibold uppercase tracking-wider text-primary-700">Quick Answer</h2>
+          <p className="mt-1.5 text-sm leading-relaxed text-secondary-800">{quickAnswer}</p>
+        </div>
+      )}
+
       {/* ── Content Layout: TOC + Article ── */}
       <div className="mt-8 flex gap-8">
         {/* Table of Contents (desktop sidebar) */}
@@ -403,6 +420,14 @@ export default async function ArticlePage({
           dangerouslySetInnerHTML={{ __html: contentHtml }}
         />
       </div>
+
+      {/* ── FAQ Section (AEO) ── */}
+      {faqItems.length > 0 && (
+        <>
+          <FAQSection faqs={faqItems} />
+          <FAQSchema faqs={faqItems} />
+        </>
+      )}
 
       {/* ── Tags ── */}
       {article.tags && (article.tags as string[]).length > 0 && (

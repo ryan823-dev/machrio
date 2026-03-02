@@ -414,14 +414,6 @@ export interface Media {
 export interface Product {
   id: string;
   /**
-   * Full product name
-   */
-  name: string;
-  /**
-   * Short name for listings (optional)
-   */
-  shortName?: string | null;
-  /**
    * URL-safe identifier
    */
   slug: string;
@@ -431,18 +423,165 @@ export interface Product {
   sku: string;
   status: 'draft' | 'published' | 'discontinued';
   /**
+   * How customers can purchase
+   */
+  purchaseMode: 'both' | 'buy-online' | 'rfq-only';
+  /**
+   * Full product name
+   */
+  name: string;
+  /**
+   * Short name for listings (optional)
+   */
+  shortName?: string | null;
+  /**
    * Main category (used in URL)
    */
   primaryCategory: string | Category;
   /**
+   * Product brand (optional)
+   */
+  brand?: (string | null) | Brand;
+  /**
    * Additional categories
    */
   categories?: (string | Category)[] | null;
-  brand: string | Brand;
   /**
    * Brief description (50+ words, used for meta description)
    */
   shortDescription: string;
+  industries?:
+    | (
+        | 'manufacturing'
+        | 'construction'
+        | 'automotive'
+        | 'healthcare'
+        | 'food-beverage'
+        | 'warehouse'
+        | 'oil-gas'
+        | 'mining'
+      )[]
+    | null;
+  pricing?: {
+    /**
+     * Standard unit price (leave empty for RFQ-only)
+     */
+    basePrice?: number | null;
+    /**
+     * Original price (strikethrough)
+     */
+    compareAtPrice?: number | null;
+    currency?: ('USD' | 'CAD') | null;
+    /**
+     * e.g., per piece, per box, per 100
+     */
+    priceUnit?: string | null;
+    /**
+     * Volume discount tiers (auto-generated if empty)
+     */
+    tieredPricing?:
+      | {
+          /**
+           * Min qty
+           */
+          minQty: number;
+          /**
+           * Max qty
+           */
+          maxQty?: number | null;
+          /**
+           * Unit price
+           */
+          unitPrice: number;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  availability: 'in-stock' | 'made-to-order' | 'contact';
+  /**
+   * e.g., 2-3 weeks, Ships in 1 day
+   */
+  leadTime?: string | null;
+  /**
+   * Minimum order qty
+   */
+  minOrderQuantity?: number | null;
+  /**
+   * Units per package
+   */
+  packageQty?: number | null;
+  /**
+   * e.g., box, case, roll
+   */
+  packageUnit?: string | null;
+  /**
+   * Shipping weight and processing
+   */
+  shippingInfo?: {
+    /**
+     * Weight in kg
+     */
+    weight?: number | null;
+    /**
+     * Days to ship
+     */
+    processingTime?: number | null;
+  };
+  /**
+   * External image URL (e.g., from supplier CDN)
+   */
+  externalImageUrl?: string | null;
+  /**
+   * Additional external image URLs
+   */
+  additionalImageUrls?: string[] | null;
+  /**
+   * Main product image (overrides external URL)
+   */
+  primaryImage?: (string | null) | Media;
+  /**
+   * Additional product images
+   */
+  images?: (string | Media)[] | null;
+  /**
+   * PDF datasheet/specification document
+   */
+  datasheet?: (string | null) | Media;
+  /**
+   * Technical specifications
+   */
+  specifications?:
+    | {
+        label: string;
+        value: string;
+        /**
+         * e.g., kg, mm
+         */
+        unit?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Filterable attributes
+   */
+  facets?: {
+    /**
+     * e.g., Nitrile, Leather
+     */
+    material?: string[] | null;
+    /**
+     * e.g., S, M, L, XL
+     */
+    size?: string[] | null;
+    /**
+     * e.g., Blue, Black
+     */
+    color?: string[] | null;
+    /**
+     * e.g., ANSI, CE, ISO
+     */
+    certification?: string[] | null;
+  };
   /**
    * Full product description (300+ words for SEO)
    */
@@ -462,152 +601,30 @@ export interface Product {
     [k: string]: unknown;
   };
   /**
-   * Technical specifications
-   */
-  specifications?:
-    | {
-        label: string;
-        value: string;
-        /**
-         * e.g., kg, mm, pcs
-         */
-        unit?: string | null;
-        id?: string | null;
-      }[]
-    | null;
-  /**
-   * External image URL (e.g., from supplier CDN)
-   */
-  externalImageUrl?: string | null;
-  /**
-   * Main product image (overrides external URL)
-   */
-  primaryImage?: (string | null) | Media;
-  /**
-   * Additional product images
-   */
-  images?: (string | Media)[] | null;
-  /**
-   * PDF datasheet/specification document
-   */
-  datasheet?: (string | null) | Media;
-  /**
-   * How customers can purchase this product
-   */
-  purchaseMode: 'both' | 'buy-online' | 'rfq-only';
-  pricing?: {
-    /**
-     * Standard unit price (leave empty for RFQ-only)
-     */
-    basePrice?: number | null;
-    /**
-     * e.g., per piece, per box, per 100
-     */
-    priceUnit?: string | null;
-    currency?: ('USD' | 'CAD') | null;
-    /**
-     * Volume discount tiers
-     */
-    tieredPricing?:
-      | {
-          /**
-           * Minimum quantity
-           */
-          minQty: number;
-          /**
-           * Maximum quantity (leave empty for no limit)
-           */
-          maxQty?: number | null;
-          /**
-           * Price per unit at this tier
-           */
-          unitPrice: number;
-          id?: string | null;
-        }[]
-      | null;
-    /**
-     * Original price before discount (strikethrough display)
-     */
-    compareAtPrice?: number | null;
-  };
-  availability: 'in-stock' | 'made-to-order' | 'contact';
-  /**
-   * Minimum order quantity
-   */
-  minOrderQuantity?: number | null;
-  /**
-   * Number of units per package (e.g., 12 gloves per box)
-   */
-  packageQty?: number | null;
-  /**
-   * Package unit label (e.g., box, case, pack, roll)
-   */
-  packageUnit?: string | null;
-  /**
-   * e.g., 2-3 weeks, Ships in 1 day
-   */
-  leadTime?: string | null;
-  /**
-   * Shipping weight and processing time
-   */
-  shippingInfo?: {
-    /**
-     * Actual product weight in kg (used for shipping calculation)
-     */
-    weight?: number | null;
-    /**
-     * Days needed to prepare for shipment (default: 3)
-     */
-    processingTime?: number | null;
-  };
-  /**
-   * Filterable attributes
-   */
-  facets?: {
-    /**
-     * e.g., Nitrile, Leather, Cotton
-     */
-    material?: string[] | null;
-    /**
-     * e.g., S, M, L, XL
-     */
-    size?: string[] | null;
-    /**
-     * e.g., Blue, Black, White
-     */
-    color?: string[] | null;
-    /**
-     * e.g., ANSI, CE, ISO 9001
-     */
-    certification?: string[] | null;
-  };
-  /**
-   * Related products for cross-selling
-   */
-  relatedProducts?: (string | Product)[] | null;
-  industries?:
-    | (
-        | 'manufacturing'
-        | 'construction'
-        | 'automotive'
-        | 'healthcare'
-        | 'food-beverage'
-        | 'warehouse'
-        | 'oil-gas'
-        | 'mining'
-      )[]
-    | null;
-  /**
    * SEO overrides
    */
   seo?: {
+    /**
+     * Custom meta title (auto-generated if empty)
+     */
     metaTitle?: string | null;
+    /**
+     * Custom meta description
+     */
     metaDescription?: string | null;
     /**
      * Primary keyword for this product
      */
     focusKeyword?: string | null;
   };
+  /**
+   * Related products for cross-selling
+   */
+  relatedProducts?: (string | Product)[] | null;
+  /**
+   * Original product source URL (for tracking)
+   */
+  sourceUrl?: string | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -1300,6 +1317,20 @@ export interface Article {
     [k: string]: unknown;
   };
   /**
+   * Direct answer in ~50 words. AI engines (ChatGPT, Perplexity, Google SGE) prioritize this for citations. Leave empty to skip.
+   */
+  quickAnswer?: string | null;
+  /**
+   * FAQ pairs generate FAQPage Schema for Google Rich Results and AI engine extraction.
+   */
+  faq?:
+    | {
+        question: string;
+        answer: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
    * Primary content category
    */
   category: 'buying-guide' | 'industry-insight' | 'how-to' | 'product-comparison';
@@ -1815,6 +1846,14 @@ export interface CategoriesSelect<T extends boolean = true> {
         expanded?: T;
         id?: T;
       };
+  customFilterAttributes?:
+    | T
+    | {
+        name?: T;
+        key?: T;
+        displayOrder?: T;
+        id?: T;
+      };
   seo?:
     | T
     | {
@@ -1831,35 +1870,24 @@ export interface CategoriesSelect<T extends boolean = true> {
  * via the `definition` "products_select".
  */
 export interface ProductsSelect<T extends boolean = true> {
-  name?: T;
-  shortName?: T;
   slug?: T;
   sku?: T;
   status?: T;
-  primaryCategory?: T;
-  categories?: T;
-  brand?: T;
-  shortDescription?: T;
-  fullDescription?: T;
-  specifications?:
-    | T
-    | {
-        label?: T;
-        value?: T;
-        unit?: T;
-        id?: T;
-      };
-  externalImageUrl?: T;
-  primaryImage?: T;
-  images?: T;
-  datasheet?: T;
   purchaseMode?: T;
+  name?: T;
+  shortName?: T;
+  primaryCategory?: T;
+  brand?: T;
+  categories?: T;
+  shortDescription?: T;
+  industries?: T;
   pricing?:
     | T
     | {
         basePrice?: T;
-        priceUnit?: T;
+        compareAtPrice?: T;
         currency?: T;
+        priceUnit?: T;
         tieredPricing?:
           | T
           | {
@@ -1868,18 +1896,30 @@ export interface ProductsSelect<T extends boolean = true> {
               unitPrice?: T;
               id?: T;
             };
-        compareAtPrice?: T;
       };
   availability?: T;
+  leadTime?: T;
   minOrderQuantity?: T;
   packageQty?: T;
   packageUnit?: T;
-  leadTime?: T;
   shippingInfo?:
     | T
     | {
         weight?: T;
         processingTime?: T;
+      };
+  externalImageUrl?: T;
+  additionalImageUrls?: T;
+  primaryImage?: T;
+  images?: T;
+  datasheet?: T;
+  specifications?:
+    | T
+    | {
+        label?: T;
+        value?: T;
+        unit?: T;
+        id?: T;
       };
   facets?:
     | T
@@ -1889,8 +1929,7 @@ export interface ProductsSelect<T extends boolean = true> {
         color?: T;
         certification?: T;
       };
-  relatedProducts?: T;
-  industries?: T;
+  fullDescription?: T;
   seo?:
     | T
     | {
@@ -1898,6 +1937,8 @@ export interface ProductsSelect<T extends boolean = true> {
         metaDescription?: T;
         focusKeyword?: T;
       };
+  relatedProducts?: T;
+  sourceUrl?: T;
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -2278,6 +2319,14 @@ export interface ArticlesSelect<T extends boolean = true> {
   slug?: T;
   excerpt?: T;
   content?: T;
+  quickAnswer?: T;
+  faq?:
+    | T
+    | {
+        question?: T;
+        answer?: T;
+        id?: T;
+      };
   category?: T;
   tags?: T;
   author?: T;
