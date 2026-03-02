@@ -79,7 +79,7 @@ const PRODUCTS_PER_PAGE = 24
 
 interface CategoryPageProps {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ page?: string; brand?: string; minPrice?: string; maxPrice?: string; sort?: string; view?: string }>
+  searchParams: Promise<{ page?: string; brand?: string; minPrice?: string; maxPrice?: string; sort?: string; view?: string; [key: string]: string | undefined }>
 }
 
 async function getCategoryBySlug(slug: string) {
@@ -391,6 +391,67 @@ async function getCategoryPriceRange(categoryId: string, childIds: string[]) {
   }
 }
 
+interface CustomFilterValue {
+  key: string
+  name: string
+  values: { value: string; count: number }[]
+}
+
+async function getCustomFilterValues(
+  categoryId: string,
+  childIds: string[],
+  attributes: { name: string; key: string }[]
+): Promise<CustomFilterValue[]> {
+  if (!attributes || attributes.length === 0) return []
+  
+  try {
+    const payload = await getPayload({ config })
+    const allCategoryIds = [categoryId, ...childIds]
+
+    const products = await payload.find({
+      collection: 'products',
+      where: {
+        primaryCategory: { in: allCategoryIds },
+        status: { equals: 'published' },
+      },
+      limit: 1000,
+    })
+
+    const results: CustomFilterValue[] = []
+
+    for (const attr of attributes) {
+      const valueCounts = new Map<string, number>()
+
+      for (const product of products.docs) {
+        const specs = product.specifications as { label: string; value: string; unit?: string }[] | undefined
+        if (!specs) continue
+
+        const matchingSpec = specs.find(
+          (s) => s.label.toLowerCase() === attr.name.toLowerCase()
+        )
+        if (matchingSpec && matchingSpec.value) {
+          const val = matchingSpec.value.trim()
+          valueCounts.set(val, (valueCounts.get(val) || 0) + 1)
+        }
+      }
+
+      if (valueCounts.size > 0) {
+        results.push({
+          key: attr.key,
+          name: attr.name,
+          values: Array.from(valueCounts.entries())
+            .map(([value, count]) => ({ value, count }))
+            .sort((a, b) => b.count - a.count),
+        })
+      }
+    }
+
+    return results
+  } catch {
+    return []
+  }
+}
+
 function mapProductToCard(product: Record<string, unknown>) {
   const pricing = product.pricing as Record<string, unknown> | undefined
   const brand = product.brand as Record<string, unknown> | null
@@ -505,7 +566,8 @@ function generateCategoryDescription(categoryName: string, parentName?: string):
 
 export default async function CategoryPage({ params, searchParams }: CategoryPageProps) {
   const { slug } = await params
-  const { page: pageParam, brand: brandFilter, minPrice: minPriceParam, maxPrice: maxPriceParam, sort: sortParam, view: viewParam } = await searchParams
+  const resolvedSearchParams = await searchParams
+  const { page: pageParam, brand: brandFilter, minPrice: minPriceParam, maxPrice: maxPriceParam, sort: sortParam, view: viewParam } = resolvedSearchParams
   const currentPage = Math.max(1, parseInt(pageParam || '1', 10))
   const minPrice = minPriceParam ? parseFloat(minPriceParam) : undefined
   const maxPrice = maxPriceParam ? parseFloat(maxPriceParam) : undefined
@@ -565,7 +627,10 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   // For L1/L2 pages, also get featured products (newest arrivals)
   const shouldGetFeaturedProducts = (isL1 || isL2) && !hasFilters
 
-  const [brandsData, priceRangeData, productsResult, featuredProductsRaw] = await Promise.all([
+  // Get custom filter attributes for L3 categories
+  const customAttributes = (category.customFilterAttributes as { name: string; key: string; displayOrder?: number }[]) || []
+
+  const [brandsData, priceRangeData, productsResult, featuredProductsRaw, customFiltersData] = await Promise.all([
     getCategoryBrands(category.id, childCategoryIds),
     getCategoryPriceRange(category.id, childCategoryIds),
     // Only get paginated products for L3 pages or when filters are applied
@@ -581,12 +646,57 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
     shouldGetFeaturedProducts
       ? getFeaturedProducts(category.id, childCategoryIds, 8)
       : Promise.resolve([]),
+    isL3 && customAttributes.length > 0
+      ? getCustomFilterValues(category.id, childCategoryIds, customAttributes)
+      : Promise.resolve([]),
   ])
 
-  const products = productsResult.docs.map(p => mapProductToCard(p as unknown as Record<string, unknown>))
+  // Parse custom filter params from URL
+  const customFilterParams: Record<string, string[]> = {}
+  if (customAttributes.length > 0) {
+    for (const attr of customAttributes) {
+      const paramValue = resolvedSearchParams[attr.key]
+      if (paramValue) {
+        customFilterParams[attr.key] = paramValue.split(',')
+      }
+    }
+  }
+  const hasCustomFilters = Object.keys(customFilterParams).length > 0
+
+  // Map products to card format
+  let products = productsResult.docs.map(p => {
+    const mapped = mapProductToCard(p as unknown as Record<string, unknown>)
+    // Attach specifications for client-side filtering
+    const specs = (p as unknown as Record<string, unknown>).specifications as { label: string; value: string }[] | undefined
+    return { ...mapped, _specifications: specs }
+  })
+
+  // Apply client-side filtering for custom attributes
+  if (hasCustomFilters && products.length > 0) {
+    products = products.filter(product => {
+      return Object.entries(customFilterParams).every(([key, values]) => {
+        const attrName = customAttributes.find(a => a.key === key)?.name
+        if (!attrName) return true
+        
+        const spec = product._specifications?.find(
+          s => s.label.toLowerCase() === attrName.toLowerCase()
+        )
+        return spec && values.includes(spec.value)
+      })
+    })
+  }
+
   const featuredProducts = featuredProductsRaw.map(p => mapProductToCard(p as unknown as Record<string, unknown>))
-  const totalDocs = productsResult.totalDocs
-  const totalPages = productsResult.totalPages
+  
+  // Adjust totals for client-side filtered results
+  const totalDocs = hasCustomFilters ? products.length : productsResult.totalDocs
+  const totalPages = hasCustomFilters ? Math.ceil(products.length / PRODUCTS_PER_PAGE) : productsResult.totalPages
+  
+  // Paginate client-side filtered results
+  if (hasCustomFilters && products.length > PRODUCTS_PER_PAGE) {
+    const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE
+    products = products.slice(startIndex, startIndex + PRODUCTS_PER_PAGE)
+  }
 
   // Build breadcrumbs (supports 3 levels: Home > L1 > L2 > L3)
   const breadcrumbs = [
@@ -612,6 +722,10 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
     if (minPriceParam) params.set('minPrice', minPriceParam)
     if (maxPriceParam) params.set('maxPrice', maxPriceParam)
     if (sortParam) params.set('sort', sortParam)
+    // Preserve custom filter params
+    Object.entries(customFilterParams).forEach(([key, values]) => {
+      if (values.length > 0) params.set(key, values.join(','))
+    })
     return `/category/${slug}?${params.toString()}`
   }
 
@@ -696,6 +810,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
             brands={brandsData}
             priceRange={priceRangeData}
             totalProducts={totalDocs}
+            customFilters={customFiltersData}
           />
         </div>
 

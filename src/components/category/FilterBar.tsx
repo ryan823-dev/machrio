@@ -3,11 +3,18 @@
 import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 
+interface CustomFilterValue {
+  key: string
+  name: string
+  values: { value: string; count: number }[]
+}
+
 interface FilterBarProps {
   categorySlug: string
   brands: { name: string; slug: string; count: number }[]
   priceRange: { min: number; max: number }
   totalProducts: number
+  customFilters?: CustomFilterValue[]
 }
 
 // View toggle icon components
@@ -27,7 +34,7 @@ function ListIcon({ className }: { className?: string }) {
   )
 }
 
-export function FilterBar({ categorySlug, brands, priceRange, totalProducts }: FilterBarProps) {
+export function FilterBar({ categorySlug, brands, priceRange, totalProducts, customFilters }: FilterBarProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   
@@ -35,6 +42,7 @@ export function FilterBar({ categorySlug, brands, priceRange, totalProducts }: F
   const [minPrice, setMinPrice] = useState(searchParams.get('minPrice') || '')
   const [maxPrice, setMaxPrice] = useState(searchParams.get('maxPrice') || '')
   const [isMobileOpen, setIsMobileOpen] = useState(false)
+  const [customSelections, setCustomSelections] = useState<Record<string, string[]>>({})
   const currentSort = searchParams.get('sort') || ''
   const currentView = searchParams.get('view') || 'list'
 
@@ -45,18 +53,40 @@ export function FilterBar({ categorySlug, brands, priceRange, totalProducts }: F
     setMinPrice(searchParams.get('minPrice') || '')
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMaxPrice(searchParams.get('maxPrice') || '')
-  }, [searchParams])
+    
+    // Parse custom filter params from URL
+    if (customFilters) {
+      const newSelections: Record<string, string[]> = {}
+      for (const filter of customFilters) {
+        const paramValue = searchParams.get(filter.key)
+        if (paramValue) {
+          newSelections[filter.key] = paramValue.split(',')
+        }
+      }
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setCustomSelections(newSelections)
+    }
+  }, [searchParams, customFilters])
 
-  function applyFilters(overrides?: { brand?: string; min?: string; max?: string }) {
+  function applyFilters(overrides?: { brand?: string; min?: string; max?: string; custom?: Record<string, string[]> }) {
     const params = new URLSearchParams()
     const brand = overrides?.brand !== undefined ? overrides.brand : selectedBrand
     const min = overrides?.min !== undefined ? overrides.min : minPrice
     const max = overrides?.max !== undefined ? overrides.max : maxPrice
+    const custom = overrides?.custom !== undefined ? overrides.custom : customSelections
+    
     if (brand) params.set('brand', brand)
     if (min) params.set('minPrice', min)
     if (max) params.set('maxPrice', max)
     if (currentSort) params.set('sort', currentSort)
     if (currentView && currentView !== 'list') params.set('view', currentView)
+    
+    // Add custom filter params
+    Object.entries(custom).forEach(([key, values]) => {
+      if (values.length > 0) {
+        params.set(key, values.join(','))
+      }
+    })
     
     const queryString = params.toString()
     router.push(`/category/${categorySlug}${queryString ? `?${queryString}` : ''}`)
@@ -66,11 +96,26 @@ export function FilterBar({ categorySlug, brands, priceRange, totalProducts }: F
     setSelectedBrand('')
     setMinPrice('')
     setMaxPrice('')
+    setCustomSelections({})
     const params = new URLSearchParams()
     if (currentSort) params.set('sort', currentSort)
     if (currentView && currentView !== 'list') params.set('view', currentView)
     const queryString = params.toString()
     router.push(`/category/${categorySlug}${queryString ? `?${queryString}` : ''}`)
+  }
+
+  function handleCustomFilterClick(filterKey: string, value: string) {
+    const currentValues = customSelections[filterKey] || []
+    const newValues = currentValues.includes(value)
+      ? currentValues.filter(v => v !== value)
+      : [...currentValues, value]
+    
+    const newSelections = { ...customSelections, [filterKey]: newValues }
+    if (newValues.length === 0) {
+      delete newSelections[filterKey]
+    }
+    setCustomSelections(newSelections)
+    applyFilters({ custom: newSelections })
   }
 
   function handleBrandClick(brandSlug: string) {
@@ -95,7 +140,7 @@ export function FilterBar({ categorySlug, brands, priceRange, totalProducts }: F
     router.push(`/category/${categorySlug}?${params.toString()}`)
   }
 
-  const hasActiveFilters = selectedBrand || minPrice || maxPrice
+  const hasActiveFilters = selectedBrand || minPrice || maxPrice || Object.keys(customSelections).length > 0
 
   const filterContent = (
     <div className="space-y-5" role="group" aria-label="Product filters">
@@ -167,6 +212,34 @@ export function FilterBar({ categorySlug, brands, priceRange, totalProducts }: F
           Apply Price
         </button>
       </fieldset>
+
+      {/* Custom Filter Attributes */}
+      {customFilters && customFilters.map((filter) => (
+        <fieldset key={filter.key}>
+          <legend className="mb-2 text-xs font-semibold uppercase tracking-wider text-secondary-500">{filter.name}</legend>
+          <div className="space-y-1" role="group" aria-label={`Filter by ${filter.name}`}>
+            {filter.values.slice(0, 8).map((item) => {
+              const isSelected = customSelections[filter.key]?.includes(item.value)
+              return (
+                <button
+                  key={item.value}
+                  type="button"
+                  onClick={() => handleCustomFilterClick(filter.key, item.value)}
+                  aria-pressed={isSelected}
+                  className={`flex w-full items-center justify-between rounded px-2 py-1.5 text-left text-sm transition-colors ${
+                    isSelected
+                      ? 'bg-primary-50 font-medium text-primary-700'
+                      : 'text-secondary-700 hover:bg-secondary-50'
+                  }`}
+                >
+                  <span className="truncate">{item.value}</span>
+                  <span className="ml-2 flex-shrink-0 text-xs text-secondary-400" aria-label={`${item.count} products`}>{item.count}</span>
+                </button>
+              )
+            })}
+          </div>
+        </fieldset>
+      ))}
 
       {/* Availability */}
       <div>

@@ -182,6 +182,33 @@ export const Categories: CollectionConfig = {
       ],
     },
     {
+      name: 'customFilterAttributes',
+      type: 'array',
+      maxRows: 9,
+      admin: {
+        description: 'Custom filter attributes for L3 categories (values aggregated from product specifications)',
+      },
+      fields: [
+        {
+          name: 'name',
+          type: 'text',
+          required: true,
+          admin: { description: 'Attribute name (e.g., Abrasive Grade)' },
+        },
+        {
+          name: 'key',
+          type: 'text',
+          required: true,
+          admin: { description: 'URL-safe key (e.g., abrasive-grade)' },
+        },
+        {
+          name: 'displayOrder',
+          type: 'number',
+          defaultValue: 0,
+        },
+      ],
+    },
+    {
       name: 'seo',
       type: 'group',
       admin: {

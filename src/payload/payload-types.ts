@@ -301,6 +301,23 @@ export interface Category {
       }[]
     | null;
   /**
+   * Custom filter attributes for L3 categories (values aggregated from product specifications)
+   */
+  customFilterAttributes?:
+    | {
+        /**
+         * Attribute name (e.g., Abrasive Grade)
+         */
+        name: string;
+        /**
+         * URL-safe key (e.g., abrasive-grade)
+         */
+        key: string;
+        displayOrder?: number | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
    * SEO overrides (leave empty to use defaults)
    */
   seo?: {
