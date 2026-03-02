@@ -12,6 +12,7 @@ import { ProductGrid } from '@/components/category/ProductGrid'
 import { SubcategoryGrid } from '@/components/category/SubcategoryGrid'
 import { FilterBar, DesktopSortBar } from '@/components/category/FilterBar'
 import { ExpandableIntro } from '@/components/category/ExpandableIntro'
+import { EmptyStateAIDialog } from '@/components/category/EmptyStateAIDialog'
 
 export const dynamic = 'force-dynamic'
 
@@ -91,16 +92,24 @@ async function getCategoryBySlug(slug: string) {
 
     const category = result.docs[0]
 
-    // Resolve parent for breadcrumbs
+    // Resolve parent and grandparent for breadcrumbs (3-level support)
     let parent = null
+    let grandparent = null
     if (category.parent) {
       const parentId = typeof category.parent === 'object' ? category.parent.id : category.parent
       try {
         parent = await payload.findByID({ collection: 'categories', id: parentId })
+        // Resolve grandparent if parent also has a parent (L3 category)
+        if (parent?.parent) {
+          const gpId = typeof parent.parent === 'object' ? parent.parent.id : parent.parent
+          try {
+            grandparent = await payload.findByID({ collection: 'categories', id: gpId })
+          } catch { /* grandparent not found */ }
+        }
       } catch { /* parent not found */ }
     }
 
-    return { category, parent }
+    return { category, parent, grandparent }
   } catch {
     return null
   }
@@ -348,9 +357,10 @@ export async function generateMetadata({ params, searchParams }: CategoryPagePro
   const data = await getCategoryBySlug(slug)
   if (!data) return { title: 'Category Not Found' }
 
-  const { category, parent } = data
+  const { category, parent, grandparent } = data
   const parentName = parent ? `${parent.name} - ` : ''
-  const title = `${category.name} | ${parentName}Machrio Industrial Supplies`
+  const gpName = grandparent ? `${grandparent.name} - ` : ''
+  const title = `${category.name} | ${gpName}${parentName}Machrio Industrial Supplies`
   
   // SEO-optimized meta description with keyword-rich fallback
   const description = category.shortDescription ||
@@ -422,7 +432,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   const data = await getCategoryBySlug(slug)
   if (!data) notFound()
 
-  const { category, parent } = data
+  const { category, parent, grandparent } = data
 
   // Get subcategories
   const subcategories = await getSubcategories(category.id)
@@ -478,9 +488,12 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   const totalDocs = productsResult.totalDocs
   const totalPages = productsResult.totalPages
 
-  // Build breadcrumbs
+  // Build breadcrumbs (supports 3 levels: Home > L1 > L2 > L3)
   const breadcrumbs = [
     { label: 'Home', href: '/' },
+    ...(grandparent
+      ? [{ label: grandparent.name, href: `/category/${grandparent.slug}` }]
+      : []),
     ...(parent
       ? [{ label: parent.name, href: `/category/${parent.slug}` }]
       : []),
@@ -571,35 +584,35 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
               </Suspense>
             </>
           ) : (
-            /* Empty state */
-            <div className="flex flex-col items-center py-16 text-center">
-              <svg className="h-16 w-16 text-secondary-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-              </svg>
-              <h2 className="mt-4 text-lg font-semibold text-secondary-700">
-                {hasFilters ? 'No products match your filters' : 'No products yet'}
-              </h2>
-              <p className="mt-2 max-w-md text-sm text-secondary-500">
-                {hasFilters
-                  ? 'Try adjusting your filters or clearing them to see more products.'
-                  : `We're expanding our ${category.name} catalog. Need something specific? Submit a quote request and our sourcing team will find it for you.`}
-              </p>
-              {hasFilters ? (
+            /* Empty state - AI Dialog + RFQ for categories without products */
+            hasFilters ? (
+              <div className="flex flex-col items-center py-16 text-center">
+                <svg className="h-16 w-16 text-secondary-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+                <h2 className="mt-4 text-lg font-semibold text-secondary-700">
+                  No products match your filters
+                </h2>
+                <p className="mt-2 max-w-md text-sm text-secondary-500">
+                  Try adjusting your filters or clearing them to see more products.
+                </p>
                 <Link
                   href={`/category/${slug}`}
                   className="btn-primary mt-6 px-8 py-2.5"
                 >
                   Clear Filters
                 </Link>
-              ) : (
-                <Link
-                  href="/rfq"
-                  className="btn-accent mt-6 px-8 py-2.5"
-                >
-                  Request a Quote
-                </Link>
-              )}
-            </div>
+              </div>
+            ) : (
+              <EmptyStateAIDialog
+                categoryName={category.name}
+                categorySlug={slug}
+                parentCategories={[
+                  ...(grandparent ? [grandparent.name] : []),
+                  ...(parent ? [parent.name] : []),
+                ]}
+              />
+            )
           )}
         </div>
       </div>

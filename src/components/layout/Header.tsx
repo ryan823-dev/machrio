@@ -579,11 +579,11 @@ export function Header() {
                 onKeyDown={(e) => {
                   if (e.key === 'Escape') closeMegaMenu()
                 }}
-                className="absolute left-0 top-full z-50 w-[720px] rounded-b-lg border border-t-0 border-secondary-200 bg-white shadow-xl"
+                className="absolute left-0 top-full z-50 w-[900px] rounded-b-lg border border-t-0 border-secondary-200 bg-white shadow-xl"
               >
-                <div className="grid grid-cols-3 gap-0 p-4">
+                <div className="grid max-h-[75vh] grid-cols-4 gap-0 overflow-y-auto p-4">
                   {navCategories.map((cat) => (
-                    <div key={cat.slug} className="py-2" role="none">
+                    <div key={cat.slug} className="py-2 pr-2" role="none">
                       <Link
                         href={`/category/${cat.slug}`}
                         onClick={closeMegaMenu}
@@ -594,7 +594,7 @@ export function Header() {
                       </Link>
                       {cat.subcategories.length > 0 && (
                         <ul className="mt-1.5 space-y-1" role="menu" aria-label={`${cat.name} subcategories`}>
-                          {cat.subcategories.map((sub) => (
+                          {cat.subcategories.slice(0, 5).map((sub) => (
                             <li key={sub.slug} role="none">
                               <Link
                                 href={`/category/${sub.slug}`}
@@ -606,6 +606,18 @@ export function Header() {
                               </Link>
                             </li>
                           ))}
+                          {cat.subcategories.length > 5 && (
+                            <li role="none">
+                              <Link
+                                href={`/category/${cat.slug}`}
+                                onClick={closeMegaMenu}
+                                role="menuitem"
+                                className="block text-xs font-medium text-primary-600 hover:text-primary-700"
+                              >
+                                +{cat.subcategories.length - 5} more
+                              </Link>
+                            </li>
+                          )}
                         </ul>
                       )}
                     </div>

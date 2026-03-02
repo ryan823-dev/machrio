@@ -1,5 +1,5 @@
 // AI Chat Service - handles communication with LLM providers
-import { getProviderConfig, SYSTEM_PROMPT, TOOL_DEFINITIONS } from './config'
+import { getProviderConfig, SYSTEM_PROMPT, getToolDefinitions } from './config'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import type { Where } from 'payload'
@@ -350,7 +350,8 @@ export async function createChatCompletion(
   }
   
   if (useTools) {
-    requestBody.tools = TOOL_DEFINITIONS
+    const toolDefs = await getToolDefinitions()
+    requestBody.tools = toolDefs
     requestBody.tool_choice = 'auto'
   }
   

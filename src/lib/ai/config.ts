@@ -59,7 +59,7 @@ You understand the real needs of procurement professionals, maintenance technici
 
 ## Machrio Website Knowledge
 Machrio.com is a B2B industrial e-commerce platform offering:
-- **9 Product Categories**: Adhesives & Sealants & Tape, Material Handling, Safety, Packaging & Shipping, Cleaning & Janitorial, Lighting, Power Transmission, Tool Storage & Workbenches, Plumbing & Pumps
+- **31 Product Categories**: Abrasives, Adhesives, Cleaning, Electrical, Fasteners, Fleet & Vehicle, Furnishings, HVAC, Hardware, Hydraulics, Lab Supplies, Lighting, Lubrication, Machining, Material Handling, Motors, Office Supplies, Outdoor Equipment, Packaging & Shipping, Paints, Pipe & Fittings, Plumbing, Pneumatics, Power Transmission, Pumps, Raw Materials, Safety, Security, Test Instruments, Tools, Welding
 - **Dual Purchase Modes**: Buy online with transparent pricing OR submit RFQ for bulk/custom quotes
 - **Key Brands**: 3M, Honeywell, Ansell, Milwaukee Tool, DeWalt, MSA Safety, Loctite, Rubbermaid Commercial, Lithonia Lighting, Grundfos
 - **Value Props**: Same-day shipping (before 3PM EST), verified industrial suppliers, PO & Net 30 payment terms, AI-powered sourcing assistance
@@ -180,119 +180,148 @@ Offer human handoff when:
 6. Match the user's language (see Language Rules above).`
 
 // Function definitions for tool calling
-export const TOOL_DEFINITIONS = [
-  {
-    type: 'function' as const,
-    function: {
-      name: 'search_products',
-      description: 'Search for products in the Machrio catalog by keyword, category, or specification',
-      parameters: {
-        type: 'object',
-        properties: {
-          query: {
-            type: 'string',
-            description: 'Search query (product name, type, specification, or keywords)',
+// Dynamic category slug cache for tool definitions
+let cachedCategorySlugs: string[] | null = null
+let cacheTimestamp = 0
+const CACHE_TTL = 300_000 // 5 minutes
+
+async function getCategorySlugsForAI(): Promise<string[]> {
+  const now = Date.now()
+  if (cachedCategorySlugs && (now - cacheTimestamp) < CACHE_TTL) {
+    return cachedCategorySlugs
+  }
+
+  try {
+    const { getPayload } = await import('payload')
+    const payloadConfig = (await import('@payload-config')).default
+    const payload = await getPayload({ config: payloadConfig })
+    const result = await payload.find({
+      collection: 'categories',
+      where: {
+        or: [
+          { parent: { exists: false } },
+          { parent: { equals: null } },
+        ],
+      },
+      limit: 50,
+    })
+    cachedCategorySlugs = result.docs.map(c => c.slug).filter(Boolean) as string[]
+    cacheTimestamp = now
+    return cachedCategorySlugs
+  } catch {
+    // Return empty on error - tool will work without enum constraint
+    return cachedCategorySlugs || []
+  }
+}
+
+// Async tool definitions with dynamic category enum
+export async function getToolDefinitions() {
+  const categorySlugs = await getCategorySlugsForAI()
+
+  const categoryParam = categorySlugs.length > 0
+    ? { type: 'string', description: 'Product category slug to filter by', enum: categorySlugs }
+    : { type: 'string', description: 'Product category slug to filter by' }
+
+  return [
+    {
+      type: 'function' as const,
+      function: {
+        name: 'search_products',
+        description: 'Search for products in the Machrio catalog by keyword, category, or specification',
+        parameters: {
+          type: 'object',
+          properties: {
+            query: {
+              type: 'string',
+              description: 'Search query (product name, type, specification, or keywords)',
+            },
+            category: categoryParam,
+            limit: {
+              type: 'number',
+              description: 'Maximum number of results to return (default: 5)',
+            },
           },
-          category: {
-            type: 'string',
-            description: 'Product category slug to filter by',
-            enum: [
-              'adhesives-sealants-tape',
-              'material-handling',
-              'safety',
-              'packaging-shipping',
-              'cleaning-janitorial',
-              'lighting',
-              'power-transmission',
-              'tool-storage-workbenches',
-              'plumbing-pumps',
-            ],
-          },
-          limit: {
-            type: 'number',
-            description: 'Maximum number of results to return (default: 5)',
-          },
+          required: ['query'],
         },
-        required: ['query'],
       },
     },
-  },
-  {
-    type: 'function' as const,
-    function: {
-      name: 'add_to_cart',
-      description: 'Add a product to the customer shopping cart',
-      parameters: {
-        type: 'object',
-        properties: {
-          product_id: {
-            type: 'string',
-            description: 'Product ID or SKU',
+    {
+      type: 'function' as const,
+      function: {
+        name: 'add_to_cart',
+        description: 'Add a product to the customer shopping cart',
+        parameters: {
+          type: 'object',
+          properties: {
+            product_id: {
+              type: 'string',
+              description: 'Product ID or SKU',
+            },
+            quantity: {
+              type: 'number',
+              description: 'Quantity to add',
+            },
           },
-          quantity: {
-            type: 'number',
-            description: 'Quantity to add',
-          },
+          required: ['product_id', 'quantity'],
         },
-        required: ['product_id', 'quantity'],
       },
     },
-  },
-  {
-    type: 'function' as const,
-    function: {
-      name: 'create_rfq_item',
-      description: 'Add a product to the RFQ (Request for Quote) list for bulk pricing. Use when quantity > 100 or custom specs needed.',
-      parameters: {
-        type: 'object',
-        properties: {
-          product_id: {
-            type: 'string',
-            description: 'Product ID or SKU (if known)',
+    {
+      type: 'function' as const,
+      function: {
+        name: 'create_rfq_item',
+        description: 'Add a product to the RFQ (Request for Quote) list for bulk pricing. Use when quantity > 100 or custom specs needed.',
+        parameters: {
+          type: 'object',
+          properties: {
+            product_id: {
+              type: 'string',
+              description: 'Product ID or SKU (if known)',
+            },
+            product_name: {
+              type: 'string',
+              description: 'Product name or description',
+            },
+            quantity: {
+              type: 'number',
+              description: 'Requested quantity',
+            },
+            specs: {
+              type: 'string',
+              description: 'Key specifications, size, material, or special requirements',
+            },
+            notes: {
+              type: 'string',
+              description: 'Delivery timeline, certifications needed, or other notes',
+            },
           },
-          product_name: {
-            type: 'string',
-            description: 'Product name or description',
-          },
-          quantity: {
-            type: 'number',
-            description: 'Requested quantity',
-          },
-          specs: {
-            type: 'string',
-            description: 'Key specifications, size, material, or special requirements',
-          },
-          notes: {
-            type: 'string',
-            description: 'Delivery timeline, certifications needed, or other notes',
-          },
+          required: ['product_name', 'quantity'],
         },
-        required: ['product_name', 'quantity'],
       },
     },
-  },
-  {
-    type: 'function' as const,
-    function: {
-      name: 'get_shipping_info',
-      description: 'Get shipping policy and delivery information',
-      parameters: {
-        type: 'object',
-        properties: {},
-        required: [],
+    {
+      type: 'function' as const,
+      function: {
+        name: 'get_shipping_info',
+        description: 'Get shipping policy and delivery information',
+        parameters: {
+          type: 'object',
+          properties: {},
+          required: [],
+        },
       },
     },
-  },
-  {
-    type: 'function' as const,
-    function: {
-      name: 'get_return_policy',
-      description: 'Get return and refund policy information',
-      parameters: {
-        type: 'object',
-        properties: {},
-        required: [],
+    {
+      type: 'function' as const,
+      function: {
+        name: 'get_return_policy',
+        description: 'Get return and refund policy information',
+        parameters: {
+          type: 'object',
+          properties: {},
+          required: [],
+        },
       },
     },
-  },
-]
+  ]
+}

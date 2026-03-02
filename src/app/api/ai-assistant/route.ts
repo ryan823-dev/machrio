@@ -3,20 +3,23 @@ import { processConversation, ChatMessage } from '@/lib/ai/chat'
 
 export async function POST(request: Request) {
   try {
-    const { messages, message } = await request.json()
+    const { messages, message, conversationHistory } = await request.json()
 
-    // Support both formats: { messages: [...] } or { message: "string" }
-    let conversationHistory: ChatMessage[] = []
+    // Support both formats: { messages: [...] } or { message: "string" } or { message, conversationHistory }
+    let history: ChatMessage[] = []
     let userMessage: string
 
     if (message && typeof message === 'string') {
-      // Simple format: just a message string
+      // Simple format or EmptyStateAIDialog format
       userMessage = message
+      if (Array.isArray(conversationHistory)) {
+        history = conversationHistory as ChatMessage[]
+      }
     } else if (messages && Array.isArray(messages)) {
       // Full format: conversation history
       const lastMsg = messages[messages.length - 1]
       userMessage = lastMsg?.content || ''
-      conversationHistory = messages.slice(0, -1) as ChatMessage[]
+      history = messages.slice(0, -1) as ChatMessage[]
     } else {
       return NextResponse.json(
         { error: 'Invalid request format. Provide either "message" or "messages" array.' },
@@ -43,10 +46,11 @@ export async function POST(request: Request) {
     }
 
     // Process with real AI
-    const result = await processConversation(userMessage, conversationHistory)
+    const result = await processConversation(userMessage, history)
 
     return NextResponse.json({
       reply: result.response,
+      response: result.response,
       toolResults: result.toolResults,
       mode: 'ai',
     })
