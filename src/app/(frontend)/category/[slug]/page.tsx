@@ -10,6 +10,8 @@ import { StructuredData } from '@/components/shared/StructuredData'
 import { CategoryBuyingGuide } from '@/components/shared/RelatedGuide'
 import { ProductGrid } from '@/components/category/ProductGrid'
 import { SubcategoryGrid } from '@/components/category/SubcategoryGrid'
+import { L1SubcategoryCard } from '@/components/category/L1SubcategoryCard'
+import { FeaturedProductsSection } from '@/components/category/FeaturedProductsSection'
 import { FilterBar, DesktopSortBar } from '@/components/category/FilterBar'
 import { ExpandableIntro } from '@/components/category/ExpandableIntro'
 import { EmptyStateAIDialog } from '@/components/category/EmptyStateAIDialog'
@@ -150,6 +152,85 @@ async function getSubcategories(categoryId: string) {
       })
     )
     return subcats
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Get L2 subcategories with their L3 children (for L1 page display)
+ */
+async function getL2WithL3Children(categoryId: string) {
+  try {
+    const payload = await getPayload({ config })
+    
+    // Get L2 categories (direct children)
+    const l2Categories = await payload.find({
+      collection: 'categories',
+      where: { parent: { equals: categoryId } },
+      sort: 'displayOrder',
+      limit: 50,
+    })
+
+    // For each L2, get its L3 children and product count
+    const results = await Promise.all(
+      l2Categories.docs.map(async (l2) => {
+        // Get L3 children
+        const l3Children = await payload.find({
+          collection: 'categories',
+          where: { parent: { equals: l2.id } },
+          sort: 'displayOrder',
+          limit: 50,
+        })
+
+        // Get product count (from L2 + all L3)
+        const allIds = [l2.id, ...l3Children.docs.map(c => c.id)]
+        const productCount = await payload.count({
+          collection: 'products',
+          where: {
+            primaryCategory: { in: allIds },
+            status: { equals: 'published' },
+          },
+        })
+
+        return {
+          name: l2.name,
+          slug: l2.slug,
+          productCount: productCount.totalDocs,
+          l3Tags: l3Children.docs.map(l3 => ({
+            name: l3.name,
+            slug: l3.slug,
+          })),
+        }
+      })
+    )
+
+    return results
+  } catch {
+    return []
+  }
+}
+
+/**
+ * Get newest products for a category (for featured section on L1/L2 pages)
+ */
+async function getFeaturedProducts(categoryId: string, childIds: string[], limit: number = 8) {
+  try {
+    const payload = await getPayload({ config })
+    const allCategoryIds = [categoryId, ...childIds]
+
+    const result = await payload.find({
+      collection: 'products',
+      where: {
+        primaryCategory: { in: allCategoryIds },
+        status: { equals: 'published' },
+      },
+      limit,
+      sort: '-createdAt',
+      depth: 2,
+    })
+
+    return result.docs
   } catch {
     return []
   }
@@ -434,8 +515,16 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
 
   const { category, parent, grandparent } = data
 
+  // Determine category level for conditional rendering
+  const isL1 = !parent && !grandparent  // Top-level category
+  const isL2 = parent && !grandparent   // Second-level category  
+  const isL3 = parent && grandparent    // Third-level category (leaf)
+
   // Get subcategories
   const subcategories = await getSubcategories(category.id)
+
+  // For L1 pages: get L2 subcategories with their L3 children
+  const l2WithL3 = isL1 ? await getL2WithL3Children(category.id) : []
 
   // Re-fetch child category IDs for product query (include grandchildren for level-1 categories)
   let childCategoryIds: string[] = []
@@ -472,19 +561,30 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
 
   // Get filter data and products
   const hasFilters = brandFilter || minPrice || maxPrice
-  const [brandsData, priceRangeData, productsResult] = await Promise.all([
+  
+  // For L1/L2 pages, also get featured products (newest arrivals)
+  const shouldGetFeaturedProducts = (isL1 || isL2) && !hasFilters
+
+  const [brandsData, priceRangeData, productsResult, featuredProductsRaw] = await Promise.all([
     getCategoryBrands(category.id, childCategoryIds),
     getCategoryPriceRange(category.id, childCategoryIds),
-    hasFilters
-      ? getFilteredProducts(category.id, childCategoryIds, currentPage, {
-          brandSlug: brandFilter,
-          minPrice,
-          maxPrice,
-        }, sortField)
-      : getProducts(category.id, childCategoryIds, currentPage, sortField),
+    // Only get paginated products for L3 pages or when filters are applied
+    (isL3 || hasFilters)
+      ? (hasFilters
+          ? getFilteredProducts(category.id, childCategoryIds, currentPage, {
+              brandSlug: brandFilter,
+              minPrice,
+              maxPrice,
+            }, sortField)
+          : getProducts(category.id, childCategoryIds, currentPage, sortField))
+      : Promise.resolve({ docs: [], totalDocs: 0, page: 1, totalPages: 1, hasNextPage: false, hasPrevPage: false }),
+    shouldGetFeaturedProducts
+      ? getFeaturedProducts(category.id, childCategoryIds, 8)
+      : Promise.resolve([]),
   ])
 
   const products = productsResult.docs.map(p => mapProductToCard(p as unknown as Record<string, unknown>))
+  const featuredProducts = featuredProductsRaw.map(p => mapProductToCard(p as unknown as Record<string, unknown>))
   const totalDocs = productsResult.totalDocs
   const totalPages = productsResult.totalPages
 
@@ -551,13 +651,44 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
       {/* Buying Guide Banner */}
       <CategoryBuyingGuide categorySlug={slug} />
 
-      {/* Subcategory cards */}
-      {subcategories.length > 0 && (
+      {/* L1 Page: Show L2 subcategories with L3 tags */}
+      {isL1 && l2WithL3.length > 0 && (
+        <section className="mb-8">
+          <h2 className="mb-4 text-lg font-semibold text-secondary-800">
+            Browse {category.name} Categories
+          </h2>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {l2WithL3.map((l2) => (
+              <L1SubcategoryCard
+                key={l2.slug}
+                name={l2.name}
+                slug={l2.slug}
+                productCount={l2.productCount}
+                l3Tags={l2.l3Tags}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* L2 Page: Show L3 subcategories prominently */}
+      {isL2 && subcategories.length > 0 && (
         <SubcategoryGrid items={subcategories} parentSlug={slug} />
       )}
 
-      {/* Filter + Products Layout */}
-      <div className="lg:grid lg:grid-cols-[220px_1fr] lg:gap-6">
+      {/* L1/L2 Pages: Show featured products (newest arrivals) */}
+      {(isL1 || isL2) && featuredProducts.length > 0 && (
+        <FeaturedProductsSection
+          title="Newest Arrivals"
+          products={featuredProducts}
+          viewAllHref={`/category/${slug}?sort=newest`}
+          viewAllLabel="View All Products"
+        />
+      )}
+
+      {/* L3 Page: Filter + Products Layout */}
+      {isL3 && (
+        <div className="lg:grid lg:grid-cols-[220px_1fr] lg:gap-6">
         {/* Sidebar filters (desktop) + mobile filter toggle */}
         <div>
           <FilterBar
@@ -616,9 +747,10 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
           )}
         </div>
       </div>
+      )}
 
-      {/* Pagination - below the grid */}
-      {totalDocs > 0 && totalPages > 1 && (
+      {/* Pagination - below the grid (L3 only) */}
+      {isL3 && totalDocs > 0 && totalPages > 1 && (
         <div className="mt-8 flex items-center justify-center gap-2">
           {currentPage > 1 && (
             <Link

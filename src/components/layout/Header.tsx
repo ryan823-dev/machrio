@@ -4,6 +4,8 @@ import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useCart } from '@/contexts/CartContext'
+import { CategoryFlyoutMenu, type NavCategory } from './CategoryFlyoutMenu'
+import { CategoryDrawerMenu } from './CategoryDrawerMenu'
 
 const HISTORY_KEY = 'machrio_search_history'
 const MAX_HISTORY = 5
@@ -48,12 +50,6 @@ const mainNav = [
   { label: 'Knowledge Center', href: '/knowledge-center' },
   { label: 'Request a Quote', href: '/rfq' },
 ]
-
-interface NavCategory {
-  name: string
-  slug: string
-  subcategories: { name: string; slug: string }[]
-}
 
 interface ProductSuggestion {
   name: string
@@ -123,8 +119,8 @@ export function Header() {
   // Categories mega-menu state
   const [navCategories, setNavCategories] = useState<NavCategory[]>([])
   const [showMegaMenu, setShowMegaMenu] = useState(false)
+  const [showMobileMenu, setShowMobileMenu] = useState(false)
   const megaMenuRef = useRef<HTMLDivElement>(null)
-  const megaMenuPanelRef = useRef<HTMLDivElement>(null)
   const megaMenuButtonRef = useRef<HTMLButtonElement>(null)
   const megaMenuTimeout = useRef<NodeJS.Timeout | null>(null)
   
@@ -133,9 +129,6 @@ export function Header() {
   const prevItemCount = useRef(itemCount)
 
   const hasSuggestions = products.length > 0 || categories.length > 0 || brands.length > 0
-
-  // Accessibility: Focus trap for mega-menu
-  useFocusTrap(showMegaMenu, megaMenuPanelRef)
 
   // Accessibility: Announce cart updates
   useEffect(() => {
@@ -538,10 +531,22 @@ export function Header() {
       {/* Navigation */}
       <nav className="border-t border-secondary-100 bg-secondary-50" aria-label="Main navigation">
         <div className="container-main flex items-center gap-1">
-          {/* Categories mega-menu trigger */}
+          {/* Mobile menu button */}
+          <button
+            type="button"
+            className="flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium text-secondary-700 transition-colors hover:bg-primary-50 hover:text-primary-700 md:hidden"
+            onClick={() => setShowMobileMenu(true)}
+            aria-label="Open category menu"
+          >
+            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+
+          {/* Desktop: Categories flyout menu trigger */}
           <div
             ref={megaMenuRef}
-            className="relative"
+            className="relative hidden md:block"
             onMouseEnter={() => {
               if (megaMenuTimeout.current) clearTimeout(megaMenuTimeout.current)
               setShowMegaMenu(true)
@@ -557,7 +562,7 @@ export function Header() {
               onClick={() => setShowMegaMenu(!showMegaMenu)}
               onKeyDown={handleMegaMenuKeyDown}
               aria-expanded={showMegaMenu}
-              aria-controls="mega-menu-panel"
+              aria-controls="flyout-menu-panel"
               aria-haspopup="true"
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -569,85 +574,36 @@ export function Header() {
               </svg>
             </button>
 
-            {/* Mega-menu dropdown */}
+            {/* Desktop: Three-level flyout menu */}
             {showMegaMenu && navCategories.length > 0 && (
-              <div 
-                id="mega-menu-panel"
-                ref={megaMenuPanelRef}
-                role="menu"
-                aria-label="Product categories"
-                onKeyDown={(e) => {
-                  if (e.key === 'Escape') closeMegaMenu()
-                }}
-                className="absolute left-0 top-full z-50 w-[900px] rounded-b-lg border border-t-0 border-secondary-200 bg-white shadow-xl"
-              >
-                <div className="grid max-h-[75vh] grid-cols-4 gap-0 overflow-y-auto p-4">
-                  {navCategories.map((cat) => (
-                    <div key={cat.slug} className="py-2 pr-2" role="none">
-                      <Link
-                        href={`/category/${cat.slug}`}
-                        onClick={closeMegaMenu}
-                        role="menuitem"
-                        className="block text-sm font-semibold text-secondary-900 hover:text-primary-700"
-                      >
-                        {cat.name}
-                      </Link>
-                      {cat.subcategories.length > 0 && (
-                        <ul className="mt-1.5 space-y-1" role="menu" aria-label={`${cat.name} subcategories`}>
-                          {cat.subcategories.slice(0, 5).map((sub) => (
-                            <li key={sub.slug} role="none">
-                              <Link
-                                href={`/category/${sub.slug}`}
-                                onClick={closeMegaMenu}
-                                role="menuitem"
-                                className="block text-xs text-secondary-500 hover:text-primary-600"
-                              >
-                                {sub.name}
-                              </Link>
-                            </li>
-                          ))}
-                          {cat.subcategories.length > 5 && (
-                            <li role="none">
-                              <Link
-                                href={`/category/${cat.slug}`}
-                                onClick={closeMegaMenu}
-                                role="menuitem"
-                                className="block text-xs font-medium text-primary-600 hover:text-primary-700"
-                              >
-                                +{cat.subcategories.length - 5} more
-                              </Link>
-                            </li>
-                          )}
-                        </ul>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <div className="border-t border-secondary-100 px-4 py-2.5">
-                  <Link
-                    href="/category"
-                    onClick={closeMegaMenu}
-                    role="menuitem"
-                    className="text-sm font-medium text-primary-600 hover:text-primary-800"
-                  >
-                    View All Categories &rarr;
-                  </Link>
-                </div>
-              </div>
+              <CategoryFlyoutMenu 
+                categories={navCategories} 
+                onClose={closeMegaMenu} 
+              />
             )}
           </div>
 
-          {mainNav.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="px-4 py-2.5 text-sm font-medium text-secondary-700 transition-colors hover:bg-primary-50 hover:text-primary-700"
-            >
-              {item.label}
-            </Link>
-          ))}
+          {/* Main nav links */}
+          <div className="hidden md:flex items-center gap-1">
+            {mainNav.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="px-4 py-2.5 text-sm font-medium text-secondary-700 transition-colors hover:bg-primary-50 hover:text-primary-700"
+              >
+                {item.label}
+              </Link>
+            ))}
+          </div>
         </div>
       </nav>
+
+      {/* Mobile: Category drawer menu */}
+      <CategoryDrawerMenu 
+        categories={navCategories}
+        isOpen={showMobileMenu}
+        onClose={() => setShowMobileMenu(false)}
+      />
     </header>
   )
 }
