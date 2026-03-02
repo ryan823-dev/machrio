@@ -20,7 +20,9 @@ export function L1SubcategoryCard({ name, slug, productCount, l3Tags }: L1Subcat
           {name}
         </h3>
         <p className="mt-1 text-xs text-secondary-500">
-          {productCount} {productCount === 1 ? 'product' : 'products'}
+          {productCount > 0
+            ? `${productCount} ${productCount === 1 ? 'product' : 'products'}`
+            : 'Browse →'}
         </p>
       </Link>
       

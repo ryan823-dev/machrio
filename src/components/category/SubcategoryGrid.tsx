@@ -25,7 +25,7 @@ export function SubcategoryGrid({ items, parentSlug }: SubcategoryGridProps) {
           >
             <span className="block text-sm font-medium text-secondary-800">{item.name}</span>
             <span className="mt-1 block text-xs text-secondary-500">
-              {item.productCount} products
+              {item.productCount > 0 ? `${item.productCount} products` : 'Browse →'}
             </span>
           </Link>
         ))}

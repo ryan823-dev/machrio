@@ -790,6 +790,15 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
         <SubcategoryGrid items={subcategories} parentSlug={slug} />
       )}
 
+      {/* L2 Page: When all subcategories have 0 products, show AI sourcing dialog */}
+      {isL2 && subcategories.length > 0 && subcategories.every(s => s.productCount === 0) && featuredProducts.length === 0 && (
+        <EmptyStateAIDialog
+          categoryName={category.name}
+          categorySlug={slug}
+          parentCategories={parent ? [parent.name] : []}
+        />
+      )}
+
       {/* L1/L2 Pages: Show featured products (newest arrivals) */}
       {(isL1 || isL2) && featuredProducts.length > 0 && (
         <FeaturedProductsSection
