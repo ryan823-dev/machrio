@@ -39,6 +39,7 @@ interface SearchResponse {
     brand: { name: string; slug: string } | null
     category: { name: string; slug: string } | null
     pricing: { basePrice: number; currency: string; priceUnit?: string } | null
+    packageQty?: number | null
     availability: string
     purchaseMode: string
   }>
@@ -133,24 +134,21 @@ export default async function SearchPage({
         currency: p.pricing?.currency || 'USD',
         priceUnit: p.pricing?.priceUnit,
       },
+      packageQty: p.packageQty || undefined,
       purchaseMode: (p.purchaseMode as 'both' | 'buy-online' | 'rfq-only') || 'both',
       availability: p.availability || 'contact',
     }
   }) || []
 
-  const buildPageUrl = (pageNum: number) => {
-    const urlParams = new URLSearchParams()
-    urlParams.set('q', query)
-    urlParams.set('page', String(pageNum))
-    if (params.brand) urlParams.set('brand', params.brand)
-    if (params.category) urlParams.set('category', params.category)
-    if (params.minPrice) urlParams.set('minPrice', params.minPrice)
-    if (params.maxPrice) urlParams.set('maxPrice', params.maxPrice)
-    if (params.availability) urlParams.set('availability', params.availability)
-    if (params.sort) urlParams.set('sort', params.sort)
-    if (params.view) urlParams.set('view', params.view)
-    return `/search?${urlParams.toString()}`
-  }
+  // Serialize filter params so the client component can build page URLs
+  const filterParams: Record<string, string> = {}
+  if (params.brand) filterParams.brand = params.brand
+  if (params.category) filterParams.category = params.category
+  if (params.minPrice) filterParams.minPrice = params.minPrice
+  if (params.maxPrice) filterParams.maxPrice = params.maxPrice
+  if (params.availability) filterParams.availability = params.availability
+  if (params.sort) filterParams.sort = params.sort
+  if (params.view) filterParams.view = params.view
 
   return (
     <div className="container-main py-8">
@@ -205,7 +203,7 @@ export default async function SearchPage({
             gridProducts={gridProducts}
             view={view}
             currentPage={currentPage}
-            buildPageUrl={buildPageUrl}
+            filterParams={filterParams}
           />
         </Suspense>
       )}

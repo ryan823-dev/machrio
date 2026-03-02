@@ -336,6 +336,7 @@ function mapProductToCard(product: Record<string, unknown>) {
       currency: (pricing?.currency as string) || 'USD',
       priceUnit: pricing?.priceUnit as string | undefined,
     },
+    packageQty: (product.packageQty as number) || undefined,
     purchaseMode: (product.purchaseMode as 'both' | 'buy-online' | 'rfq-only') || 'both',
     availability: (product.availability as string) || 'contact',
   }

@@ -176,7 +176,7 @@ function PriceDisplay({ product }: { product: ProductCardData }) {
       {unitPrice && (
         <span className="text-xs font-normal text-secondary-500"> (${unitPrice.toFixed(2)}/each)</span>
       )}
-      {product.pricing.priceUnit && (
+      {!unitPrice && product.pricing.priceUnit && (
         <span className="text-xs font-normal text-secondary-500"> /{product.pricing.priceUnit}</span>
       )}
     </span>

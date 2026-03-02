@@ -22,6 +22,7 @@ interface ProductCardData {
   }
   purchaseMode: 'both' | 'buy-online' | 'rfq-only'
   availability: string
+  packageQty?: number
 }
 
 interface SearchResultsContentProps {
@@ -42,7 +43,7 @@ interface SearchResultsContentProps {
   gridProducts: ProductCardData[]
   view: 'list' | 'grid'
   currentPage: number
-  buildPageUrl: (page: number) => string
+  filterParams: Record<string, string>
 }
 
 export function SearchResultsContent({
@@ -51,9 +52,19 @@ export function SearchResultsContent({
   gridProducts,
   view,
   currentPage,
-  buildPageUrl,
+  filterParams,
 }: SearchResultsContentProps) {
   const { addItem } = useCart()
+
+  const buildPageUrl = (pageNum: number) => {
+    const urlParams = new URLSearchParams()
+    urlParams.set('q', query)
+    urlParams.set('page', String(pageNum))
+    for (const [key, value] of Object.entries(filterParams)) {
+      if (value) urlParams.set(key, value)
+    }
+    return `/search?${urlParams.toString()}`
+  }
 
   return (
     <>
@@ -258,10 +269,16 @@ function PriceDisplay({ product }: { product: ProductCardData }) {
   if (product.purchaseMode === 'rfq-only' || !product.pricing.basePrice) {
     return <span className="text-sm font-semibold text-amber-600">Contact for Price</span>
   }
+  const unitPrice = product.packageQty && product.packageQty > 1 && product.pricing.basePrice
+    ? (product.pricing.basePrice / product.packageQty)
+    : null
   return (
     <span className="text-sm font-semibold text-secondary-900">
       ${product.pricing.basePrice.toFixed(2)}
-      {product.pricing.priceUnit && (
+      {unitPrice && (
+        <span className="text-xs font-normal text-secondary-500"> (${unitPrice.toFixed(2)}/each)</span>
+      )}
+      {!unitPrice && product.pricing.priceUnit && (
         <span className="text-xs font-normal text-secondary-500"> /{product.pricing.priceUnit}</span>
       )}
     </span>

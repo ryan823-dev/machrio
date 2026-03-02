@@ -218,6 +218,7 @@ export async function GET(request: NextRequest) {
           currency: pricing.currency || 'USD',
           priceUnit: pricing.priceUnit,
         } : null,
+        packageQty: p.packageQty || null,
         availability: p.availability,
         purchaseMode: p.purchaseMode || 'both',
       }

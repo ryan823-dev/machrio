@@ -587,7 +587,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   {unitPrice && (
                     <span className="text-sm text-secondary-500">(${unitPrice.toFixed(2)}/each)</span>
                   )}
-                  {priceUnit && (
+                  {!unitPrice && priceUnit && (
                     <span className="text-sm text-secondary-500">/ {priceUnit}</span>
                   )}
                   {compareAtPrice && (

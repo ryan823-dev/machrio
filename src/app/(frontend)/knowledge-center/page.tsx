@@ -45,8 +45,37 @@ const categoryColors: Record<string, string> = {
 }
 
 // ---------------------------------------------------------------------------
-// Data fetching
+// Article cover gradient mapping (when no featured image)
 // ---------------------------------------------------------------------------
+
+const coverThemes: { keywords: string[]; gradient: string; icon: string }[] = [
+  { keywords: ['safety', 'protection', 'ppe', 'respiratory', 'eye', 'face', 'hearing', 'head', 'fall'], gradient: 'from-red-500 to-orange-400', icon: '🛡️' },
+  { keywords: ['footwear', 'shoe', 'boot'], gradient: 'from-amber-500 to-yellow-400', icon: '👢' },
+  { keywords: ['hand', 'arm', 'glove'], gradient: 'from-blue-500 to-cyan-400', icon: '🧤' },
+  { keywords: ['clothing', 'workwear', 'garment'], gradient: 'from-indigo-500 to-blue-400', icon: '👔' },
+  { keywords: ['fire', 'extinguisher'], gradient: 'from-red-600 to-red-400', icon: '🧯' },
+  { keywords: ['first aid', 'wound', 'medical'], gradient: 'from-emerald-500 to-green-400', icon: '🩹' },
+  { keywords: ['lockout', 'tagout', 'loto'], gradient: 'from-yellow-500 to-amber-400', icon: '🔒' },
+  { keywords: ['label', 'identification', 'sign'], gradient: 'from-violet-500 to-purple-400', icon: '🏷️' },
+  { keywords: ['tape', 'adhesive', 'glue', 'sealant'], gradient: 'from-teal-500 to-emerald-400', icon: '🔗' },
+  { keywords: ['packaging', 'shipping', 'packing', 'protective packaging', 'strapping', 'cable tie'], gradient: 'from-sky-500 to-blue-400', icon: '📦' },
+  { keywords: ['cleaning', 'janitorial', 'filtration', 'purification'], gradient: 'from-cyan-500 to-teal-400', icon: '🧹' },
+  { keywords: ['lighting', 'flashlight', 'lamp'], gradient: 'from-yellow-400 to-orange-400', icon: '💡' },
+  { keywords: ['storage', 'shelving', 'workbench', 'desk'], gradient: 'from-gray-500 to-slate-400', icon: '🗄️' },
+  { keywords: ['material handling', 'lifting', 'pulling', 'caster', 'wheel', 'transporting'], gradient: 'from-orange-500 to-amber-400', icon: '🏗️' },
+  { keywords: ['seal', 'gasket', 'power transmission'], gradient: 'from-slate-500 to-gray-400', icon: '⚙️' },
+  { keywords: ['valve', 'hose', 'fitting', 'plumbing', 'pipe'], gradient: 'from-blue-600 to-indigo-400', icon: '🔧' },
+]
+
+function getCoverTheme(title: string) {
+  const lower = title.toLowerCase()
+  for (const theme of coverThemes) {
+    if (theme.keywords.some((kw) => lower.includes(kw))) {
+      return theme
+    }
+  }
+  return { gradient: 'from-primary-500 to-primary-400', icon: '📋' }
+}
 
 async function getArticles(category?: string, page = 1, limit = 12) {
   try {
@@ -159,6 +188,8 @@ export default async function KnowledgeCenterPage({
               const publishedAt = article.publishedAt as string | undefined
               const cat = article.category as string
               const readingTime = article.readingTime as number || 3
+              const title = article.title as string
+              const coverTheme = getCoverTheme(title)
 
               return (
                 <Link
@@ -166,15 +197,16 @@ export default async function KnowledgeCenterPage({
                   href={`/knowledge-center/${article.slug}`}
                   className="group flex flex-col overflow-hidden rounded-lg border border-secondary-200 bg-white transition-shadow hover:shadow-md"
                 >
-                  {/* Image */}
-                  <div className="flex h-44 items-center justify-center bg-secondary-50">
+                  {/* Image / Cover */}
+                  <div className="flex h-44 items-center justify-center">
                     {imageUrl ? (
-                      <img src={imageUrl} alt={article.title as string} className="h-full w-full object-cover" />
+                      <img src={imageUrl} alt={title} className="h-full w-full object-cover" />
                     ) : (
-                      <div className="flex flex-col items-center text-secondary-300">
-                        <svg className="h-12 w-12" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-                        </svg>
+                      <div className={`flex h-full w-full flex-col items-center justify-center bg-gradient-to-br ${coverTheme.gradient} transition-transform group-hover:scale-[1.02]`}>
+                        <span className="text-5xl drop-shadow-md">{coverTheme.icon}</span>
+                        <span className="mt-2 max-w-[80%] text-center text-xs font-semibold leading-tight text-white/90 drop-shadow">
+                          {title.replace(/^How to Choose\s*/i, '').replace(/:\s*Complete Buying Guide.*$/i, '')}
+                        </span>
                       </div>
                     )}
                   </div>
