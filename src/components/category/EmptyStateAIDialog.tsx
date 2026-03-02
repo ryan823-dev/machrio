@@ -204,7 +204,7 @@ export function EmptyStateAIDialog({ categoryName, categorySlug, parentCategorie
   return (
     <div className="mx-auto max-w-3xl">
       {/* Hero */}
-      <div className="rounded-t-lg border border-b-0 border-secondary-200 bg-gradient-to-b from-primary-50 to-white px-8 pb-4 pt-8 text-center">
+      <div className="rounded-t-lg border border-b-0 border-secondary-200 bg-gradient-to-b from-primary-50 to-white px-4 pb-4 pt-6 text-center sm:px-8 sm:pt-8">
         <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-primary-100">
           <svg className="h-7 w-7 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />

@@ -41,7 +41,9 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
                   {item.label}
                 </Link>
               ) : (
-                <span className="text-secondary-800">{item.label}</span>
+                <span className="max-w-[200px] truncate text-secondary-800 sm:max-w-none">
+                  {item.label}
+                </span>
               )}
             </li>
           ))}

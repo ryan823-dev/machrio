@@ -272,7 +272,7 @@ export function Header() {
               </svg>
               Same-Day Shipping
             </span>
-            <span className="flex items-center gap-1.5">
+            <span className="hidden sm:flex items-center gap-1.5">
               <svg className="h-4 w-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
@@ -287,7 +287,7 @@ export function Header() {
             </span>
           </div>
           <div className="flex items-center gap-5 text-sm">
-            <a href="mailto:sales@machrio.com" className="flex items-center gap-1.5 hover:text-amber-300 transition-colors">
+            <a href="mailto:sales@machrio.com" className="hidden sm:flex items-center gap-1.5 hover:text-amber-300 transition-colors">
               <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
                 <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
@@ -497,7 +497,7 @@ export function Header() {
         <div className="flex items-center gap-4">
           <Link 
             href="/account" 
-            className="flex flex-col items-center text-xs text-secondary-600 hover:text-primary-700"
+            className="flex min-h-[44px] min-w-[44px] flex-col items-center justify-center text-xs text-secondary-600 hover:text-primary-700"
             aria-label="My account"
           >
             <svg className="mb-0.5 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -507,7 +507,7 @@ export function Header() {
           </Link>
           <Link 
             href="/cart" 
-            className="relative flex flex-col items-center text-xs text-secondary-600 hover:text-primary-700"
+            className="relative flex min-h-[44px] min-w-[44px] flex-col items-center justify-center text-xs text-secondary-600 hover:text-primary-700"
             aria-label={`Shopping cart${itemCount > 0 ? `, ${itemCount} ${itemCount === 1 ? 'item' : 'items'}` : ', empty'}`}
           >
             <svg className="mb-0.5 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">

@@ -36,9 +36,9 @@ export function Footer() {
   return (
     <footer className="mt-auto border-t border-secondary-200 bg-secondary-900 text-secondary-300">
       <div className="container-main py-12">
-        <div className="grid grid-cols-2 gap-8 md:grid-cols-6">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-8 md:grid-cols-6">
           {/* Brand */}
-          <div className="col-span-2 md:col-span-1">
+          <div className="sm:col-span-2 md:col-span-1">
             <span className="text-xl font-bold text-white">
               Mach<span className="text-amber-400">rio</span>
             </span>
