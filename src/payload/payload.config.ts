@@ -57,7 +57,6 @@ export default buildConfig({
           exact: true,
         },
       },
-      providers: ['/src/components/admin/AdminStyleProvider#AdminStyleProvider'],
     },
   },
   i18n: {
