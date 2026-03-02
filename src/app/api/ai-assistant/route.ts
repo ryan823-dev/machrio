@@ -3,7 +3,7 @@ import { processConversation, ChatMessage } from '@/lib/ai/chat'
 
 export async function POST(request: Request) {
   try {
-    const { messages, message, conversationHistory } = await request.json()
+    const { messages, message, conversationHistory, source, categoryName, categoryPath } = await request.json()
 
     // Support both formats: { messages: [...] } or { message: "string" } or { message, conversationHistory }
     let history: ChatMessage[] = []
@@ -34,13 +34,23 @@ export async function POST(request: Request) {
       )
     }
 
+    // Inject system context for empty category pages
+    if (source === 'empty-category' && categoryName) {
+      const path = categoryPath ? ` (${categoryPath} > ${categoryName})` : ` (${categoryName})`
+      const categoryContext: ChatMessage = {
+        role: 'system',
+        content: `[CONTEXT: User is on an empty category page for "${categoryName}"${path}. This category doesn't have products listed yet, but Machrio can absolutely source them through our supplier network. Your goal: understand what they need (specs, quantities, brands, certifications, timeline), then guide them to submit an RFQ. NEVER say "we don't have" or "not available" — say "we can source this for you." Be a confident sourcing expert. After 2-3 exchanges, suggest submitting a quote request.]`,
+      }
+      history = [categoryContext, ...history]
+    }
+
     // Check if API key is configured
     const apiKey = process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY
     
     if (!apiKey) {
       // Fall back to mock response if no API key
       return NextResponse.json({
-        reply: generateFallbackResponse(userMessage),
+        reply: generateFallbackResponse(userMessage, source),
         mode: 'fallback',
       })
     }
@@ -67,8 +77,33 @@ export async function POST(request: Request) {
 }
 
 // Fallback response when API is not configured
-function generateFallbackResponse(input: string): string {
+function generateFallbackResponse(input: string, source?: string): string {
   const lower = input.toLowerCase()
+
+  // Empty category page: supply-chain-oriented responses
+  if (source === 'empty-category') {
+    if (lower.includes('quote') || lower.includes('rfq') || lower.includes('bulk') || lower.includes('price')) {
+      return `Absolutely! For bulk and custom orders, here's how we work:\n\n` +
+        `1. **Tell me** what you need — product specs, quantities, brand preferences\n` +
+        `2. **Submit an RFQ** — our sourcing team gets to work immediately\n` +
+        `3. **Receive your quote** — competitive pricing delivered within 24 hours\n\n` +
+        `What specific products and quantities are you looking for? Or if you have a procurement list, feel free to upload it.`
+    }
+
+    if (lower.includes('upload') || lower.includes('list') || lower.includes('file') || lower.includes('document') || lower.includes('spec')) {
+      return `Great — you can upload your spec sheet, BOM, or procurement list using the upload area below the chat.\n\n` +
+        `We accept PDF, Excel, CSV, and Word formats. Once uploaded, I'd recommend submitting a quick RFQ so our sourcing specialists can review everything and get back to you with pricing.\n\n` +
+        `Go ahead and drop your file below!`
+    }
+
+    return `Thanks for your interest! We can absolutely source this for you.\n\n` +
+      `To prepare the most accurate quote, it would help to know:\n\n` +
+      `• **Product specs** — size, material, ratings, part numbers\n` +
+      `• **Quantity** — how many units do you need?\n` +
+      `• **Brand preference** — any specific brands, or open to alternatives?\n` +
+      `• **Timeline** — when do you need delivery?\n\n` +
+      `Share these details and I'll get you a competitive quote. Or you can upload a procurement list below.`
+  }
 
   if (lower.includes('glove') || lower.includes('ppe') || lower.includes('safety')) {
     return `We have a wide selection of safety gloves and PPE:\n\n` +
