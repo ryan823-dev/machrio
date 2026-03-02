@@ -19,6 +19,8 @@ export async function GET() {
       size: 'S, M, L, XL',
       color: '黑色, 白色',
       externalImageUrl: 'https://example.com/image.jpg',
+      packageQty: 100,
+      packageUnit: 'box',
     },
   ]
 
@@ -40,6 +42,8 @@ export async function GET() {
     { wch: 20 }, // size
     { wch: 20 }, // color
     { wch: 40 }, // externalImageUrl
+    { wch: 12 }, // packageQty
+    { wch: 12 }, // packageUnit
   ]
 
   // Add instructions sheet
@@ -58,6 +62,8 @@ export async function GET() {
     { 字段: 'size', 说明: '尺寸 (逗号分隔)', 必填: '否', 示例: 'S, M, L, XL' },
     { 字段: 'color', 说明: '颜色 (逗号分隔)', 必填: '否', 示例: 'Blue, Black' },
     { 字段: 'externalImageUrl', 说明: '外部图片URL', 必填: '否', 示例: 'https://...' },
+    { 字段: 'packageQty', 说明: '包装数量 (留空则自动从产品名中解析 Pkg Qty)', 必填: '否', 示例: '100' },
+    { 字段: 'packageUnit', 说明: '包装单位 (box, case, pack, roll)', 必填: '否', 示例: 'box' },
   ]
   const instructionsSheet = XLSX.utils.json_to_sheet(instructionsData)
   instructionsSheet['!cols'] = [

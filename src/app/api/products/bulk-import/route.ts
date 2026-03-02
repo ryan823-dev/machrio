@@ -18,6 +18,28 @@ interface ProductRow {
   size?: string
   color?: string
   externalImageUrl?: string
+  packageQty?: string
+  packageUnit?: string
+}
+
+function parsePackageQty(name: string): number | null {
+  const patterns = [
+    /Pkg\s+Qty\s+(\d+)/i,
+    /Pack\s+of\s+(\d+)/i,
+    /(\d+)[\s-]*Pack\b/i,
+    /Box\s+of\s+(\d+)/i,
+    /(\d+)[\s-]*(?:pcs?|pieces?)\b/i,
+    /Case\s+of\s+(\d+)/i,
+    /(\d+)[\s-]*(?:Rolls?|Count)\b/i,
+  ]
+  for (const pattern of patterns) {
+    const match = name.match(pattern)
+    if (match) {
+      const qty = parseInt(match[1], 10)
+      if (qty > 1) return qty
+    }
+  }
+  return null
 }
 
 export async function POST(req: NextRequest) {
@@ -136,6 +158,13 @@ export async function POST(req: NextRequest) {
           },
           externalImageUrl: row.externalImageUrl || undefined,
         }
+
+        // Package quantity: explicit value takes priority, otherwise auto-parse from name
+        const explicitQty = row.packageQty ? parseInt(String(row.packageQty), 10) : null
+        const parsedQty = parsePackageQty(row.name)
+        const finalQty = (explicitQty && explicitQty > 0) ? explicitQty : parsedQty
+        if (finalQty) productData.packageQty = finalQty
+        if (row.packageUnit) productData.packageUnit = row.packageUnit
         
         // Add fullDescription as Lexical format if provided
         if (row.fullDescription) {
