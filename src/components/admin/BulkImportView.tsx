@@ -243,12 +243,65 @@ export const BulkImportView: React.FC = () => {
       }}>
         <h4 style={{ fontWeight: 600, marginBottom: '12px' }}>注意事项：</h4>
         <ul style={{ paddingLeft: '20px', lineHeight: 1.8 }}>
-          <li>确保分类和品牌名称与系统中已有的名称完全一致</li>
+          <li>确保分类名称与系统中已有的 L1/L2/L3 三级分类名称完全一致</li>
           <li>如果 SKU 已存在，将更新现有产品数据</li>
           <li>如果 SKU 不存在，将创建新产品</li>
-          <li>多个值（如材料、尺寸）请用英文逗号分隔</li>
+          <li>规格参数支持最多 9 组 (Spec 1-9 Name/Value)</li>
+          <li>Source URL 字段用于记录产品来源链接</li>
           <li>建议先用少量数据测试，确认无误后再批量导入</li>
         </ul>
+      </div>
+
+      {/* Automation Tool Section */}
+      <div style={{
+        marginTop: '24px',
+        padding: '20px',
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        borderRadius: '8px',
+        color: 'white',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '16px' }}>
+          <div style={{
+            background: 'rgba(255,255,255,0.2)',
+            borderRadius: '12px',
+            padding: '12px',
+            flexShrink: 0,
+          }}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5z" />
+              <path d="M2 17l10 5 10-5" />
+              <path d="M2 12l10 5 10-5" />
+            </svg>
+          </div>
+          <div style={{ flex: 1 }}>
+            <h4 style={{ fontWeight: 600, fontSize: '16px', marginBottom: '8px' }}>
+              自动化产品导入工具
+            </h4>
+            <p style={{ fontSize: '14px', opacity: 0.9, marginBottom: '12px', lineHeight: 1.6 }}>
+              使用 Python 自动化工具可以从震坤行(ZKH)批量爬取产品数据，通过 AI 自动生成英文描述，并一键导入到 Machrio 后台。
+            </p>
+            <div style={{ fontSize: '13px', opacity: 0.85, lineHeight: 1.8 }}>
+              <p style={{ marginBottom: '8px' }}>功能特点：</p>
+              <ul style={{ paddingLeft: '20px', margin: 0 }}>
+                <li>从震坤行分类页面自动爬取产品数据</li>
+                <li>自动映射到 Machrio 三级分类体系</li>
+                <li>使用通义千问 AI 生成专业英文产品描述</li>
+                <li>自动生成符合模板格式的 Excel 文件</li>
+              </ul>
+            </div>
+            <div style={{ marginTop: '16px' }}>
+              <span style={{
+                display: 'inline-block',
+                background: 'rgba(255,255,255,0.2)',
+                borderRadius: '4px',
+                padding: '6px 12px',
+                fontSize: '12px',
+              }}>
+                📁 工具位置: Documents/Machrio产品导入_完整代码包_v3/
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   )

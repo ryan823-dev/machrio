@@ -1,0 +1,422 @@
+/**
+ * Machrio Admin Theme - Custom Payload CMS Styles
+ * 
+ * Color System:
+ * - Primary: Deep Blue (#1e293b) - Sidebar, headers
+ * - Accent: Amber (#f59e0b) - Buttons, highlights
+ * - Success: Green (#22c55e)
+ * - Error: Red (#ef4444)
+ * - Warning: Yellow (#eab308)
+ */
+
+/* ============================================
+   ROOT VARIABLES
+   ============================================ */
+:root {
+  /* Brand Colors */
+  --theme-elevation-0: #ffffff;
+  --theme-elevation-50: #f8fafc;
+  --theme-elevation-100: #f1f5f9;
+  --theme-elevation-150: #e2e8f0;
+  --theme-elevation-200: #cbd5e1;
+  --theme-elevation-300: #94a3b8;
+  --theme-elevation-400: #64748b;
+  --theme-elevation-500: #475569;
+  --theme-elevation-600: #334155;
+  --theme-elevation-700: #1e293b;
+  --theme-elevation-800: #0f172a;
+  --theme-elevation-900: #020617;
+  --theme-elevation-1000: #000000;
+  
+  /* Accent Colors */
+  --theme-success-50: #f0fdf4;
+  --theme-success-100: #dcfce7;
+  --theme-success-500: #22c55e;
+  --theme-success-600: #16a34a;
+  
+  --theme-error-50: #fef2f2;
+  --theme-error-100: #fee2e2;
+  --theme-error-500: #ef4444;
+  --theme-error-600: #dc2626;
+  
+  --theme-warning-50: #fefce8;
+  --theme-warning-100: #fef9c3;
+  --theme-warning-500: #eab308;
+  --theme-warning-600: #ca8a04;
+}
+
+/* ============================================
+   NAV / SIDEBAR STYLING
+   ============================================ */
+.nav {
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%) !important;
+}
+
+.nav__link {
+  color: #94a3b8 !important;
+  transition: all 0.2s ease !important;
+}
+
+.nav__link:hover,
+.nav__link--active {
+  color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+}
+
+.nav__link--active {
+  border-left: 3px solid #f59e0b !important;
+}
+
+.nav__label {
+  color: #64748b !important;
+  font-size: 11px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  font-weight: 600 !important;
+}
+
+/* ============================================
+   HEADER IMPROVEMENTS
+   ============================================ */
+.app-header {
+  border-bottom: 1px solid #e2e8f0 !important;
+  background: #ffffff !important;
+}
+
+.step-nav__link {
+  color: #64748b !important;
+}
+
+.step-nav__link:hover {
+  color: #1e293b !important;
+}
+
+/* ============================================
+   BUTTONS
+   ============================================ */
+.btn {
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
+}
+
+.btn--style-primary {
+  background: #f59e0b !important;
+  border-color: #f59e0b !important;
+  color: #0f172a !important;
+}
+
+.btn--style-primary:hover {
+  background: #d97706 !important;
+  border-color: #d97706 !important;
+}
+
+.btn--style-secondary {
+  background: #1e293b !important;
+  border-color: #1e293b !important;
+  color: #ffffff !important;
+}
+
+.btn--style-secondary:hover {
+  background: #334155 !important;
+  border-color: #334155 !important;
+}
+
+/* ============================================
+   FORM FIELDS
+   ============================================ */
+.field-type {
+  margin-bottom: 24px !important;
+}
+
+.field-type label {
+  font-weight: 500 !important;
+  color: #334155 !important;
+  margin-bottom: 8px !important;
+}
+
+.field-type input,
+.field-type textarea,
+.field-type select {
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 6px !important;
+  padding: 10px 14px !important;
+  font-size: 14px !important;
+  transition: border-color 0.2s, box-shadow 0.2s !important;
+}
+
+.field-type input:focus,
+.field-type textarea:focus,
+.field-type select:focus {
+  border-color: #f59e0b !important;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1) !important;
+  outline: none !important;
+}
+
+/* ============================================
+   CARDS & PANELS
+   ============================================ */
+.card {
+  border-radius: 8px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+.card__header {
+  background: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  padding: 16px 20px !important;
+}
+
+.card__content {
+  padding: 20px !important;
+}
+
+/* ============================================
+   TABLE / LIST VIEWS
+   ============================================ */
+.table {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+.table th {
+  background: #f8fafc !important;
+  color: #475569 !important;
+  font-weight: 600 !important;
+  font-size: 12px !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  padding: 12px 16px !important;
+  border-bottom: 2px solid #e2e8f0 !important;
+}
+
+.table td {
+  padding: 16px !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+  vertical-align: middle !important;
+}
+
+.table tr:hover td {
+  background: #f8fafc !important;
+}
+
+.row-1 td {
+  min-height: 56px !important;
+}
+
+/* ============================================
+   STATUS BADGES
+   ============================================ */
+.pill {
+  border-radius: 9999px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  padding: 4px 12px !important;
+}
+
+.pill--style-success,
+.pill--has-action[data-status="published"],
+.pill--has-action[data-status="completed"],
+.pill--has-action[data-status="paid"] {
+  background: #dcfce7 !important;
+  color: #166534 !important;
+}
+
+.pill--style-warning,
+.pill--has-action[data-status="pending"],
+.pill--has-action[data-status="processing"] {
+  background: #fef9c3 !important;
+  color: #854d0e !important;
+}
+
+.pill--style-error,
+.pill--has-action[data-status="draft"],
+.pill--has-action[data-status="cancelled"],
+.pill--has-action[data-status="failed"] {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+}
+
+/* ============================================
+   COLLECTION LIST HEADER
+   ============================================ */
+.collection-list__header {
+  padding: 24px 0 !important;
+}
+
+.collection-list__header h1 {
+  font-size: 24px !important;
+  font-weight: 600 !important;
+  color: #1e293b !important;
+}
+
+/* ============================================
+   DOCUMENT EDIT VIEW
+   ============================================ */
+.doc-header {
+  padding: 20px 0 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  margin-bottom: 32px !important;
+}
+
+.doc-header__title h1 {
+  font-size: 24px !important;
+  font-weight: 600 !important;
+  color: #1e293b !important;
+}
+
+/* Field Groups */
+.group-field {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  padding: 24px !important;
+  margin-bottom: 24px !important;
+}
+
+.group-field__header {
+  font-size: 16px !important;
+  font-weight: 600 !important;
+  color: #1e293b !important;
+  margin-bottom: 20px !important;
+  padding-bottom: 12px !important;
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+
+/* ============================================
+   TABS
+   ============================================ */
+.tabs {
+  border-bottom: 2px solid #e2e8f0 !important;
+  margin-bottom: 24px !important;
+}
+
+.tabs__tab {
+  padding: 12px 20px !important;
+  font-weight: 500 !important;
+  color: #64748b !important;
+  border-bottom: 2px solid transparent !important;
+  margin-bottom: -2px !important;
+  transition: all 0.2s ease !important;
+}
+
+.tabs__tab:hover {
+  color: #1e293b !important;
+}
+
+.tabs__tab--active {
+  color: #f59e0b !important;
+  border-bottom-color: #f59e0b !important;
+}
+
+/* ============================================
+   UPLOAD / MEDIA
+   ============================================ */
+.upload {
+  border: 2px dashed #e2e8f0 !important;
+  border-radius: 8px !important;
+  background: #f8fafc !important;
+  transition: all 0.2s ease !important;
+}
+
+.upload:hover {
+  border-color: #f59e0b !important;
+  background: #fffbeb !important;
+}
+
+.thumbnail {
+  border-radius: 6px !important;
+  overflow: hidden !important;
+}
+
+/* ============================================
+   RICH TEXT EDITOR
+   ============================================ */
+.rich-text {
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+}
+
+.rich-text__toolbar {
+  background: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+/* ============================================
+   POPUP / MODAL
+   ============================================ */
+.popup-button-list {
+  border-radius: 8px !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15) !important;
+}
+
+.popup-button-list__item {
+  padding: 10px 16px !important;
+}
+
+.popup-button-list__item:hover {
+  background: #f8fafc !important;
+}
+
+/* ============================================
+   TOAST / NOTIFICATIONS
+   ============================================ */
+.toast {
+  border-radius: 8px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+}
+
+.toast--success {
+  background: #f0fdf4 !important;
+  border-left: 4px solid #22c55e !important;
+}
+
+.toast--error {
+  background: #fef2f2 !important;
+  border-left: 4px solid #ef4444 !important;
+}
+
+.toast--warning {
+  background: #fefce8 !important;
+  border-left: 4px solid #eab308 !important;
+}
+
+/* ============================================
+   SCROLLBAR
+   ============================================ */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ============================================
+   RESPONSIVE ADJUSTMENTS
+   ============================================ */
+@media (max-width: 1024px) {
+  .field-type {
+    margin-bottom: 20px !important;
+  }
+  
+  .card__content {
+    padding: 16px !important;
+  }
+  
+  .group-field {
+    padding: 16px !important;
+  }
+}

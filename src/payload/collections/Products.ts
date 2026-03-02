@@ -36,22 +36,7 @@ export const Products: CollectionConfig = {
     ],
   },
   fields: [
-    // Basic Information
-    {
-      name: 'name',
-      type: 'text',
-      required: true,
-      admin: {
-        description: 'Full product name',
-      },
-    },
-    {
-      name: 'shortName',
-      type: 'text',
-      admin: {
-        description: 'Short name for listings (optional)',
-      },
-    },
+    // Sidebar fields
     {
       name: 'slug',
       type: 'text',
@@ -69,10 +54,7 @@ export const Products: CollectionConfig = {
                 .toLowerCase()
                 .replace(/[^a-z0-9]+/g, '-')
                 .replace(/(^-|-$)/g, '')
-              // Add SKU snippet for uniqueness
-              const skuPart = data.sku
-                ? `-${data.sku.toLowerCase().slice(-4)}`
-                : ''
+              const skuPart = data.sku ? `-${data.sku.toLowerCase().slice(-4)}` : ''
               return `${baseSlug}${skuPart}`
             }
             return value
@@ -104,121 +86,6 @@ export const Products: CollectionConfig = {
         position: 'sidebar',
       },
     },
-
-    // Categories & Brand
-    {
-      name: 'primaryCategory',
-      type: 'relationship',
-      relationTo: 'categories',
-      required: true,
-      admin: {
-        description: 'Main category (used in URL)',
-      },
-    },
-    {
-      name: 'categories',
-      type: 'relationship',
-      relationTo: 'categories',
-      hasMany: true,
-      admin: {
-        description: 'Additional categories',
-      },
-    },
-    {
-      name: 'brand',
-      type: 'relationship',
-      relationTo: 'brands',
-      required: true,
-    },
-
-    // Descriptions
-    {
-      name: 'shortDescription',
-      type: 'textarea',
-      required: true,
-      admin: {
-        description: 'Brief description (50+ words, used for meta description)',
-      },
-    },
-    {
-      name: 'fullDescription',
-      type: 'richText',
-      required: true,
-      admin: {
-        description: 'Full product description (300+ words for SEO)',
-      },
-    },
-
-    // Specifications
-    {
-      name: 'specifications',
-      type: 'array',
-      admin: {
-        description: 'Technical specifications',
-      },
-      fields: [
-        {
-          name: 'label',
-          type: 'text',
-          required: true,
-          admin: {
-            width: '33%',
-          },
-        },
-        {
-          name: 'value',
-          type: 'text',
-          required: true,
-          admin: {
-            width: '33%',
-          },
-        },
-        {
-          name: 'unit',
-          type: 'text',
-          admin: {
-            width: '33%',
-            description: 'e.g., kg, mm, pcs',
-          },
-        },
-      ],
-    },
-
-    // Images
-    {
-      name: 'externalImageUrl',
-      type: 'text',
-      admin: {
-        description: 'External image URL (e.g., from supplier CDN)',
-      },
-    },
-    {
-      name: 'primaryImage',
-      type: 'upload',
-      relationTo: 'media',
-      admin: {
-        description: 'Main product image (overrides external URL)',
-      },
-    },
-    {
-      name: 'images',
-      type: 'upload',
-      relationTo: 'media',
-      hasMany: true,
-      admin: {
-        description: 'Additional product images',
-      },
-    },
-    {
-      name: 'datasheet',
-      type: 'upload',
-      relationTo: 'media',
-      admin: {
-        description: 'PDF datasheet/specification document',
-      },
-    },
-
-    // Purchase Mode: controls whether product can be bought online, RFQ only, or both
     {
       name: 'purchaseMode',
       type: 'select',
@@ -231,232 +98,444 @@ export const Products: CollectionConfig = {
       ],
       admin: {
         position: 'sidebar',
-        description: 'How customers can purchase this product',
+        description: 'How customers can purchase',
       },
     },
 
-    // Pricing
+    // TABS
     {
-      name: 'pricing',
-      type: 'group',
-      fields: [
+      type: 'tabs',
+      tabs: [
+        // ==================== Tab 1: Basic Info ====================
         {
-          name: 'basePrice',
-          type: 'number',
-          admin: {
-            description: 'Standard unit price (leave empty for RFQ-only)',
-          },
-        },
-        {
-          name: 'priceUnit',
-          type: 'text',
-          admin: {
-            description: 'e.g., per piece, per box, per 100',
-          },
-        },
-        {
-          name: 'currency',
-          type: 'select',
-          defaultValue: 'USD',
-          options: [
-            { label: 'USD', value: 'USD' },
-            { label: 'CAD', value: 'CAD' },
-          ],
-        },
-        {
-          name: 'tieredPricing',
-          type: 'array',
-          admin: {
-            description: 'Volume discount tiers',
-          },
+          label: '基本信息',
+          description: 'Product identity and descriptions',
           fields: [
             {
-              name: 'minQty',
-              type: 'number',
+              name: 'name',
+              type: 'text',
               required: true,
-              admin: { description: 'Minimum quantity', width: '33%' },
+              admin: {
+                description: 'Full product name',
+              },
             },
             {
-              name: 'maxQty',
-              type: 'number',
-              admin: { description: 'Maximum quantity (leave empty for no limit)', width: '33%' },
+              name: 'shortName',
+              type: 'text',
+              admin: {
+                description: 'Short name for listings (optional)',
+              },
             },
             {
-              name: 'unitPrice',
-              type: 'number',
+              type: 'row',
+              fields: [
+                {
+                  name: 'primaryCategory',
+                  type: 'relationship',
+                  relationTo: 'categories',
+                  required: true,
+                  admin: {
+                    width: '50%',
+                    description: 'Main category (used in URL)',
+                  },
+                },
+                {
+                  name: 'brand',
+                  type: 'relationship',
+                  relationTo: 'brands',
+                  required: true,
+                  admin: {
+                    width: '50%',
+                  },
+                },
+              ],
+            },
+            {
+              name: 'categories',
+              type: 'relationship',
+              relationTo: 'categories',
+              hasMany: true,
+              admin: {
+                description: 'Additional categories',
+              },
+            },
+            {
+              name: 'shortDescription',
+              type: 'textarea',
               required: true,
-              admin: { description: 'Price per unit at this tier', width: '33%' },
+              admin: {
+                description: 'Brief description (50+ words, used for meta description)',
+              },
+            },
+            {
+              name: 'industries',
+              type: 'select',
+              hasMany: true,
+              options: [
+                { label: 'Manufacturing', value: 'manufacturing' },
+                { label: 'Construction', value: 'construction' },
+                { label: 'Automotive', value: 'automotive' },
+                { label: 'Healthcare', value: 'healthcare' },
+                { label: 'Food & Beverage', value: 'food-beverage' },
+                { label: 'Warehouse & Logistics', value: 'warehouse' },
+                { label: 'Oil & Gas', value: 'oil-gas' },
+                { label: 'Mining', value: 'mining' },
+              ],
             },
           ],
         },
-        {
-          name: 'compareAtPrice',
-          type: 'number',
-          admin: {
-            description: 'Original price before discount (strikethrough display)',
-          },
-        },
-      ],
-    },
 
-    // Availability
-    {
-      name: 'availability',
-      type: 'select',
-      required: true,
-      defaultValue: 'contact',
-      options: [
-        { label: 'In Stock', value: 'in-stock' },
-        { label: 'Made to Order', value: 'made-to-order' },
-        { label: 'Contact for Availability', value: 'contact' },
-      ],
-    },
-    {
-      name: 'minOrderQuantity',
-      type: 'number',
-      admin: {
-        description: 'Minimum order quantity',
-      },
-    },
-    {
-      name: 'packageQty',
-      type: 'number',
-      admin: {
-        description: 'Number of units per package (e.g., 12 gloves per box)',
-      },
-    },
-    {
-      name: 'packageUnit',
-      type: 'text',
-      admin: {
-        description: 'Package unit label (e.g., box, case, pack, roll)',
-      },
-    },
-    {
-      name: 'leadTime',
-      type: 'text',
-      admin: {
-        description: 'e.g., 2-3 weeks, Ships in 1 day',
-      },
-    },
+        // ==================== Tab 2: Pricing & Inventory ====================
+        {
+          label: '定价库存',
+          description: 'Pricing tiers and availability',
+          fields: [
+            {
+              name: 'pricing',
+              type: 'group',
+              fields: [
+                {
+                  type: 'row',
+                  fields: [
+                    {
+                      name: 'basePrice',
+                      type: 'number',
+                      admin: {
+                        width: '33%',
+                        description: 'Standard unit price (leave empty for RFQ-only)',
+                      },
+                    },
+                    {
+                      name: 'compareAtPrice',
+                      type: 'number',
+                      admin: {
+                        width: '33%',
+                        description: 'Original price (strikethrough)',
+                      },
+                    },
+                    {
+                      name: 'currency',
+                      type: 'select',
+                      defaultValue: 'USD',
+                      options: [
+                        { label: 'USD', value: 'USD' },
+                        { label: 'CAD', value: 'CAD' },
+                      ],
+                      admin: {
+                        width: '33%',
+                      },
+                    },
+                  ],
+                },
+                {
+                  name: 'priceUnit',
+                  type: 'text',
+                  admin: {
+                    description: 'e.g., per piece, per box, per 100',
+                  },
+                },
+                {
+                  name: 'tieredPricing',
+                  type: 'array',
+                  admin: {
+                    description: 'Volume discount tiers (auto-generated if empty)',
+                  },
+                  fields: [
+                    {
+                      name: 'minQty',
+                      type: 'number',
+                      required: true,
+                      admin: { description: 'Min qty', width: '33%' },
+                    },
+                    {
+                      name: 'maxQty',
+                      type: 'number',
+                      admin: { description: 'Max qty', width: '33%' },
+                    },
+                    {
+                      name: 'unitPrice',
+                      type: 'number',
+                      required: true,
+                      admin: { description: 'Unit price', width: '33%' },
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              type: 'row',
+              fields: [
+                {
+                  name: 'availability',
+                  type: 'select',
+                  required: true,
+                  defaultValue: 'contact',
+                  options: [
+                    { label: 'In Stock', value: 'in-stock' },
+                    { label: 'Made to Order', value: 'made-to-order' },
+                    { label: 'Contact for Availability', value: 'contact' },
+                  ],
+                  admin: { width: '50%' },
+                },
+                {
+                  name: 'leadTime',
+                  type: 'text',
+                  admin: {
+                    width: '50%',
+                    description: 'e.g., 2-3 weeks, Ships in 1 day',
+                  },
+                },
+              ],
+            },
+            {
+              type: 'row',
+              fields: [
+                {
+                  name: 'minOrderQuantity',
+                  type: 'number',
+                  admin: {
+                    width: '33%',
+                    description: 'Minimum order qty',
+                  },
+                },
+                {
+                  name: 'packageQty',
+                  type: 'number',
+                  admin: {
+                    width: '33%',
+                    description: 'Units per package',
+                  },
+                },
+                {
+                  name: 'packageUnit',
+                  type: 'text',
+                  admin: {
+                    width: '33%',
+                    description: 'e.g., box, case, roll',
+                  },
+                },
+              ],
+            },
+            {
+              name: 'shippingInfo',
+              type: 'group',
+              admin: { description: 'Shipping weight and processing' },
+              fields: [
+                {
+                  type: 'row',
+                  fields: [
+                    {
+                      name: 'weight',
+                      type: 'number',
+                      min: 0,
+                      admin: { width: '50%', description: 'Weight in kg' },
+                    },
+                    {
+                      name: 'processingTime',
+                      type: 'number',
+                      min: 0,
+                      defaultValue: 3,
+                      admin: { width: '50%', description: 'Days to ship' },
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
 
-    // Shipping
-    {
-      name: 'shippingInfo',
-      type: 'group',
-      admin: { description: 'Shipping weight and processing time' },
-      fields: [
+        // ==================== Tab 3: Media ====================
         {
-          name: 'weight',
-          type: 'number',
-          min: 0,
-          admin: { description: 'Actual product weight in kg (used for shipping calculation)' },
+          label: '媒体资源',
+          description: 'Images and documents',
+          fields: [
+            {
+              name: 'externalImageUrl',
+              type: 'text',
+              admin: {
+                description: 'External image URL (e.g., from supplier CDN)',
+              },
+            },
+            {
+              name: 'additionalImageUrls',
+              type: 'text',
+              hasMany: true,
+              admin: {
+                description: 'Additional external image URLs',
+              },
+            },
+            {
+              name: 'primaryImage',
+              type: 'upload',
+              relationTo: 'media',
+              admin: {
+                description: 'Main product image (overrides external URL)',
+              },
+            },
+            {
+              name: 'images',
+              type: 'upload',
+              relationTo: 'media',
+              hasMany: true,
+              admin: {
+                description: 'Additional product images',
+              },
+            },
+            {
+              name: 'datasheet',
+              type: 'upload',
+              relationTo: 'media',
+              admin: {
+                description: 'PDF datasheet/specification document',
+              },
+            },
+          ],
         },
-        {
-          name: 'processingTime',
-          type: 'number',
-          min: 0,
-          defaultValue: 3,
-          admin: { description: 'Days needed to prepare for shipment (default: 3)' },
-        },
-      ],
-    },
 
-    // Facets for filtering
-    {
-      name: 'facets',
-      type: 'group',
-      admin: {
-        description: 'Filterable attributes',
-      },
-      fields: [
+        // ==================== Tab 4: Specifications ====================
         {
-          name: 'material',
-          type: 'text',
-          hasMany: true,
-          admin: {
-            description: 'e.g., Nitrile, Leather, Cotton',
-          },
+          label: '规格参数',
+          description: 'Technical specifications and filters',
+          fields: [
+            {
+              name: 'specifications',
+              type: 'array',
+              admin: {
+                description: 'Technical specifications',
+              },
+              fields: [
+                {
+                  type: 'row',
+                  fields: [
+                    {
+                      name: 'label',
+                      type: 'text',
+                      required: true,
+                      admin: { width: '40%' },
+                    },
+                    {
+                      name: 'value',
+                      type: 'text',
+                      required: true,
+                      admin: { width: '40%' },
+                    },
+                    {
+                      name: 'unit',
+                      type: 'text',
+                      admin: { width: '20%', description: 'e.g., kg, mm' },
+                    },
+                  ],
+                },
+              ],
+            },
+            {
+              name: 'facets',
+              type: 'group',
+              admin: {
+                description: 'Filterable attributes',
+              },
+              fields: [
+                {
+                  type: 'row',
+                  fields: [
+                    {
+                      name: 'material',
+                      type: 'text',
+                      hasMany: true,
+                      admin: { width: '50%', description: 'e.g., Nitrile, Leather' },
+                    },
+                    {
+                      name: 'size',
+                      type: 'text',
+                      hasMany: true,
+                      admin: { width: '50%', description: 'e.g., S, M, L, XL' },
+                    },
+                  ],
+                },
+                {
+                  type: 'row',
+                  fields: [
+                    {
+                      name: 'color',
+                      type: 'text',
+                      hasMany: true,
+                      admin: { width: '50%', description: 'e.g., Blue, Black' },
+                    },
+                    {
+                      name: 'certification',
+                      type: 'text',
+                      hasMany: true,
+                      admin: { width: '50%', description: 'e.g., ANSI, CE, ISO' },
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
         },
-        {
-          name: 'size',
-          type: 'text',
-          hasMany: true,
-          admin: {
-            description: 'e.g., S, M, L, XL',
-          },
-        },
-        {
-          name: 'color',
-          type: 'text',
-          hasMany: true,
-          admin: {
-            description: 'e.g., Blue, Black, White',
-          },
-        },
-        {
-          name: 'certification',
-          type: 'text',
-          hasMany: true,
-          admin: {
-            description: 'e.g., ANSI, CE, ISO 9001',
-          },
-        },
-      ],
-    },
 
-    // Related Products
-    {
-      name: 'relatedProducts',
-      type: 'relationship',
-      relationTo: 'products',
-      hasMany: true,
-      admin: {
-        description: 'Related products for cross-selling',
-      },
-    },
-
-    // Industries
-    {
-      name: 'industries',
-      type: 'select',
-      hasMany: true,
-      options: [
-        { label: 'Manufacturing', value: 'manufacturing' },
-        { label: 'Construction', value: 'construction' },
-        { label: 'Automotive', value: 'automotive' },
-        { label: 'Healthcare', value: 'healthcare' },
-        { label: 'Food & Beverage', value: 'food-beverage' },
-        { label: 'Warehouse & Logistics', value: 'warehouse' },
-        { label: 'Oil & Gas', value: 'oil-gas' },
-        { label: 'Mining', value: 'mining' },
-      ],
-    },
-
-    // SEO
-    {
-      name: 'seo',
-      type: 'group',
-      admin: {
-        description: 'SEO overrides',
-      },
-      fields: [
+        // ==================== Tab 5: SEO & Content ====================
         {
-          name: 'metaTitle',
-          type: 'text',
-          maxLength: 60,
-        },
-        {
-          name: 'metaDescription',
-          type: 'textarea',
-          maxLength: 160,
-        },
-        {
-          name: 'focusKeyword',
-          type: 'text',
-          admin: {
-            description: 'Primary keyword for this product',
-          },
+          label: 'SEO内容',
+          description: 'Full description and SEO settings',
+          fields: [
+            {
+              name: 'fullDescription',
+              type: 'richText',
+              required: true,
+              admin: {
+                description: 'Full product description (300+ words for SEO)',
+              },
+            },
+            {
+              name: 'seo',
+              type: 'group',
+              admin: {
+                description: 'SEO overrides',
+              },
+              fields: [
+                {
+                  name: 'metaTitle',
+                  type: 'text',
+                  maxLength: 60,
+                  admin: {
+                    description: 'Custom meta title (auto-generated if empty)',
+                  },
+                },
+                {
+                  name: 'metaDescription',
+                  type: 'textarea',
+                  maxLength: 160,
+                  admin: {
+                    description: 'Custom meta description',
+                  },
+                },
+                {
+                  name: 'focusKeyword',
+                  type: 'text',
+                  admin: {
+                    description: 'Primary keyword for this product',
+                  },
+                },
+              ],
+            },
+            {
+              name: 'relatedProducts',
+              type: 'relationship',
+              relationTo: 'products',
+              hasMany: true,
+              admin: {
+                description: 'Related products for cross-selling',
+              },
+            },
+            {
+              name: 'sourceUrl',
+              type: 'text',
+              admin: {
+                description: 'Original product source URL (for tracking)',
+              },
+            },
+          ],
         },
       ],
     },

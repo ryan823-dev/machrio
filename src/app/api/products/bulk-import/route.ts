@@ -42,6 +42,7 @@ interface ProductRowV2 {
   'Spec 9 Value'?: string
   'Meta Title'?: string
   'Meta Description'?: string
+  'Source URL'?: string
   // Legacy fields for backward compatibility
   name?: string
   sku?: string
@@ -324,6 +325,11 @@ export async function POST(req: NextRequest) {
             title: row['Meta Title'] || `${name} | Machrio`,
             description: row['Meta Description'] || shortDescription.substring(0, 160),
           }
+        }
+
+        // Add source URL (for tracking original product source)
+        if (row['Source URL']) {
+          productData.sourceUrl = row['Source URL']
         }
 
         // Add fullDescription as Lexical format if provided

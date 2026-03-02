@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import * as XLSX from 'xlsx'
 
-// Template headers matching Machrio_Import_Template.xlsx (37 columns)
+// Template headers matching Machrio_Import_Template.xlsx (38 columns)
 const HEADERS = [
   { key: 'SKU', desc: 'Unique product ID' },
   { key: 'Name', desc: 'Product title, max 120 chars' },
@@ -40,6 +40,7 @@ const HEADERS = [
   { key: 'Spec 9 Value', desc: 'Specification attribute value' },
   { key: 'Meta Title', desc: 'SEO title, max 70 chars + | Machrio' },
   { key: 'Meta Description', desc: 'SEO description, max 160 chars' },
+  { key: 'Source URL', desc: 'Original ZKH product URL' },
 ]
 
 // Sample product data
@@ -81,6 +82,7 @@ const SAMPLE_PRODUCT: Record<string, string> = {
   'Spec 9 Value': '',
   'Meta Title': 'Cut Resistant Gloves, ANSI A4 / EN 388:2016, Size 9 | Machrio',
   'Meta Description': 'Buy Safety Gloves at competitive prices. ANSI A4 rated cut resistant gloves with nitrile coating. Free quotes available. Shop industrial safety supplies at Machrio.com',
+  'Source URL': 'https://www.zkh.com/item/HP4853.html',
 }
 
 export async function GET() {
