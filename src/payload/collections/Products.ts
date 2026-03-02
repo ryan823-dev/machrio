@@ -9,7 +9,7 @@ export const Products: CollectionConfig = {
   admin: {
     useAsTitle: 'name',
     group: '产品目录',
-    defaultColumns: ['name', 'sku', 'primaryCategory', 'brand', 'status'],
+    defaultColumns: ['name', 'sku', 'primaryCategory', 'status'],
     components: {
       beforeListTable: ['/src/components/admin/ProductListHeader#ProductListHeader'],
     },
@@ -143,9 +143,9 @@ export const Products: CollectionConfig = {
                   name: 'brand',
                   type: 'relationship',
                   relationTo: 'brands',
-                  required: true,
                   admin: {
                     width: '50%',
+                    description: 'Product brand (optional)',
                   },
                 },
               ],
