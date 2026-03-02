@@ -37,12 +37,13 @@ export function FAQSchema({ faqs }: FAQSchemaProps) {
 
 /**
  * Visual FAQ Section component for displaying FAQs on page
+ * Uses Schema.org microdata attributes for AI engine and search crawler recognition
  */
 export function FAQSection({ faqs, title = 'Frequently Asked Questions' }: FAQSchemaProps & { title?: string }) {
   if (faqs.length === 0) return null
 
   return (
-    <section className="mt-10">
+    <section className="mt-10" itemScope itemType="https://schema.org/FAQPage">
       <h2 className="text-lg font-bold text-secondary-900">{title}</h2>
       <div className="mt-4 space-y-4">
         {faqs.map((faq, index) => (
@@ -50,9 +51,12 @@ export function FAQSection({ faqs, title = 'Frequently Asked Questions' }: FAQSc
             key={index}
             className="group rounded-lg border border-secondary-200 bg-white"
             open={index === 0}
+            itemScope
+            itemProp="mainEntity"
+            itemType="https://schema.org/Question"
           >
             <summary className="flex cursor-pointer items-center justify-between px-4 py-3 text-sm font-medium text-secondary-800 hover:bg-secondary-50">
-              <span>{faq.question}</span>
+              <span itemProp="name">{faq.question}</span>
               <svg
                 className="h-4 w-4 flex-shrink-0 text-secondary-400 transition-transform group-open:rotate-180"
                 fill="none"
@@ -62,8 +66,13 @@ export function FAQSection({ faqs, title = 'Frequently Asked Questions' }: FAQSc
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </summary>
-            <div className="border-t border-secondary-100 px-4 py-3 text-sm text-secondary-600">
-              {faq.answer}
+            <div
+              className="border-t border-secondary-100 px-4 py-3 text-sm text-secondary-600"
+              itemScope
+              itemProp="acceptedAnswer"
+              itemType="https://schema.org/Answer"
+            >
+              <span itemProp="text">{faq.answer}</span>
             </div>
           </details>
         ))}
