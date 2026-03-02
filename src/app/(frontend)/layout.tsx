@@ -67,11 +67,27 @@ const organizationSchema = {
   logo: `${SITE_URL}/logo.png`,
   description:
     'B2B industrial e-commerce platform for MRO supplies — safety, adhesives, power transmission, material handling, cleaning, packaging, lighting, and tool storage for manufacturing, construction, automotive, healthcare, food & beverage, and warehouse operations.',
+  slogan: 'Your trusted source for tools, parts, and industrial essentials',
+  foundingDate: '2024',
+  parentOrganization: {
+    '@type': 'Organization',
+    name: 'VERTAX LIMITED',
+    address: {
+      '@type': 'PostalAddress',
+      addressLocality: 'Hong Kong',
+      addressCountry: 'HK',
+    },
+  },
+  sameAs: [
+    'https://www.linkedin.com/company/machrio',
+    'https://www.facebook.com/machrio',
+  ],
   contactPoint: [
     {
       '@type': 'ContactPoint',
       contactType: 'sales',
       email: 'sales@machrio.com',
+      telephone: '+1-579-300-1335',
       availableLanguage: ['English', 'Chinese'],
     },
     {

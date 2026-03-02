@@ -24,6 +24,7 @@ const guides = [
   { title: 'Returns & Refunds', description: '30-day return policy', href: '/return-refund', icon: '↩️' },
   { title: 'Customs & Duties', description: 'DDP shipping & import duties', href: '/clearance-duties', icon: '🌍' },
   { title: 'FAQ', description: 'Common questions answered', href: '/faq', icon: '❓' },
+  { title: 'Industrial Glossary', description: 'MRO terms & definitions', href: '/glossary', icon: '📖' },
 ]
 
 // ---------------------------------------------------------------------------

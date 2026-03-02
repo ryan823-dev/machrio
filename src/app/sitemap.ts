@@ -38,6 +38,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     },
     {
+      url: `${baseUrl}/glossary`,
+      lastModified: new Date(),
+      changeFrequency: 'monthly',
+      priority: 0.6,
+    },
+    {
       url: `${baseUrl}/about`,
       lastModified: new Date(),
       changeFrequency: 'monthly',
@@ -140,6 +146,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   let categoryPages: MetadataRoute.Sitemap = []
   let productPages: MetadataRoute.Sitemap = []
   let articlePages: MetadataRoute.Sitemap = []
+  let glossaryPages: MetadataRoute.Sitemap = []
 
   try {
     const payload = await getPayload({ config })
@@ -221,6 +228,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.6,
     }))
 
+    // Fetch all published glossary terms
+    const glossaryTerms = await payload.find({
+      collection: 'glossary-terms',
+      limit: 500,
+      where: { status: { equals: 'published' } },
+    })
+    glossaryPages = glossaryTerms.docs.map((term) => ({
+      url: `${baseUrl}/glossary/${term.slug}`,
+      lastModified: new Date(term.updatedAt),
+      changeFrequency: 'monthly' as const,
+      priority: 0.5,
+    }))
+
   } catch (error) {
     // Log error for debugging but continue with static pages
     console.error('Sitemap generation error:', error)
@@ -231,5 +251,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...categoryPages,
     ...productPages,
     ...articlePages,
+    ...glossaryPages,
   ]
 }

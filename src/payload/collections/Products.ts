@@ -17,6 +17,24 @@ export const Products: CollectionConfig = {
   versions: {
     drafts: true,
   },
+  hooks: {
+    beforeChange: [
+      ({ data }) => {
+        const basePrice = data?.pricing?.basePrice
+        if (basePrice && basePrice > 0) {
+          const existing = data.pricing?.tieredPricing
+          if (!existing || !Array.isArray(existing) || existing.length === 0) {
+            data.pricing.tieredPricing = [
+              { minQty: 1, maxQty: 9, unitPrice: Math.round(basePrice * 100) / 100 },
+              { minQty: 10, maxQty: 49, unitPrice: Math.round(basePrice * 0.95 * 100) / 100 },
+              { minQty: 50, unitPrice: Math.round(basePrice * 0.90 * 100) / 100 },
+            ]
+          }
+        }
+        return data
+      },
+    ],
+  },
   fields: [
     // Basic Information
     {

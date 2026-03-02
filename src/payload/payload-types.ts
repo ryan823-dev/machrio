@@ -88,6 +88,7 @@ export interface Config {
     pages: Page;
     industries: Industry;
     redirects: Redirect;
+    'glossary-terms': GlossaryTerm;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -116,6 +117,7 @@ export interface Config {
     pages: PagesSelect<false> | PagesSelect<true>;
     industries: IndustriesSelect<false> | IndustriesSelect<true>;
     redirects: RedirectsSelect<false> | RedirectsSelect<true>;
+    'glossary-terms': GlossaryTermsSelect<false> | GlossaryTermsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -1517,6 +1519,77 @@ export interface Redirect {
   createdAt: string;
 }
 /**
+ * Industrial glossary terms for SEO — "What is PPE", "What is LOTO", etc.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "glossary-terms".
+ */
+export interface GlossaryTerm {
+  id: string;
+  /**
+   * The term or acronym (e.g. "PPE", "LOTO", "MRO")
+   */
+  term: string;
+  /**
+   * URL slug (auto-generated from term)
+   */
+  slug: string;
+  /**
+   * Full expanded name if the term is an acronym (e.g. "Personal Protective Equipment")
+   */
+  fullName?: string | null;
+  /**
+   * Concise 1-2 sentence definition shown at the top of the page
+   */
+  definition: string;
+  /**
+   * Detailed explanation, examples, standards, and best practices
+   */
+  content?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  /**
+   * Topic category for grouping and filtering
+   */
+  category: 'safety' | 'maintenance' | 'materials' | 'procurement' | 'tools' | 'standards';
+  /**
+   * Related glossary terms for internal linking
+   */
+  relatedTerms?: (string | GlossaryTerm)[] | null;
+  /**
+   * Related product categories
+   */
+  relatedCategories?: (string | Category)[] | null;
+  status: 'draft' | 'published';
+  /**
+   * SEO overrides
+   */
+  seo?: {
+    /**
+     * Custom meta title. Defaults to "What is [Term]? | Machrio"
+     */
+    metaTitle?: string | null;
+    /**
+     * Custom meta description. Defaults to definition.
+     */
+    metaDescription?: string | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -1623,6 +1696,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'redirects';
         value: string | Redirect;
+      } | null)
+    | ({
+        relationTo: 'glossary-terms';
+        value: string | GlossaryTerm;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -2293,6 +2370,29 @@ export interface RedirectsSelect<T extends boolean = true> {
   type?: T;
   isActive?: T;
   notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "glossary-terms_select".
+ */
+export interface GlossaryTermsSelect<T extends boolean = true> {
+  term?: T;
+  slug?: T;
+  fullName?: T;
+  definition?: T;
+  content?: T;
+  category?: T;
+  relatedTerms?: T;
+  relatedCategories?: T;
+  status?: T;
+  seo?:
+    | T
+    | {
+        metaTitle?: T;
+        metaDescription?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }

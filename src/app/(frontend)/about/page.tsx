@@ -1,5 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { StructuredData } from '@/components/shared/StructuredData'
+
+const SITE_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://machrio.com'
 
 export const metadata: Metadata = {
   title: 'About Us | Machrio',
@@ -11,9 +14,78 @@ export const metadata: Metadata = {
   },
 }
 
+const aboutPageSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'AboutPage',
+  name: 'About Machrio',
+  description: 'Machrio is a B2B industrial e-commerce platform operated by VERTAX LIMITED, offering competitive pricing, DDP global shipping, and trusted quality for MRO supplies.',
+  url: `${SITE_URL}/about/`,
+  mainEntity: {
+    '@type': 'Organization',
+    name: 'Machrio',
+    url: SITE_URL,
+    logo: `${SITE_URL}/logo.png`,
+    foundingDate: '2024',
+    slogan: 'Your trusted source for tools, parts, and industrial essentials',
+    description: 'B2B industrial e-commerce platform for MRO supplies — safety, adhesives, power transmission, material handling, cleaning, packaging, lighting, and tool storage.',
+    parentOrganization: {
+      '@type': 'Organization',
+      name: 'VERTAX LIMITED',
+      address: {
+        '@type': 'PostalAddress',
+        addressLocality: 'Hong Kong',
+        addressCountry: 'HK',
+      },
+    },
+    address: [
+      {
+        '@type': 'PostalAddress',
+        addressLocality: 'Hong Kong',
+        addressCountry: 'HK',
+        description: 'Registered office',
+      },
+      {
+        '@type': 'PostalAddress',
+        addressLocality: 'Shanghai',
+        addressCountry: 'CN',
+        description: 'Operations center and warehouse',
+      },
+    ],
+    contactPoint: {
+      '@type': 'ContactPoint',
+      contactType: 'sales',
+      email: 'sales@machrio.com',
+      telephone: '+1-579-300-1335',
+      availableLanguage: ['English', 'Chinese'],
+    },
+    areaServed: 'Worldwide',
+    knowsAbout: [
+      'MRO supplies',
+      'industrial safety equipment',
+      'PPE',
+      'adhesives and sealants',
+      'power transmission components',
+      'material handling equipment',
+      'industrial cleaning products',
+      'packaging and shipping supplies',
+      'B2B procurement',
+    ],
+    hasCredential: [
+      { '@type': 'EducationalOccupationalCredential', credentialCategory: 'ANSI compliance' },
+      { '@type': 'EducationalOccupationalCredential', credentialCategory: 'OSHA standards' },
+      { '@type': 'EducationalOccupationalCredential', credentialCategory: 'RoHS/REACH compliance' },
+    ],
+    sameAs: [
+      'https://www.linkedin.com/company/machrio',
+      'https://www.facebook.com/machrio',
+    ],
+  },
+}
+
 export default function AboutUsPage() {
   return (
     <div className="container-main pb-16 pt-8">
+      <StructuredData data={aboutPageSchema} />
       <h1 className="text-3xl font-bold text-secondary-900">About Machrio</h1>
       <p className="mt-4 max-w-3xl text-sm leading-relaxed text-secondary-600">
         Industrial procurement should be simple, transparent, and reliable. That&apos;s what we&apos;re building at Machrio.

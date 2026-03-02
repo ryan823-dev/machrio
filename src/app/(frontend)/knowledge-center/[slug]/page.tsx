@@ -270,13 +270,31 @@ export default async function ArticlePage({
   // Adjacent articles for navigation
   const { prev, next } = await getAdjacentArticles(publishedAt)
 
-  // --- BlogPosting Schema ---
+  // --- BlogPosting Schema (enhanced for E-E-A-T + AEO) ---
+  const plainText = extractPlainText(article.content)
+  const wordCount = plainText.split(/\s+/).filter(Boolean).length
+  const tags = (article.tags as string[] | undefined) || []
+
   const blogPostingSchema = {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
     headline: article.title,
     description: article.excerpt,
-    author: { '@type': 'Person', name: author },
+    articleSection: categoryLabels[category] || category,
+    inLanguage: 'en',
+    wordCount,
+    ...(tags.length > 0 && { keywords: tags.join(', ') }),
+    author: {
+      '@type': 'Person',
+      name: author,
+      url: `${serverUrl}/about`,
+      jobTitle: 'Industrial Supply Specialist',
+      worksFor: {
+        '@type': 'Organization',
+        name: 'Machrio',
+        url: serverUrl,
+      },
+    },
     datePublished: publishedAt,
     dateModified: article.updatedAt as string,
     ...(imageUrl && { image: imageUrl }),
@@ -284,10 +302,19 @@ export default async function ArticlePage({
       '@type': 'Organization',
       name: 'Machrio',
       url: serverUrl,
+      logo: {
+        '@type': 'ImageObject',
+        url: `${serverUrl}/machrio-logo.png`,
+      },
     },
     mainEntityOfPage: {
       '@type': 'WebPage',
       '@id': `${serverUrl}/knowledge-center/${slug}/`,
+    },
+    isPartOf: {
+      '@type': 'WebSite',
+      name: 'Machrio',
+      url: serverUrl,
     },
     speakable: {
       '@type': 'SpeakableSpecification',

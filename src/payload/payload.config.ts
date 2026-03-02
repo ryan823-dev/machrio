@@ -29,6 +29,7 @@ import { Quotes } from './collections/Quotes'
 import { Pages } from './collections/Pages'
 import { Industries } from './collections/Industries'
 import { Redirects } from './collections/Redirects'
+import { GlossaryTerms } from './collections/GlossaryTerms'
 
 import { Homepage } from './globals/Homepage'
 import { SiteSettings } from './globals/SiteSettings'
@@ -84,6 +85,7 @@ export default buildConfig({
     Pages,
     Industries,
     Redirects,
+    GlossaryTerms,
   ],
   globals: [
     Homepage,
