@@ -494,6 +494,198 @@ const articles = [
       metaDescription: 'OSHA fall protection requirements for construction and general industry. Learn about harnesses, lanyards, SRLs, anchors, and clearance calculations.',
     },
   },
+
+  // ── Respirator Types FAQ Article ──
+  {
+    title: 'Are All Types of Respirators the Same? Understanding Respirator Categories',
+    slug: 'are-all-types-of-respirators-the-same',
+    excerpt: 'No, respirators vary significantly by protection type, filter class, and intended hazards. Learn the differences between N95s, half-face, full-face, PAPRs, and supplied-air respirators to choose the right protection.',
+    category: 'buying-guide',
+    tags: ['safety', 'respirators', 'PPE', 'NIOSH', 'respiratory protection'],
+    author: 'Machrio Team',
+    quickAnswer: 'No. Respirators range from disposable N95s for dust, to reusable half/full-face with cartridges, to PAPRs and supplied-air systems. Selection depends on hazard type, required protection factor, and OSHA/NIOSH requirements.',
+    faq: [
+      {
+        question: 'Are all types of respirators the same?',
+        answer: 'No. Respirators differ by protection mechanism (air-purifying vs. atmosphere-supplying), form factor (disposable vs. reusable, half-face vs. full-face), filter type (N/R/P series, organic vapor, acid gas), and assigned protection factor (APF 10 to 10,000+). Choosing the wrong type can result in inadequate protection or OSHA violations.'
+      },
+      {
+        question: 'What is the difference between N95 and P100 respirators?',
+        answer: 'N95 filters 95% of airborne particles and is not oil-resistant. P100 filters 99.97% of particles and is oil-proof. N95 is sufficient for dust, pollen, and most airborne pathogens. P100 is required for oil-based aerosols, lead, asbestos, and environments requiring higher protection factors.'
+      },
+      {
+        question: 'When should I use a full-face respirator instead of a half-face?',
+        answer: 'Use full-face respirators when: (1) eye protection is needed against the same hazard, (2) higher protection factor is required (APF 50 vs APF 10), (3) working with chemicals that irritate eyes, or (4) regulations specify full-face for the contaminant (e.g., certain pesticides, emergency response).'
+      },
+      {
+        question: 'What is a PAPR and when is it needed?',
+        answer: 'A Powered Air-Purifying Respirator (PAPR) uses a battery-powered blower to push filtered air into a hood or facepiece. PAPRs are needed when: higher protection factors are required (APF 25-1000), workers cannot achieve fit with tight-fitting respirators, extended wear is needed, or workers have facial hair that prevents mask seal.'
+      },
+      {
+        question: 'How do I know which respirator OSHA requires for my workplace?',
+        answer: 'OSHA requires employers to: (1) identify respiratory hazards through exposure assessment, (2) select NIOSH-certified respirators with adequate protection factors, (3) implement a written respiratory protection program per 29 CFR 1910.134, (4) conduct fit testing for tight-fitting respirators, and (5) provide training. Consult OSHA permissible exposure limits (PELs) for specific contaminants.'
+      }
+    ],
+    content: richTextDoc([
+      paragraph([text('Respirators are critical personal protective equipment (PPE), but they are definitely not all the same. Selecting the wrong respirator type can leave workers unprotected against serious respiratory hazards. This guide explains the key differences between respirator categories to help you choose the right protection.')]),
+      
+      heading('h2', 'Two Main Classes: Air-Purifying vs. Atmosphere-Supplying'),
+      
+      heading('h3', 'Air-Purifying Respirators (APRs)'),
+      paragraph([text('APRs filter contaminants from the ambient air. They only work when there is sufficient oxygen (at least 19.5%) and contaminant levels are below immediately dangerous to life or health (IDLH) concentrations.')]),
+      bulletList([
+        'Filtering Facepiece Respirators (FFRs): Disposable masks like N95, N99, P100',
+        'Elastomeric Half-Face Respirators: Reusable with replaceable cartridges',
+        'Elastomeric Full-Face Respirators: Higher protection, includes eye protection',
+        'Powered Air-Purifying Respirators (PAPRs): Battery-powered filtered air supply',
+      ]),
+      
+      heading('h3', 'Atmosphere-Supplying Respirators'),
+      paragraph([text('These provide clean air from an independent source. Required for oxygen-deficient environments, IDLH conditions, or unknown contaminant concentrations.')]),
+      bulletList([
+        'Supplied-Air Respirators (SARs): Air line connected to remote source',
+        'Self-Contained Breathing Apparatus (SCBA): Portable air tank, like firefighters use',
+        'Combination units: SAR with escape SCBA bottle',
+      ]),
+      
+      heading('h2', 'NIOSH Filter Classifications'),
+      paragraph([text('NIOSH certifies particulate filters using a letter-number system:')]),
+      
+      heading('h3', 'Letter: Oil Resistance'),
+      bulletList([
+        'N (Not oil-resistant): Use only for non-oil particles',
+        'R (oil-Resistant): Limited oil exposure, single shift',
+        'P (oil-Proof): Extended use in oil-containing atmospheres',
+      ]),
+      
+      heading('h3', 'Number: Filtration Efficiency'),
+      bulletList([
+        '95: Filters at least 95% of airborne particles',
+        '99: Filters at least 99% of airborne particles',
+        '100: Filters at least 99.97% of particles (HEPA equivalent)',
+      ]),
+      paragraph([text('Example: P100 = oil-proof, 99.97% filtration. Required for lead, asbestos, and many toxic dusts.')]),
+      
+      heading('h2', 'Gas and Vapor Cartridges'),
+      paragraph([text('Chemical cartridges are color-coded by hazard type:')]),
+      bulletList([
+        'Black: Organic vapors (solvents, paints)',
+        'White: Acid gases (chlorine, hydrogen chloride)',
+        'Yellow: Organic vapors + acid gases',
+        'Green: Ammonia',
+        'Olive: Multi-gas/vapor',
+        'Orange: Mercury vapor',
+        'Purple: HEPA/P100 particulate',
+        'Magenta: Particulate (N/R/P95, N/R/P99, N/R/P100)',
+      ]),
+      
+      heading('h2', 'Assigned Protection Factors (APF)'),
+      paragraph([text('OSHA assigns protection factors indicating how much the respirator reduces exposure:')]),
+      bulletList([
+        'APF 10: Half-face APRs, disposable N95s — exposure reduced to 1/10',
+        'APF 25: PAPRs with loose-fitting hood',
+        'APF 50: Full-face APRs, PAPRs with tight-fitting facepiece',
+        'APF 1000: SAR with full facepiece, PAPR with helmet/hood',
+        'APF 10,000: SCBA with full facepiece (pressure-demand)',
+      ]),
+      paragraph([text('Select a respirator with an APF that keeps exposure below the occupational exposure limit (OEL).')]),
+      
+      heading('h2', 'Choosing the Right Respirator'),
+      
+      heading('h3', 'Step 1: Identify the Hazard'),
+      bulletList([
+        'What contaminants are present? (particles, gases, vapors, combination)',
+        'What are the exposure levels?',
+        'Is the atmosphere oxygen-deficient or IDLH?',
+      ]),
+      
+      heading('h3', 'Step 2: Determine Required Protection'),
+      bulletList([
+        'Calculate required APF: workplace concentration ÷ OEL',
+        'Select respirator type with adequate APF',
+        'Choose appropriate filter/cartridge for the contaminant',
+      ]),
+      
+      heading('h3', 'Step 3: Consider Practical Factors'),
+      bulletList([
+        'Duration of use — comfort matters for extended wear',
+        'Communication needs — some designs allow easier speech',
+        'Facial hair — PAPRs or loose-fitting designs may be needed',
+        'Glasses — full-face designs need prescription inserts',
+        'Heat stress — PAPRs reduce breathing resistance',
+      ]),
+      
+      heading('h2', 'Common Applications by Respirator Type'),
+      
+      heading('h3', 'N95 Disposable'),
+      bulletList([
+        'Construction dust, drywall sanding',
+        'Healthcare airborne precautions',
+        'Wildfire smoke',
+        'General nuisance dust',
+      ]),
+      
+      heading('h3', 'Half-Face with Cartridges'),
+      bulletList([
+        'Paint spraying (OV cartridges)',
+        'Pesticide application',
+        'Solvent work',
+        'Welding fumes (with P100)',
+      ]),
+      
+      heading('h3', 'Full-Face Respirator'),
+      bulletList([
+        'Asbestos abatement',
+        'Lead paint removal',
+        'Chemical handling with splash hazard',
+        'Silica exposure in construction',
+      ]),
+      
+      heading('h3', 'PAPR'),
+      bulletList([
+        'Healthcare (COVID, TB isolation)',
+        'Pharmaceutical manufacturing',
+        'Workers who cannot fit-test tight-fitting masks',
+        'Extended duration high-hazard work',
+      ]),
+      
+      heading('h3', 'Supplied-Air / SCBA'),
+      bulletList([
+        'Confined space entry',
+        'Emergency response',
+        'Sandblasting operations',
+        'Chemical spill cleanup',
+      ]),
+      
+      heading('h2', 'OSHA Respiratory Protection Requirements'),
+      paragraph([text('When respirators are required, OSHA 29 CFR 1910.134 mandates:')]),
+      bulletList([
+        'Written respiratory protection program',
+        'Medical evaluation before fit testing',
+        'Annual fit testing for tight-fitting respirators',
+        'Training on use, limitations, and maintenance',
+        'Proper storage and maintenance procedures',
+        'Program evaluation and recordkeeping',
+      ]),
+      
+      heading('h2', 'Key Takeaways'),
+      bulletList([
+        'Respirators vary enormously — one type does not fit all hazards',
+        'Match the respirator APF to your calculated exposure',
+        'Air-purifying respirators require adequate oxygen and sub-IDLH levels',
+        'Chemical cartridges are contaminant-specific — check color codes',
+        'Fit testing is mandatory for tight-fitting respirators',
+        'When in doubt, consult NIOSH guidelines or request professional help',
+      ]),
+      
+      heading('h2', 'Next Steps'),
+      paragraph([text('Browse our '), text('Respiratory Protection', 1), text(' category for NIOSH-certified respirators from N95 disposables to full-face and PAPR systems. Need help selecting the right respirator for your workplace hazards? Use our '), text('AI Sourcing Assistant', 1), text(' or '), text('request a quote', 1), text(' with your specific application and exposure data.')]),
+    ]),
+    seo: {
+      metaTitle: 'Are All Respirators the Same? Types & Selection Guide',
+      metaDescription: 'Respirators differ by type (N95, half-face, PAPR, SCBA), filter class, and protection factor. Learn to choose the right respiratory PPE.',
+    },
+  },
 ]
 
 // ---------------------------------------------------------------------------

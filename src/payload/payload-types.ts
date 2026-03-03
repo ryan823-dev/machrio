@@ -464,7 +464,11 @@ export interface Product {
     | null;
   pricing?: {
     /**
-     * Standard unit price (leave empty for RFQ-only)
+     * Cost price (for margin calculation)
+     */
+    costPrice?: number | null;
+    /**
+     * Selling price (leave empty for RFQ-only)
      */
     basePrice?: number | null;
     /**
@@ -625,6 +629,22 @@ export interface Product {
    * Original product source URL (for tracking)
    */
   sourceUrl?: string | null;
+  /**
+   * Frequently Asked Questions (up to 3)
+   */
+  faq?:
+    | {
+        /**
+         * FAQ question
+         */
+        question: string;
+        /**
+         * FAQ answer
+         */
+        answer: string;
+        id?: string | null;
+      }[]
+    | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -1884,6 +1904,7 @@ export interface ProductsSelect<T extends boolean = true> {
   pricing?:
     | T
     | {
+        costPrice?: T;
         basePrice?: T;
         compareAtPrice?: T;
         currency?: T;
@@ -1939,6 +1960,13 @@ export interface ProductsSelect<T extends boolean = true> {
       };
   relatedProducts?: T;
   sourceUrl?: T;
+  faq?:
+    | T
+    | {
+        question?: T;
+        answer?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
