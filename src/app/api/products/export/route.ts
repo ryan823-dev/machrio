@@ -65,20 +65,22 @@ export async function GET() {
         : null
       const primaryImageUrl = (primaryImageObj?.url as string) || (product.externalImageUrl as string) || ''
       
-      // Build row data
+      // Build row data matching v3 template (40 columns)
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const prod = product as any
       const row: Record<string, string | number> = {
         'SKU': product.sku as string || '',
         'Name': product.name as string || '',
+        'Brand': brand?.name as string || '',
         'L1 Category': catPath.l1,
         'L2 Category': catPath.l2,
         'L3 Category': catPath.l3,
         'Short Description': product.shortDescription as string || '',
         'Full Description': '', // Skip richText for now
         'Primary Image URL': primaryImageUrl,
-        'Additional Images': (prod.additionalImageUrls as string[] || []).join(', '),
-        'Price (USD)': pricing?.basePrice as number || '',
+        'Additional Images': (prod.additionalImageUrls as string[] || []).join('|'),
+        'Cost Price (USD)': pricing?.costPrice as number || '',
+        'Selling Price (USD)': pricing?.basePrice as number || '',
         'Min Order Qty': product.minOrderQuantity as number || 1,
         'Package Qty': product.packageQty as number || '',
         'Package Unit': product.packageUnit as string || '',
@@ -86,20 +88,19 @@ export async function GET() {
         'Availability': product.availability as string || '',
         'Status': product.status as string || '',
         'Purchase Mode': product.purchaseMode as string || '',
-        'Brand': brand?.name as string || '',
       }
 
-      // Add specifications (up to 9)
+      // Add specifications/attributes (up to 9) - renamed from Spec to Attribute to match v3 template
       if (specs && Array.isArray(specs)) {
         for (let i = 0; i < 9; i++) {
           const spec = specs[i]
-          row[`Spec ${i + 1} Name`] = spec?.label || ''
-          row[`Spec ${i + 1} Value`] = spec?.value || ''
+          row[`Attribute ${i + 1} Name`] = spec?.label || ''
+          row[`Attribute ${i + 1} Value`] = spec?.value || ''
         }
       } else {
         for (let i = 0; i < 9; i++) {
-          row[`Spec ${i + 1} Name`] = ''
-          row[`Spec ${i + 1} Value`] = ''
+          row[`Attribute ${i + 1} Name`] = ''
+          row[`Attribute ${i + 1} Value`] = ''
         }
       }
 
@@ -110,29 +111,55 @@ export async function GET() {
       return row
     })
 
-    // Create worksheet
-    const worksheet = XLSX.utils.json_to_sheet(exportData)
+    // Define column order to match v3 template (40 columns)
+    const columnOrder = [
+      'SKU', 'Name', 'Brand', 'L1 Category', 'L2 Category', 'L3 Category',
+      'Short Description', 'Full Description', 'Primary Image URL', 'Additional Images',
+      'Cost Price (USD)', 'Selling Price (USD)', 'Min Order Qty', 'Package Qty',
+      'Package Unit', 'Lead Time', 'Availability', 'Status', 'Purchase Mode',
+      'Attribute 1 Name', 'Attribute 1 Value', 'Attribute 2 Name', 'Attribute 2 Value',
+      'Attribute 3 Name', 'Attribute 3 Value', 'Attribute 4 Name', 'Attribute 4 Value',
+      'Attribute 5 Name', 'Attribute 5 Value', 'Attribute 6 Name', 'Attribute 6 Value',
+      'Attribute 7 Name', 'Attribute 7 Value', 'Attribute 8 Name', 'Attribute 8 Value',
+      'Attribute 9 Name', 'Attribute 9 Value', 'Meta Title', 'Meta Description', 'Source URL'
+    ]
 
-    // Set column widths
+    // Create worksheet with explicit column order
+    const worksheet = XLSX.utils.json_to_sheet(exportData, { header: columnOrder })
+
+    // Set column widths for 40 columns
     worksheet['!cols'] = [
       { wch: 15 },  // SKU
       { wch: 60 },  // Name
-      { wch: 20 },  // L1
-      { wch: 25 },  // L2
-      { wch: 25 },  // L3
-      { wch: 50 },  // Short Desc
-      { wch: 50 },  // Full Desc
-      { wch: 40 },  // Primary Image
+      { wch: 20 },  // Brand
+      { wch: 20 },  // L1 Category
+      { wch: 25 },  // L2 Category
+      { wch: 25 },  // L3 Category
+      { wch: 50 },  // Short Description
+      { wch: 50 },  // Full Description
+      { wch: 40 },  // Primary Image URL
       { wch: 40 },  // Additional Images
-      { wch: 12 },  // Price
-      { wch: 12 },  // Min Order
-      { wch: 12 },  // Pkg Qty
-      { wch: 12 },  // Pkg Unit
+      { wch: 15 },  // Cost Price (USD)
+      { wch: 15 },  // Selling Price (USD)
+      { wch: 12 },  // Min Order Qty
+      { wch: 12 },  // Package Qty
+      { wch: 12 },  // Package Unit
       { wch: 15 },  // Lead Time
       { wch: 15 },  // Availability
       { wch: 10 },  // Status
       { wch: 18 },  // Purchase Mode
-      { wch: 20 },  // Brand
+      { wch: 18 }, { wch: 18 },  // Attribute 1
+      { wch: 18 }, { wch: 18 },  // Attribute 2
+      { wch: 18 }, { wch: 18 },  // Attribute 3
+      { wch: 18 }, { wch: 18 },  // Attribute 4
+      { wch: 18 }, { wch: 18 },  // Attribute 5
+      { wch: 18 }, { wch: 18 },  // Attribute 6
+      { wch: 18 }, { wch: 18 },  // Attribute 7
+      { wch: 18 }, { wch: 18 },  // Attribute 8
+      { wch: 18 }, { wch: 18 },  // Attribute 9
+      { wch: 40 },  // Meta Title
+      { wch: 50 },  // Meta Description
+      { wch: 50 },  // Source URL
     ]
 
     // Create workbook
