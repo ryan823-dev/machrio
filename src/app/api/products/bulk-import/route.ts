@@ -3,10 +3,11 @@ import { getPayload } from 'payload'
 import configPromise from '@/payload/payload.config'
 import * as XLSX from 'xlsx'
 
-// New v2 template format with 37 columns
+// v3 template format with 40 columns (added Brand, Cost Price, Selling Price, Attribute 1-9)
 interface ProductRowV2 {
   'SKU': string
   'Name': string
+  'Brand'?: string
   'L1 Category'?: string
   'L2 Category'?: string
   'L3 Category'?: string
@@ -14,6 +15,10 @@ interface ProductRowV2 {
   'Full Description'?: string
   'Primary Image URL'?: string
   'Additional Images'?: string
+  // v2 price columns
+  'Cost Price (USD)'?: string | number
+  'Selling Price (USD)'?: string | number
+  // Legacy price column (backward compatibility)
   'Price (USD)'?: string | number
   'Min Order Qty'?: string | number
   'Package Qty'?: string | number
@@ -22,6 +27,26 @@ interface ProductRowV2 {
   'Availability'?: string
   'Status'?: string
   'Purchase Mode'?: string
+  // v2 attribute columns
+  'Attribute 1 Name'?: string
+  'Attribute 1 Value'?: string
+  'Attribute 2 Name'?: string
+  'Attribute 2 Value'?: string
+  'Attribute 3 Name'?: string
+  'Attribute 3 Value'?: string
+  'Attribute 4 Name'?: string
+  'Attribute 4 Value'?: string
+  'Attribute 5 Name'?: string
+  'Attribute 5 Value'?: string
+  'Attribute 6 Name'?: string
+  'Attribute 6 Value'?: string
+  'Attribute 7 Name'?: string
+  'Attribute 7 Value'?: string
+  'Attribute 8 Name'?: string
+  'Attribute 8 Value'?: string
+  'Attribute 9 Name'?: string
+  'Attribute 9 Value'?: string
+  // Legacy spec columns (backward compatibility)
   'Spec 1 Name'?: string
   'Spec 1 Value'?: string
   'Spec 2 Name'?: string
@@ -98,10 +123,13 @@ function mapPurchaseMode(value?: string): 'both' | 'buy-online' | 'rfq-only' {
 function extractSpecifications(row: ProductRowV2): Array<{ label: string; value: string }> {
   const specs: Array<{ label: string; value: string }> = []
   for (let i = 1; i <= 9; i++) {
-    const nameKey = `Spec ${i} Name` as keyof ProductRowV2
-    const valueKey = `Spec ${i} Value` as keyof ProductRowV2
-    const name = row[nameKey]
-    const value = row[valueKey]
+    // v2 format: Attribute X Name/Value; legacy: Spec X Name/Value
+    const attrNameKey = `Attribute ${i} Name` as keyof ProductRowV2
+    const attrValueKey = `Attribute ${i} Value` as keyof ProductRowV2
+    const specNameKey = `Spec ${i} Name` as keyof ProductRowV2
+    const specValueKey = `Spec ${i} Value` as keyof ProductRowV2
+    const name = row[attrNameKey] || row[specNameKey]
+    const value = row[attrValueKey] || row[specValueKey]
     if (name && value && typeof name === 'string' && typeof value === 'string') {
       specs.push({ label: name.trim(), value: value.trim() })
     }
@@ -270,9 +298,13 @@ export async function POST(req: NextRequest) {
         // Extract specifications from Spec 1-9 columns
         const specifications = extractSpecifications(row)
 
-        // Parse price
-        const priceValue = row['Price (USD)']
+        // Parse price - v2: Selling Price (USD), legacy: Price (USD)
+        const priceValue = row['Selling Price (USD)'] || row['Price (USD)']
         const basePrice = priceValue ? parseFloat(String(priceValue)) : null
+
+        // Parse cost price (v2 only)
+        const costPriceValue = row['Cost Price (USD)']
+        const costPrice = costPriceValue ? parseFloat(String(costPriceValue)) : null
 
         // Parse quantities
         const minOrderQty = row['Min Order Qty'] ? parseInt(String(row['Min Order Qty']), 10) : 1
@@ -311,11 +343,16 @@ export async function POST(req: NextRequest) {
         }
 
         // Add pricing
-        if (basePrice && !isNaN(basePrice)) {
+        if ((basePrice && !isNaN(basePrice)) || (costPrice && !isNaN(costPrice))) {
           productData.pricing = {
-            basePrice,
             currency: 'USD',
             priceUnit: (row['Package Unit'] || 'each').toLowerCase(),
+          }
+          if (basePrice && !isNaN(basePrice)) {
+            productData.pricing.basePrice = basePrice
+          }
+          if (costPrice && !isNaN(costPrice)) {
+            productData.pricing.costPrice = costPrice
           }
         }
 
@@ -357,9 +394,10 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        // Handle brand from specifications or legacy field
-        if (row.brand) {
-          const brandId = brandMap.get(row.brand.toLowerCase())
+        // Handle brand - v3: Brand column; legacy: brand field
+        const brandName = row['Brand'] || row.brand
+        if (brandName) {
+          const brandId = brandMap.get(brandName.toLowerCase())
           if (brandId) {
             productData.brand = brandId
           }

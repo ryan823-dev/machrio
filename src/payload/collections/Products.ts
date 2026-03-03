@@ -198,18 +198,26 @@ export const Products: CollectionConfig = {
                   type: 'row',
                   fields: [
                     {
+                      name: 'costPrice',
+                      type: 'number',
+                      admin: {
+                        width: '25%',
+                        description: 'Cost price (for margin calculation)',
+                      },
+                    },
+                    {
                       name: 'basePrice',
                       type: 'number',
                       admin: {
-                        width: '33%',
-                        description: 'Standard unit price (leave empty for RFQ-only)',
+                        width: '25%',
+                        description: 'Selling price (leave empty for RFQ-only)',
                       },
                     },
                     {
                       name: 'compareAtPrice',
                       type: 'number',
                       admin: {
-                        width: '33%',
+                        width: '25%',
                         description: 'Original price (strikethrough)',
                       },
                     },
@@ -222,7 +230,7 @@ export const Products: CollectionConfig = {
                         { label: 'CAD', value: 'CAD' },
                       ],
                       admin: {
-                        width: '33%',
+                        width: '25%',
                       },
                     },
                   ],
