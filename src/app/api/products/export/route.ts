@@ -53,7 +53,6 @@ export async function GET() {
       const pricing = product.pricing as Record<string, unknown> | undefined
       const seo = product.seo as Record<string, unknown> | undefined
       const specs = product.specifications as Array<{ label: string; value: string; unit?: string }> | undefined
-      const faq = product.faq as Array<{ question: string; answer: string }> | undefined
       const primaryCategory = product.primaryCategory as unknown as Record<string, unknown> | null
       const brand = product.brand as unknown as Record<string, unknown> | null
       
@@ -109,18 +108,10 @@ export async function GET() {
       row['Meta Description'] = seo?.metaDescription as string || ''
       row['Source URL'] = prod.sourceUrl as string || ''
 
-      // Add FAQ columns (up to 3)
-      if (faq && Array.isArray(faq)) {
-        for (let i = 0; i < 3; i++) {
-          const faqItem = faq[i]
-          row[`FAQ Question ${i + 1}`] = faqItem?.question || ''
-          row[`FAQ Answer ${i + 1}`] = faqItem?.answer || ''
-        }
-      } else {
-        for (let i = 0; i < 3; i++) {
-          row[`FAQ Question ${i + 1}`] = ''
-          row[`FAQ Answer ${i + 1}`] = ''
-        }
+      // Add FAQ columns (up to 3) - Products collection doesn't have FAQ, leave empty for export template compatibility
+      for (let i = 0; i < 3; i++) {
+        row[`FAQ Question ${i + 1}`] = ''
+        row[`FAQ Answer ${i + 1}`] = ''
       }
 
       return row
