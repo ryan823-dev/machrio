@@ -420,7 +420,7 @@ export default async function ArticlePage({
 
         {/* Article Body */}
         <article
-          className="prose prose-secondary max-w-none flex-1 prose-headings:scroll-mt-20 prose-h2:text-xl prose-h2:font-bold prose-h3:text-lg prose-h3:font-semibold prose-p:leading-relaxed prose-a:text-primary-600 prose-a:no-underline hover:prose-a:underline prose-li:text-secondary-700"
+          className="prose prose-secondary max-w-prose flex-1 prose-headings:scroll-mt-20 prose-h2:mt-8 prose-h2:text-xl prose-h2:font-bold prose-h3:mt-6 prose-h3:text-lg prose-h3:font-semibold prose-p:my-4 prose-p:leading-7 prose-a:text-primary-600 prose-a:no-underline hover:prose-a:underline prose-li:my-1 prose-li:leading-7 prose-li:text-secondary-700 prose-ul:my-4"
           dangerouslySetInnerHTML={{ __html: contentHtml }}
         />
       </div>
