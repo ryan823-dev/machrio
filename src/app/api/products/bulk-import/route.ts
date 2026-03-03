@@ -3,7 +3,7 @@ import { getPayload } from 'payload'
 import configPromise from '@/payload/payload.config'
 import * as XLSX from 'xlsx'
 
-// v3 template format with 40 columns (added Brand, Cost Price, Selling Price, Attribute 1-9)
+// v4 template format with 46 columns (added FAQ Question/Answer 1-3)
 interface ProductRowV2 {
   'SKU': string
   'Name': string
@@ -68,6 +68,13 @@ interface ProductRowV2 {
   'Meta Title'?: string
   'Meta Description'?: string
   'Source URL'?: string
+  // v4 FAQ columns
+  'FAQ Question 1'?: string
+  'FAQ Answer 1'?: string
+  'FAQ Question 2'?: string
+  'FAQ Answer 2'?: string
+  'FAQ Question 3'?: string
+  'FAQ Answer 3'?: string
   // Legacy fields for backward compatibility
   name?: string
   sku?: string
@@ -135,6 +142,20 @@ function extractSpecifications(row: ProductRowV2): Array<{ label: string; value:
     }
   }
   return specs
+}
+
+function extractFAQ(row: ProductRowV2): Array<{ question: string; answer: string }> {
+  const faq: Array<{ question: string; answer: string }> = []
+  for (let i = 1; i <= 3; i++) {
+    const questionKey = `FAQ Question ${i}` as keyof ProductRowV2
+    const answerKey = `FAQ Answer ${i}` as keyof ProductRowV2
+    const question = row[questionKey]
+    const answer = row[answerKey]
+    if (question && answer && typeof question === 'string' && typeof answer === 'string') {
+      faq.push({ question: question.trim(), answer: answer.trim() })
+    }
+  }
+  return faq
 }
 
 export async function POST(req: NextRequest) {
@@ -298,6 +319,9 @@ export async function POST(req: NextRequest) {
         // Extract specifications from Spec 1-9 columns
         const specifications = extractSpecifications(row)
 
+        // Extract FAQ from FAQ Question/Answer 1-3 columns
+        const faq = extractFAQ(row)
+
         // Parse price - v2: Selling Price (USD), legacy: Price (USD)
         const priceValue = row['Selling Price (USD)'] || row['Price (USD)']
         const basePrice = priceValue ? parseFloat(String(priceValue)) : null
@@ -332,6 +356,7 @@ export async function POST(req: NextRequest) {
           externalImageUrl: row['Primary Image URL'] || undefined,
           additionalImageUrls: additionalImages.length > 0 ? additionalImages : undefined,
           specifications: specifications.length > 0 ? specifications : undefined,
+          faq: faq.length > 0 ? faq : undefined,
         }
 
         // Add package info

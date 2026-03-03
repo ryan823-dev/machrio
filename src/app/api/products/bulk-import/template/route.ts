@@ -3,8 +3,8 @@ import fs from 'fs'
 import path from 'path'
 
 export async function GET() {
-  // Serve the static v3 template file directly to preserve all styles/colors/fonts
-  const templatePath = path.join(process.cwd(), 'Machrio_Import_Template_v3.xlsx')
+  // Serve the static v4 template file directly to preserve all styles/colors/fonts
+  const templatePath = path.join(process.cwd(), 'Machrio_Import_Template_v4.xlsx')
 
   if (!fs.existsSync(templatePath)) {
     return NextResponse.json(

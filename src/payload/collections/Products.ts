@@ -543,6 +543,32 @@ export const Products: CollectionConfig = {
                 description: 'Original product source URL (for tracking)',
               },
             },
+            {
+              name: 'faq',
+              type: 'array',
+              maxRows: 3,
+              admin: {
+                description: 'Frequently Asked Questions (up to 3)',
+              },
+              fields: [
+                {
+                  name: 'question',
+                  type: 'text',
+                  required: true,
+                  admin: {
+                    description: 'FAQ question',
+                  },
+                },
+                {
+                  name: 'answer',
+                  type: 'textarea',
+                  required: true,
+                  admin: {
+                    description: 'FAQ answer',
+                  },
+                },
+              ],
+            },
           ],
         },
       ],

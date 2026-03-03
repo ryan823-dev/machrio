@@ -53,6 +53,7 @@ export async function GET() {
       const pricing = product.pricing as Record<string, unknown> | undefined
       const seo = product.seo as Record<string, unknown> | undefined
       const specs = product.specifications as Array<{ label: string; value: string; unit?: string }> | undefined
+      const faq = product.faq as Array<{ question: string; answer: string }> | undefined
       const primaryCategory = product.primaryCategory as unknown as Record<string, unknown> | null
       const brand = product.brand as unknown as Record<string, unknown> | null
       
@@ -108,10 +109,24 @@ export async function GET() {
       row['Meta Description'] = seo?.metaDescription as string || ''
       row['Source URL'] = prod.sourceUrl as string || ''
 
+      // Add FAQ columns (up to 3)
+      if (faq && Array.isArray(faq)) {
+        for (let i = 0; i < 3; i++) {
+          const faqItem = faq[i]
+          row[`FAQ Question ${i + 1}`] = faqItem?.question || ''
+          row[`FAQ Answer ${i + 1}`] = faqItem?.answer || ''
+        }
+      } else {
+        for (let i = 0; i < 3; i++) {
+          row[`FAQ Question ${i + 1}`] = ''
+          row[`FAQ Answer ${i + 1}`] = ''
+        }
+      }
+
       return row
     })
 
-    // Define column order to match v3 template (40 columns)
+    // Define column order to match v4 template (46 columns)
     const columnOrder = [
       'SKU', 'Name', 'Brand', 'L1 Category', 'L2 Category', 'L3 Category',
       'Short Description', 'Full Description', 'Primary Image URL', 'Additional Images',
@@ -121,13 +136,15 @@ export async function GET() {
       'Attribute 3 Name', 'Attribute 3 Value', 'Attribute 4 Name', 'Attribute 4 Value',
       'Attribute 5 Name', 'Attribute 5 Value', 'Attribute 6 Name', 'Attribute 6 Value',
       'Attribute 7 Name', 'Attribute 7 Value', 'Attribute 8 Name', 'Attribute 8 Value',
-      'Attribute 9 Name', 'Attribute 9 Value', 'Meta Title', 'Meta Description', 'Source URL'
+      'Attribute 9 Name', 'Attribute 9 Value', 'Meta Title', 'Meta Description', 'Source URL',
+      'FAQ Question 1', 'FAQ Answer 1', 'FAQ Question 2', 'FAQ Answer 2',
+      'FAQ Question 3', 'FAQ Answer 3'
     ]
 
     // Create worksheet with explicit column order
     const worksheet = XLSX.utils.json_to_sheet(exportData, { header: columnOrder })
 
-    // Set column widths for 40 columns
+    // Set column widths for 46 columns
     worksheet['!cols'] = [
       { wch: 15 },  // SKU
       { wch: 60 },  // Name
@@ -160,6 +177,12 @@ export async function GET() {
       { wch: 40 },  // Meta Title
       { wch: 50 },  // Meta Description
       { wch: 50 },  // Source URL
+      { wch: 40 },  // FAQ Question 1
+      { wch: 60 },  // FAQ Answer 1
+      { wch: 40 },  // FAQ Question 2
+      { wch: 60 },  // FAQ Answer 2
+      { wch: 40 },  // FAQ Question 3
+      { wch: 60 },  // FAQ Answer 3
     ]
 
     // Create workbook
