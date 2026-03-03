@@ -420,15 +420,7 @@ export default async function ArticlePage({
 
         {/* Article Body */}
         <article
-          className="prose prose-lg prose-secondary max-w-[75ch] flex-1
-            prose-headings:scroll-mt-20
-            prose-h2:mb-4 prose-h2:mt-10 prose-h2:text-2xl prose-h2:font-bold prose-h2:text-secondary-900
-            prose-h3:mb-3 prose-h3:mt-8 prose-h3:text-xl prose-h3:font-semibold prose-h3:text-secondary-800
-            prose-p:my-5 prose-p:text-base prose-p:leading-[1.8] prose-p:text-secondary-700
-            prose-a:text-primary-600 prose-a:no-underline hover:prose-a:underline
-            prose-ul:my-5 prose-ul:space-y-2
-            prose-ol:my-5 prose-ol:space-y-2
-            prose-li:text-base prose-li:leading-[1.7] prose-li:text-secondary-700"
+          className="article-content max-w-[70ch] flex-1 [&_h2]:scroll-mt-20 [&_h3]:scroll-mt-20"
           dangerouslySetInnerHTML={{ __html: contentHtml }}
         />
       </div>
