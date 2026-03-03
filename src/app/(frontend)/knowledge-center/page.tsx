@@ -3,6 +3,9 @@ import Link from 'next/link'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 
+// ISR: revalidate every hour to show new articles
+export const revalidate = 3600
+
 export const metadata: Metadata = {
   title: 'Knowledge Center — Guides, Tips & Industry Insights | Machrio',
   description: 'Industrial buying guides, product comparisons, how-to articles, and industry insights. Expert content to help you make informed MRO purchasing decisions.',

@@ -7,6 +7,10 @@ import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 import { StructuredData } from '@/components/shared/StructuredData'
 import { FAQSchema, FAQSection } from '@/components/shared/FAQSchema'
 
+// ISR: allow new articles without redeploy, revalidate every hour
+export const dynamicParams = true
+export const revalidate = 3600
+
 // ---------------------------------------------------------------------------
 // Lexical richText helpers (shared pattern from product page)
 // ---------------------------------------------------------------------------
