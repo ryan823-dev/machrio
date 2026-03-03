@@ -9,14 +9,14 @@ const fs = require('fs')
 const path = require('path')
 
 const MONGODB_URI = 'mongodb+srv://mroworks_db_user:moore1982@mroworks-dev.gbqxebq.mongodb.net/machrio?retryWrites=true&w=majority'
-const DASHSCOPE_API_KEY = 'sk-73c6886b82a64d00adf44d147b2dcf63'
+const DASHSCOPE_API_KEY = 'sk-sp-befc667877a94f5cb8d137bf8ac57ad9'
 const MODEL = 'qwen-max'
 const CONCURRENCY = 5
 
 async function callDashScope(prompt, systemPrompt, retries = 2) {
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const response = await fetch('https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions', {
+      const response = await fetch('https://coding.dashscope.aliyuncs.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
