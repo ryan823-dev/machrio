@@ -43,8 +43,12 @@ export async function GET(req: NextRequest) {
       ? sourceProduct.brand?.id
       : sourceProduct.brand
     const sourceFacets = sourceProduct.facets || {}
-    const sourceMaterials: string[] = sourceFacets.material || []
-    const sourceCertifications: string[] = sourceFacets.certification || []
+    const sourceSpecs: Array<{ label: string; value: string }> = sourceProduct.specifications || []
+    // Extract materials and certifications from specifications as fallback
+    const sourceMaterials: string[] = sourceFacets.material || 
+      sourceSpecs.filter((s: any) => /material/i.test(s.label)).map((s: any) => s.value).filter(Boolean)
+    const sourceCertifications: string[] = sourceFacets.certification || 
+      sourceSpecs.filter((s: any) => /certif|standard|rating/i.test(s.label)).map((s: any) => s.value).filter(Boolean)
 
     const excludeIds = new Set<string>([productId, ...cartProductIds])
     const results: Array<{

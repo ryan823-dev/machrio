@@ -566,27 +566,6 @@ export interface Product {
       }[]
     | null;
   /**
-   * Filterable attributes
-   */
-  facets?: {
-    /**
-     * e.g., Nitrile, Leather
-     */
-    material?: string[] | null;
-    /**
-     * e.g., S, M, L, XL
-     */
-    size?: string[] | null;
-    /**
-     * e.g., Blue, Black
-     */
-    color?: string[] | null;
-    /**
-     * e.g., ANSI, CE, ISO
-     */
-    certification?: string[] | null;
-  };
-  /**
    * Full product description (300+ words for SEO)
    */
   fullDescription: {
@@ -1941,14 +1920,6 @@ export interface ProductsSelect<T extends boolean = true> {
         value?: T;
         unit?: T;
         id?: T;
-      };
-  facets?:
-    | T
-    | {
-        material?: T;
-        size?: T;
-        color?: T;
-        certification?: T;
       };
   fullDescription?: T;
   seo?:

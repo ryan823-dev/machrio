@@ -9,7 +9,8 @@ export const Products: CollectionConfig = {
   admin: {
     useAsTitle: 'name',
     group: '产品目录',
-    defaultColumns: ['name', 'sku', 'primaryCategory', 'status'],
+    defaultColumns: ['name', 'sku', 'primaryCategory', 'status', 'updatedAt'],
+    listSearchableFields: ['name', 'sku'],
     components: {
       beforeListTable: ['/src/components/admin/ProductListHeader#ProductListHeader'],
     },
@@ -431,49 +432,6 @@ export const Products: CollectionConfig = {
                       name: 'unit',
                       type: 'text',
                       admin: { width: '20%', description: 'e.g., kg, mm' },
-                    },
-                  ],
-                },
-              ],
-            },
-            {
-              name: 'facets',
-              type: 'group',
-              admin: {
-                description: 'Filterable attributes',
-              },
-              fields: [
-                {
-                  type: 'row',
-                  fields: [
-                    {
-                      name: 'material',
-                      type: 'text',
-                      hasMany: true,
-                      admin: { width: '50%', description: 'e.g., Nitrile, Leather' },
-                    },
-                    {
-                      name: 'size',
-                      type: 'text',
-                      hasMany: true,
-                      admin: { width: '50%', description: 'e.g., S, M, L, XL' },
-                    },
-                  ],
-                },
-                {
-                  type: 'row',
-                  fields: [
-                    {
-                      name: 'color',
-                      type: 'text',
-                      hasMany: true,
-                      admin: { width: '50%', description: 'e.g., Blue, Black' },
-                    },
-                    {
-                      name: 'certification',
-                      type: 'text',
-                      hasMany: true,
-                      admin: { width: '50%', description: 'e.g., ANSI, CE, ISO' },
                     },
                   ],
                 },

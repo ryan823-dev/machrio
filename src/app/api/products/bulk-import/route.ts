@@ -16,6 +16,7 @@ interface ProductRowV2 {
   'Primary Image URL'?: string
   'Additional Images'?: string
   // v2 price columns
+  'Cost Price (CNY)'?: string | number
   'Cost Price (USD)'?: string | number
   'Selling Price (USD)'?: string | number
   // Legacy price column (backward compatibility)
@@ -23,6 +24,7 @@ interface ProductRowV2 {
   'Min Order Qty'?: string | number
   'Package Qty'?: string | number
   'Package Unit'?: string
+  'Weight (kg)'?: string | number
   'Lead Time'?: string
   'Availability'?: string
   'Status'?: string
@@ -67,6 +69,7 @@ interface ProductRowV2 {
   'Spec 9 Value'?: string
   'Meta Title'?: string
   'Meta Description'?: string
+  'Focus Keyword'?: string
   'Source URL'?: string
   // v4 FAQ columns
   'FAQ Question 1'?: string
@@ -267,6 +270,7 @@ export async function POST(req: NextRequest) {
 
         // Find category by L1/L2/L3 path
         let categoryId: string | null = null
+        let parentCategoryIds: string[] = []
         const l1 = row['L1 Category']?.toLowerCase() || ''
         const l2 = row['L2 Category']?.toLowerCase() || ''
         const l3 = row['L3 Category']?.toLowerCase() || ''
@@ -277,6 +281,18 @@ export async function POST(req: NextRequest) {
           const pathMatch = pathToCategory.get(pathKey)
           if (pathMatch) {
             categoryId = pathMatch.id
+            // Collect parent category IDs for the categories array
+            if (pathMatch.parent) {
+              const parentId = typeof pathMatch.parent === 'object' ? pathMatch.parent.id : pathMatch.parent
+              const parent = catById.get(parentId)
+              if (parent) {
+                parentCategoryIds.push(parent.id)
+                if (parent.parent) {
+                  const grandparentId = typeof parent.parent === 'object' ? parent.parent.id : parent.parent
+                  parentCategoryIds.push(grandparentId)
+                }
+              }
+            }
           } else {
             // Fallback: try name match for L3
             const nameMatch = catByName.get(l3)
@@ -326,8 +342,8 @@ export async function POST(req: NextRequest) {
         const priceValue = row['Selling Price (USD)'] || row['Price (USD)']
         const basePrice = priceValue ? parseFloat(String(priceValue)) : null
 
-        // Parse cost price (v2 only)
-        const costPriceValue = row['Cost Price (USD)']
+        // Parse cost price - v2: Cost Price (CNY) or Cost Price (USD)
+        const costPriceValue = row['Cost Price (CNY)'] || row['Cost Price (USD)']
         const costPrice = costPriceValue ? parseFloat(String(costPriceValue)) : null
 
         // Parse quantities
@@ -353,6 +369,7 @@ export async function POST(req: NextRequest) {
           purchaseMode: mapPurchaseMode(row['Purchase Mode']),
           leadTime: row['Lead Time'] || '2-3 weeks',
           minOrderQuantity: minOrderQty || 1,
+          categories: parentCategoryIds.length > 0 ? parentCategoryIds : undefined,
           externalImageUrl: row['Primary Image URL'] || undefined,
           additionalImageUrls: additionalImages.length > 0 ? additionalImages : undefined,
           specifications: specifications.length > 0 ? specifications : undefined,
@@ -381,17 +398,29 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        // Add SEO fields
-        if (row['Meta Title'] || row['Meta Description']) {
-          productData.meta = {
-            title: row['Meta Title'] || `${name} | Machrio`,
-            description: row['Meta Description'] || shortDescription.substring(0, 160),
+        // Add SEO fields (correct field path: seo.metaTitle, seo.metaDescription, seo.focusKeyword)
+        if (row['Meta Title'] || row['Meta Description'] || row['Focus Keyword']) {
+          productData.seo = {
+            metaTitle: row['Meta Title'] || undefined,
+            metaDescription: row['Meta Description'] || undefined,
+            focusKeyword: row['Focus Keyword'] || undefined,
           }
         }
 
         // Add source URL (for tracking original product source)
         if (row['Source URL']) {
           productData.sourceUrl = row['Source URL']
+        }
+
+        // Add weight to shipping info
+        const weightValue = row['Weight (kg)']
+        if (weightValue) {
+          const weight = parseFloat(String(weightValue))
+          if (!isNaN(weight) && weight > 0) {
+            productData.shippingInfo = {
+              weight,
+            }
+          }
         }
 
         // Add fullDescription as Lexical format if provided

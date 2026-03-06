@@ -153,7 +153,7 @@ async function seed() {
       purchaseMode: 'both',
       pricing: { basePrice: 8.49, priceUnit: 'per tube', currency: 'USD', tieredPricing: [{ minQty: 1, maxQty: 11, unitPrice: 8.49 }, { minQty: 12, maxQty: 47, unitPrice: 7.49 }, { minQty: 48, unitPrice: 5.99 }] },
       availability: 'in-stock', minOrderQuantity: 1, packageQty: 1, packageUnit: 'tube', leadTime: 'Ships same day',
-      facets: { material: ['Cyanoacrylate'] }, industries: ['manufacturing', 'automotive'],
+      industries: ['manufacturing', 'automotive'],
     }}),
     payload.create({ collection: 'products', data: {
       name: 'Silicone Sealant, Clear, 10.1 oz Cartridge',
@@ -164,7 +164,7 @@ async function seed() {
       purchaseMode: 'both',
       pricing: { basePrice: 6.99, priceUnit: 'per cartridge', currency: 'USD', tieredPricing: [{ minQty: 1, maxQty: 11, unitPrice: 6.99 }, { minQty: 12, maxQty: 23, unitPrice: 5.99 }, { minQty: 24, unitPrice: 4.99 }] },
       availability: 'in-stock', minOrderQuantity: 1, packageQty: 12, packageUnit: 'case', leadTime: 'Ships same day',
-      facets: { material: ['Silicone'], color: ['Clear'] }, industries: ['construction', 'manufacturing'],
+      industries: ['construction', 'manufacturing'],
     }}),
 
     // ── Material Handling ──
@@ -201,7 +201,6 @@ async function seed() {
       purchaseMode: 'both',
       pricing: { basePrice: 12.99, priceUnit: 'per box of 100', currency: 'USD', tieredPricing: [{ minQty: 1, maxQty: 9, unitPrice: 12.99 }, { minQty: 10, maxQty: 49, unitPrice: 11.49 }, { minQty: 50, unitPrice: 9.99 }] },
       availability: 'in-stock', minOrderQuantity: 1, packageQty: 100, packageUnit: 'box', leadTime: 'Ships same day',
-      facets: { material: ['Nitrile'], size: ['S', 'M', 'L', 'XL'], color: ['Blue'], certification: ['FDA', 'CE'] },
       industries: ['healthcare', 'manufacturing', 'food-beverage'],
     }}),
     payload.create({ collection: 'products', data: {
@@ -213,7 +212,6 @@ async function seed() {
       purchaseMode: 'both',
       pricing: { basePrice: 18.49, priceUnit: 'per pair', currency: 'USD', tieredPricing: [{ minQty: 1, maxQty: 11, unitPrice: 18.49 }, { minQty: 12, maxQty: 47, unitPrice: 16.99 }, { minQty: 48, unitPrice: 14.99 }] },
       availability: 'in-stock', minOrderQuantity: 1, packageQty: 12, packageUnit: 'dozen', leadTime: 'Ships same day',
-      facets: { material: ['HPPE', 'Nitrile'], size: ['S', 'M', 'L', 'XL', '2XL'], color: ['Gray', 'Black'], certification: ['ANSI A4', 'EN 388'] },
       industries: ['manufacturing', 'construction', 'automotive'],
     }}),
     payload.create({ collection: 'products', data: {
@@ -225,7 +223,6 @@ async function seed() {
       purchaseMode: 'both',
       pricing: { basePrice: 8.99, priceUnit: 'per pair', currency: 'USD', tieredPricing: [{ minQty: 1, maxQty: 11, unitPrice: 8.99 }, { minQty: 12, maxQty: 47, unitPrice: 7.99 }, { minQty: 48, unitPrice: 6.49 }] },
       availability: 'in-stock', minOrderQuantity: 1, packageQty: 12, packageUnit: 'box', leadTime: 'Ships same day',
-      facets: { material: ['Polycarbonate'], color: ['Clear'], certification: ['ANSI Z87.1+', 'CSA Z94.3'] },
       industries: ['manufacturing', 'construction', 'warehouse'],
     }}),
     payload.create({ collection: 'products', data: {
@@ -237,7 +234,6 @@ async function seed() {
       purchaseMode: 'both',
       pricing: { basePrice: 29.99, priceUnit: 'each', currency: 'USD', tieredPricing: [{ minQty: 1, maxQty: 11, unitPrice: 29.99 }, { minQty: 12, maxQty: 47, unitPrice: 26.99 }, { minQty: 48, unitPrice: 23.99 }] },
       availability: 'in-stock', minOrderQuantity: 1, packageQty: 1, packageUnit: 'each', leadTime: 'Ships same day',
-      facets: { material: ['HDPE'], color: ['White', 'Yellow', 'Orange', 'Blue'], certification: ['ANSI Z89.1', 'CSA Z94.1'] },
       industries: ['construction', 'manufacturing', 'oil-gas', 'mining'],
     }}),
 
@@ -251,7 +247,7 @@ async function seed() {
       purchaseMode: 'both',
       pricing: { basePrice: 29.99, priceUnit: 'per bundle of 25', currency: 'USD', tieredPricing: [{ minQty: 1, maxQty: 3, unitPrice: 29.99 }, { minQty: 4, maxQty: 9, unitPrice: 26.99 }, { minQty: 10, unitPrice: 22.99 }] },
       availability: 'in-stock', minOrderQuantity: 1, packageQty: 25, packageUnit: 'bundle', leadTime: 'Ships same day',
-      facets: { material: ['Corrugated Cardboard'], size: ['12x12x12"'] }, industries: ['warehouse', 'manufacturing'],
+      industries: ['warehouse', 'manufacturing'],
     }}),
     payload.create({ collection: 'products', data: {
       name: 'Packing Tape, Clear, 2" x 110 yd (36 rolls)',
@@ -262,7 +258,7 @@ async function seed() {
       purchaseMode: 'both',
       pricing: { basePrice: 79.99, priceUnit: 'per case of 36', currency: 'USD', tieredPricing: [{ minQty: 1, maxQty: 2, unitPrice: 79.99 }, { minQty: 3, maxQty: 5, unitPrice: 74.99 }, { minQty: 6, unitPrice: 69.99 }] },
       availability: 'in-stock', minOrderQuantity: 1, packageQty: 36, packageUnit: 'case', leadTime: 'Ships same day',
-      facets: { material: ['Polypropylene'], color: ['Clear'] }, industries: ['warehouse', 'manufacturing'],
+      industries: ['warehouse', 'manufacturing'],
     }}),
 
     // ── Cleaning and Janitorial ──
@@ -299,7 +295,7 @@ async function seed() {
       purchaseMode: 'both',
       pricing: { basePrice: 149.99, priceUnit: 'each', currency: 'USD', tieredPricing: [{ minQty: 1, maxQty: 5, unitPrice: 149.99 }, { minQty: 6, maxQty: 19, unitPrice: 134.99 }, { minQty: 20, unitPrice: 119.99 }] },
       availability: 'in-stock', minOrderQuantity: 1, packageQty: 1, packageUnit: 'each', leadTime: 'Ships in 1-2 days',
-      facets: { certification: ['UL', 'DLC'] }, industries: ['warehouse', 'manufacturing'],
+      industries: ['warehouse', 'manufacturing'],
     }}),
 
     // ── Power Transmission ──
@@ -312,7 +308,7 @@ async function seed() {
       purchaseMode: 'both',
       pricing: { basePrice: 6.99, priceUnit: 'each', currency: 'USD', tieredPricing: [{ minQty: 1, maxQty: 9, unitPrice: 6.99 }, { minQty: 10, maxQty: 49, unitPrice: 5.49 }, { minQty: 50, unitPrice: 3.99 }] },
       availability: 'in-stock', minOrderQuantity: 1, packageQty: 10, packageUnit: 'box', leadTime: 'Ships same day',
-      facets: { size: ['25x52x15mm'] }, industries: ['manufacturing'],
+      industries: ['manufacturing'],
     }}),
 
     // ── Tool Storage & Workbenches ──
@@ -338,7 +334,7 @@ async function seed() {
       purchaseMode: 'both',
       pricing: { basePrice: 119.99, priceUnit: 'each', currency: 'USD', tieredPricing: [{ minQty: 1, maxQty: 4, unitPrice: 119.99 }, { minQty: 5, unitPrice: 109.99 }] },
       availability: 'in-stock', minOrderQuantity: 1, packageQty: 1, packageUnit: 'each', leadTime: 'Ships in 1-2 days',
-      facets: { material: ['Thermoplastic'] }, industries: ['construction', 'manufacturing'],
+      industries: ['construction', 'manufacturing'],
     }}),
     payload.create({ collection: 'products', data: {
       name: 'PTFE Thread Seal Tape, 1/2" x 520" (10 pack)',
@@ -349,7 +345,7 @@ async function seed() {
       purchaseMode: 'both',
       pricing: { basePrice: 9.99, priceUnit: 'per 10-pack', currency: 'USD', tieredPricing: [{ minQty: 1, maxQty: 9, unitPrice: 9.99 }, { minQty: 10, maxQty: 24, unitPrice: 8.49 }, { minQty: 25, unitPrice: 6.99 }] },
       availability: 'in-stock', minOrderQuantity: 1, packageQty: 10, packageUnit: 'pack', leadTime: 'Ships same day',
-      facets: { material: ['PTFE'] }, industries: ['construction', 'manufacturing'],
+      industries: ['construction', 'manufacturing'],
     }}),
   ])
 
