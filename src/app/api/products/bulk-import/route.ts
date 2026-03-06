@@ -86,6 +86,76 @@ interface ProductRowV2 {
   brand?: string
 }
 
+/**
+ * Flexible column value resolver - handles column name variations, whitespace, and case differences.
+ * Returns the first matching non-empty value from the row.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function col(row: Record<string, any>, ...keys: string[]): string | undefined {
+  // 1. Try exact match first
+  for (const key of keys) {
+    const v = row[key]
+    if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim()
+  }
+  // 2. Try case-insensitive + trimmed match
+  const rowKeys = Object.keys(row)
+  for (const key of keys) {
+    const normalizedKey = key.toLowerCase().replace(/\s+/g, ' ').trim()
+    const match = rowKeys.find(k => k.toLowerCase().replace(/\s+/g, ' ').trim() === normalizedKey)
+    if (match) {
+      const v = row[match]
+      if (v !== undefined && v !== null && String(v).trim() !== '') return String(v).trim()
+    }
+  }
+  return undefined
+}
+
+/**
+ * Convert plain text (possibly with newlines and section headers) into Lexical richText JSON
+ * with proper multi-paragraph structure.
+ */
+function textToLexical(text: string) {
+  // Split by double newlines, or single newlines that separate logical sections
+  const lines = text.split(/\n{2,}|\n(?=[A-Z][a-zA-Z\s]*\n)/)
+    .map(s => s.trim())
+    .filter(Boolean)
+
+  // If splitting by double-newline yields only 1 block, try single newline
+  const paragraphs = lines.length <= 1
+    ? text.split(/\n/).map(s => s.trim()).filter(Boolean)
+    : lines
+
+  const children = paragraphs.map(paraText => ({
+    type: 'paragraph' as const,
+    format: '' as const,
+    indent: 0,
+    version: 1,
+    children: [{
+      mode: 'normal' as const,
+      text: paraText,
+      type: 'text' as const,
+      format: 0,
+      style: '',
+      detail: 0,
+      version: 1,
+    }],
+    direction: 'ltr' as const,
+    textFormat: 0,
+    textStyle: '',
+  }))
+
+  return {
+    root: {
+      type: 'root' as const,
+      format: '' as const,
+      indent: 0,
+      version: 1,
+      children,
+      direction: 'ltr' as const,
+    },
+  }
+}
+
 function parsePackageQty(name: string): number | null {
   const patterns = [
     /Pkg\s+Qty\s+(\d+)/i,
@@ -353,9 +423,13 @@ export async function POST(req: NextRequest) {
         const packageQty = (explicitPackageQty && explicitPackageQty > 0) ? explicitPackageQty : parsedPackageQty
 
         // Parse additional images
-        const additionalImages = row['Additional Images']
-          ? String(row['Additional Images']).split(',').map(url => url.trim()).filter(Boolean)
+        const additionalImagesRaw = col(row as unknown as Record<string, unknown>, 'Additional Images', 'Additional Image URLs', 'Extra Images')
+        const additionalImages = additionalImagesRaw
+          ? additionalImagesRaw.split(',').map(url => url.trim()).filter(Boolean)
           : []
+
+        // Resolve image URL with flexible column matching
+        const imageUrl = col(row as unknown as Record<string, unknown>, 'Primary Image URL', 'Image URL', 'Image', 'Primary Image', 'Main Image URL', 'Main Image', 'Product Image', 'Product Image URL')
 
         // Build product data
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -370,7 +444,7 @@ export async function POST(req: NextRequest) {
           leadTime: row['Lead Time'] || '2-3 weeks',
           minOrderQuantity: minOrderQty || 1,
           categories: parentCategoryIds.length > 0 ? parentCategoryIds : undefined,
-          externalImageUrl: row['Primary Image URL'] || undefined,
+          externalImageUrl: imageUrl || undefined,
           additionalImageUrls: additionalImages.length > 0 ? additionalImages : undefined,
           specifications: specifications.length > 0 ? specifications : undefined,
           faq: faq.length > 0 ? faq : undefined,
@@ -426,26 +500,7 @@ export async function POST(req: NextRequest) {
         // Add fullDescription as Lexical format if provided
         const fullDesc = row['Full Description']
         if (fullDesc) {
-          // Check if it's HTML content
-          const isHtml = /<[a-z][\s\S]*>/i.test(fullDesc)
-          productData.fullDescription = {
-            root: {
-              type: 'root',
-              children: [{ 
-                type: 'paragraph', 
-                version: 1,
-                children: [{ 
-                  type: isHtml ? 'html' : 'text', 
-                  text: fullDesc, 
-                  version: 1 
-                }] 
-              }],
-              direction: 'ltr',
-              format: '',
-              indent: 0,
-              version: 1,
-            },
-          }
+          productData.fullDescription = textToLexical(String(fullDesc))
         }
 
         // Handle brand - v3: Brand column; legacy: brand field

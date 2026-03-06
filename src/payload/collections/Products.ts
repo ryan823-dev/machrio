@@ -2,6 +2,7 @@ import type { CollectionConfig } from 'payload'
 
 export const Products: CollectionConfig = {
   slug: 'products',
+  defaultSort: '-updatedAt',
   labels: {
     singular: '产品',
     plural: '产品',
