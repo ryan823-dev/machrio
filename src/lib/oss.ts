@@ -68,6 +68,9 @@ export async function uploadToOSS(
   })
 
   // Return the public URL
-  const url = `https://${bucket}.${endpoint.replace('https://', '')}/${ossPath}`
+  // endpoint is like https://oss-us-west-1.aliyuncs.com
+  // public URL format: https://{bucket}.{endpoint-host}/{path}
+  const endpointHost = endpoint.replace('https://', '').replace('http://', '')
+  const url = `https://${bucket}.${endpointHost}/${ossPath}`
   return url
 }
