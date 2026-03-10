@@ -369,11 +369,11 @@ export const Products: CollectionConfig = {
                 },
               },
             },
+            // Hidden fields that store the actual image URLs
             {
               name: 'externalImageUrl',
               type: 'text',
               admin: {
-                description: 'External image URL (e.g., from supplier CDN)',
                 hidden: true,
               },
             },
@@ -382,7 +382,6 @@ export const Products: CollectionConfig = {
               type: 'text',
               hasMany: true,
               admin: {
-                description: 'Additional external image URLs',
                 hidden: true,
               },
             },
@@ -391,7 +390,6 @@ export const Products: CollectionConfig = {
               type: 'upload',
               relationTo: 'media',
               admin: {
-                description: 'Main product image (overrides external URL)',
                 hidden: true,
               },
             },
@@ -401,7 +399,6 @@ export const Products: CollectionConfig = {
               relationTo: 'media',
               hasMany: true,
               admin: {
-                description: 'Additional product images',
                 hidden: true,
               },
             },
