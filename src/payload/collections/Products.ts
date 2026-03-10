@@ -360,13 +360,22 @@ export const Products: CollectionConfig = {
           description: 'Images and documents',
           fields: [
             {
+              name: 'primaryImage',
+              type: 'upload',
+              relationTo: 'media',
+              admin: {
+                description: 'Main product image (overrides external URL)',
+                components: {
+                  Field: '/src/components/admin/ProductImageManager#ProductImageManager',
+                },
+              },
+            },
+            {
               name: 'externalImageUrl',
               type: 'text',
               admin: {
                 description: 'External image URL (e.g., from supplier CDN)',
-                components: {
-                  Field: '/src/components/admin/ExternalImageField#ExternalImageField',
-                },
+                hidden: true,
               },
             },
             {
@@ -379,20 +388,13 @@ export const Products: CollectionConfig = {
               },
             },
             {
-              name: 'primaryImage',
-              type: 'upload',
-              relationTo: 'media',
-              admin: {
-                description: 'Main product image (overrides external URL)',
-              },
-            },
-            {
               name: 'images',
               type: 'upload',
               relationTo: 'media',
               hasMany: true,
               admin: {
                 description: 'Additional product images',
+                hidden: true,
               },
             },
             {
