@@ -14,6 +14,10 @@ const nextConfig = {
         protocol: 'https',
         hostname: 'cdn.mroport.com',
       },
+      {
+        protocol: 'https',
+        hostname: 'machrio.oss-us-west-1.aliyuncs.com',
+      },
     ],
   },
   async headers() {

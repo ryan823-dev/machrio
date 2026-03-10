@@ -364,6 +364,9 @@ export const Products: CollectionConfig = {
               type: 'text',
               admin: {
                 description: 'External image URL (e.g., from supplier CDN)',
+                components: {
+                  Field: '/src/components/admin/ExternalImageField#ExternalImageField',
+                },
               },
             },
             {
