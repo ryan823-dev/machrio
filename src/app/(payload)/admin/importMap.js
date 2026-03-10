@@ -25,6 +25,7 @@ import { ProductListHeader as ProductListHeader_302a5f861f9f65f4d1bfc48238327feb
 import { Icon as Icon_b04c0db8d89d68ff5dd20d513b3034b9 } from '../../../../src/components/admin/Icon'
 import { Logo as Logo_4522c7900ab0b0df414ce3e1574aaee4 } from '../../../../src/components/admin/Logo'
 import { BulkImportView as BulkImportView_e380a3254f3153f48837afeee5576a4b } from '../../../../src/components/admin/BulkImportView'
+import { ProductImageManager as ProductImageManager_8a7c6d5e3f2b1a9c4d8e0f5a6b7c8d9e } from '../../../../src/components/admin/ProductImageManager'
 import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
 
 export const importMap = {
@@ -55,5 +56,6 @@ export const importMap = {
   "/src/components/admin/Icon#Icon": Icon_b04c0db8d89d68ff5dd20d513b3034b9,
   "/src/components/admin/Logo#Logo": Logo_4522c7900ab0b0df414ce3e1574aaee4,
   "/src/components/admin/BulkImportView#BulkImportView": BulkImportView_e380a3254f3153f48837afeee5576a4b,
+  "/src/components/admin/ProductImageManager#ProductImageManager": ProductImageManager_8a7c6d5e3f2b1a9c4d8e0f5a6b7c8d9e,
   "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1
 }
