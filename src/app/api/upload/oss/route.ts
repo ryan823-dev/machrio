@@ -14,9 +14,11 @@ const ALLOWED_TYPES = new Set([
 const MAX_SIZE = 10 * 1024 * 1024 // 10MB
 
 export async function POST(request: NextRequest) {
+  console.log('[API /api/upload/oss] Received request')
   try {
     const formData = await request.formData()
     const file = formData.get('file') as File | null
+    console.log('[API /api/upload/oss] File:', file?.name, 'Type:', file?.type, 'Size:', file?.size)
 
     if (!file) {
       return NextResponse.json({ success: false, error: '未提供文件' }, { status: 400 })
@@ -39,8 +41,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Convert to Buffer and upload
+    console.log('[API /api/upload/oss] Converting to buffer...')
     const buffer = Buffer.from(await file.arrayBuffer())
+    console.log('[API /api/upload/oss] Buffer size:', buffer.length)
+    
+    console.log('[API /api/upload/oss] Calling uploadToOSS...')
     const url = await uploadToOSS(buffer, file.name, file.type)
+    console.log('[API /api/upload/oss] Upload success, URL:', url)
 
     return NextResponse.json({ success: true, url })
   } catch (error) {

@@ -8,8 +8,11 @@ import { toast } from 'sonner'
 async function uploadToOSS(file: File): Promise<string> {
   const formData = new FormData()
   formData.append('file', file)
+  console.log('[uploadToOSS] Sending request to /api/upload/oss')
   const res = await fetch('/api/upload/oss', { method: 'POST', body: formData })
+  console.log('[uploadToOSS] Response status:', res.status)
   const data = await res.json()
+  console.log('[uploadToOSS] Response data:', data)
   if (!data.success || !data.url) throw new Error(data.error || '上传失败')
   return data.url
 }
@@ -270,19 +273,25 @@ export const ProductImageManager: React.FC<{ path?: string }> = () => {
   const doUpload = useCallback(async (file: File, target: 'cover' | number | 'new') => {
     if (uploading !== null) return
     setUploading(target)
+    console.log('[Upload] Starting upload for', file.name, 'target:', target)
     try {
       const url = await uploadToOSS(file)
+      console.log('[Upload] Success, URL:', url)
       if (target === 'cover') {
+        console.log('[Upload] Setting cover URL')
         setCoverUrl(url)
       } else if (target === 'new') {
+        console.log('[Upload] Adding to gallery')
         setGallery([...galleryUrls, url])
       } else {
+        console.log('[Upload] Replacing gallery item', target)
         const next = [...galleryUrls]
         next[target] = url
         setGallery(next)
       }
       toast.success('图片上传成功')
     } catch (err) {
+      console.error('[Upload] Error:', err)
       toast.error(err instanceof Error ? err.message : '上传失败')
     } finally {
       setUploading(null)
