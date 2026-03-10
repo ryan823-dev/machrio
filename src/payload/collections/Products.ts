@@ -359,12 +359,11 @@ export const Products: CollectionConfig = {
           label: '媒体资源',
           description: 'Images and documents',
           fields: [
+            // UI field for image management (no actual data storage, just UI)
             {
-              name: 'primaryImage',
-              type: 'upload',
-              relationTo: 'media',
+              name: 'imageManager',
+              type: 'ui',
               admin: {
-                description: 'Main product image (overrides external URL)',
                 components: {
                   Field: '/src/components/admin/ProductImageManager#ProductImageManager',
                 },
@@ -384,6 +383,15 @@ export const Products: CollectionConfig = {
               hasMany: true,
               admin: {
                 description: 'Additional external image URLs',
+                hidden: true,
+              },
+            },
+            {
+              name: 'primaryImage',
+              type: 'upload',
+              relationTo: 'media',
+              admin: {
+                description: 'Main product image (overrides external URL)',
                 hidden: true,
               },
             },
