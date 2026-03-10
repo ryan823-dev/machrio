@@ -4,236 +4,413 @@ import React, { useCallback, useRef, useState } from 'react'
 import { useField } from '@payloadcms/ui'
 import { toast } from 'sonner'
 
-export const ExternalImageField: React.FC<{ path?: string }> = ({ path: pathProp }) => {
-  const fieldPath = pathProp || 'externalImageUrl'
-  const { value = '', setValue } = useField<string>({ path: fieldPath })
+// ────────────────────────────────────────────────────────────
+// Shared upload helper
+// ────────────────────────────────────────────────────────────
+async function uploadFile(file: File): Promise<string> {
+  const formData = new FormData()
+  formData.append('file', file)
+  const res = await fetch('/api/upload/oss', { method: 'POST', body: formData })
+  const data = await res.json()
+  if (!data.success || !data.url) throw new Error(data.error || '上传失败')
+  return data.url
+}
 
-  const [uploading, setUploading] = useState(false)
+// ────────────────────────────────────────────────────────────
+// Cover Image Card  (封面图)
+// ────────────────────────────────────────────────────────────
+function CoverImageCard({
+  url,
+  uploading,
+  onUpload,
+  onZoom,
+  onReplace,
+  onDelete,
+  onDrop,
+}: {
+  url: string
+  uploading: boolean
+  onUpload: () => void
+  onZoom: () => void
+  onReplace: () => void
+  onDelete: () => void
+  onDrop: (e: React.DragEvent) => void
+}) {
   const [dragOver, setDragOver] = useState(false)
-  const [previewError, setPreviewError] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
-
-  const handleUpload = useCallback(async (file: File) => {
-    if (uploading) return
-    setUploading(true)
-
-    try {
-      const formData = new FormData()
-      formData.append('file', file)
-
-      const res = await fetch('/api/upload/oss', { method: 'POST', body: formData })
-      const data = await res.json()
-
-      if (data.success && data.url) {
-        setValue(data.url)
-        setPreviewError(false)
-        toast.success('图片上传成功')
-      } else {
-        toast.error(data.error || '上传失败')
-      }
-    } catch {
-      toast.error('网络错误，上传失败')
-    } finally {
-      setUploading(false)
-      if (fileInputRef.current) fileInputRef.current.value = ''
-    }
-  }, [uploading, setValue])
-
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) handleUpload(file)
-  }, [handleUpload])
-
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(false)
-    const file = e.dataTransfer.files?.[0]
-    if (file && file.type.startsWith('image/')) {
-      handleUpload(file)
-    }
-  }, [handleUpload])
-
-  const handleClear = useCallback(() => {
-    setValue('')
-    setPreviewError(false)
-  }, [setValue])
-
-  const hasImage = typeof value === 'string' && value.length > 0
+  const [imgErr, setImgErr] = useState(false)
+  const hasImage = url.length > 0
 
   return (
-    <div style={{ marginBottom: '24px' }}>
-      {/* Label */}
-      <label style={{
-        display: 'block',
-        fontWeight: 600,
-        fontSize: '14px',
-        marginBottom: '6px',
-        color: 'var(--theme-text, #1a1a2e)',
-      }}>
-        External Image URL
-      </label>
-      <p style={{
-        fontSize: '12px',
-        color: 'var(--theme-elevation-500, #6b7280)',
-        margin: '0 0 12px 0',
-      }}>
-        产品主图 — 支持直接粘贴 URL 或上传图片到 OSS
-      </p>
-
-      {/* Preview area */}
+    <div
+      style={{
+        width: '200px',
+        border: `1px solid ${dragOver ? '#3b82f6' : '#e5e7eb'}`,
+        borderRadius: '6px',
+        background: dragOver ? '#f0f7ff' : '#fff',
+        overflow: 'hidden',
+        transition: 'border-color .2s',
+      }}
+      onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+      onDragLeave={() => setDragOver(false)}
+      onDrop={(e) => { e.preventDefault(); setDragOver(false); onDrop(e) }}
+    >
+      {/* Image area */}
       <div style={{
         width: '100%',
-        maxWidth: '320px',
-        aspectRatio: '1',
-        borderRadius: '8px',
-        border: `2px ${dragOver ? 'solid #3b82f6' : 'dashed #d1d5db'}`,
-        background: dragOver ? '#eff6ff' : '#f9fafb',
+        height: '180px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        overflow: 'hidden',
-        marginBottom: '12px',
+        background: '#fafafa',
+        cursor: hasImage ? 'default' : 'pointer',
         position: 'relative',
-        transition: 'border-color 0.2s, background 0.2s',
       }}
-        onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
-        onDragLeave={() => setDragOver(false)}
-        onDrop={handleDrop}
+        onClick={!hasImage ? onUpload : undefined}
       >
         {uploading ? (
           <div style={{ textAlign: 'center', color: '#6b7280' }}>
             <div style={{
-              width: '32px',
-              height: '32px',
-              border: '3px solid #e5e7eb',
-              borderTopColor: '#3b82f6',
-              borderRadius: '50%',
-              animation: 'spin 0.8s linear infinite',
-              margin: '0 auto 8px',
+              width: '28px', height: '28px',
+              border: '3px solid #e5e7eb', borderTopColor: '#3b82f6',
+              borderRadius: '50%', animation: 'eif-spin .8s linear infinite',
+              margin: '0 auto 6px',
             }} />
-            <span style={{ fontSize: '13px' }}>上传中...</span>
-            <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
+            <span style={{ fontSize: '12px' }}>上传中...</span>
           </div>
-        ) : hasImage && !previewError ? (
+        ) : hasImage && !imgErr ? (
           <img
-            src={value as string}
-            alt="Product image preview"
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'contain',
-            }}
-            onError={() => setPreviewError(true)}
+            src={url}
+            alt="封面图"
+            style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+            onError={() => setImgErr(true)}
           />
-        ) : hasImage && previewError ? (
-          <div style={{ textAlign: 'center', color: '#ef4444', padding: '16px' }}>
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ margin: '0 auto 8px', display: 'block' }}>
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <circle cx="8.5" cy="8.5" r="1.5" />
-              <path d="m21 15-5-5L5 21" />
+        ) : hasImage && imgErr ? (
+          <div style={{ textAlign: 'center', color: '#ef4444', fontSize: '12px' }}>
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ display: 'block', margin: '0 auto 4px' }}>
+              <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" />
             </svg>
-            <span style={{ fontSize: '12px' }}>图片加载失败</span>
+            加载失败
           </div>
         ) : (
-          <div style={{ textAlign: 'center', color: '#9ca3af', padding: '16px' }}>
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" style={{ margin: '0 auto 8px', display: 'block', opacity: 0.5 }}>
-              <rect x="3" y="3" width="18" height="18" rx="2" />
-              <circle cx="8.5" cy="8.5" r="1.5" />
-              <path d="m21 15-5-5L5 21" />
+          <div style={{ textAlign: 'center', color: '#bbb', fontSize: '12px' }}>
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" style={{ display: 'block', margin: '0 auto 4px', opacity: .45 }}>
+              <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" />
             </svg>
-            <span style={{ fontSize: '13px' }}>拖拽图片到此处或点击上传</span>
+            点击或拖拽上传
           </div>
         )}
       </div>
 
-      {/* URL input */}
-      <input
-        type="text"
-        value={(value as string) || ''}
-        onChange={(e) => {
-          setValue(e.target.value)
-          setPreviewError(false)
-        }}
-        placeholder="输入图片 URL 或上传图片到 OSS"
-        disabled={uploading}
-        style={{
-          width: '100%',
-          padding: '8px 12px',
-          border: '1px solid var(--theme-elevation-150, #d1d5db)',
-          borderRadius: '6px',
-          fontSize: '14px',
-          fontFamily: 'monospace',
-          background: 'var(--theme-input-bg, #fff)',
-          color: 'var(--theme-text, #1a1a2e)',
-          marginBottom: '10px',
-          boxSizing: 'border-box',
-        }}
-      />
-
-      {/* Action buttons */}
-      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '6px',
-            background: uploading ? '#94a3b8' : '#10b981',
-            color: '#fff',
-            padding: '8px 16px',
-            borderRadius: '6px',
-            border: 'none',
-            fontSize: '13px',
-            fontWeight: 500,
-            cursor: uploading ? 'not-allowed' : 'pointer',
-          }}
-        >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <polyline points="17 8 12 3 7 8" />
-            <line x1="12" y1="3" x2="12" y2="15" />
-          </svg>
-          {uploading ? '上传中...' : '上传图片'}
-        </button>
-
-        {hasImage && (
-          <button
-            type="button"
-            onClick={handleClear}
-            disabled={uploading}
-            style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              background: 'transparent',
-              color: '#ef4444',
-              padding: '8px 16px',
-              borderRadius: '6px',
-              border: '1px solid #fca5a5',
-              fontSize: '13px',
-              fontWeight: 500,
-              cursor: uploading ? 'not-allowed' : 'pointer',
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="18" y1="6" x2="6" y2="18" />
-              <line x1="6" y1="6" x2="18" y2="18" />
+      {/* Action bar */}
+      {hasImage && (
+        <div style={{
+          display: 'flex', justifyContent: 'center', gap: '12px',
+          padding: '6px 0', borderTop: '1px solid #f0f0f0',
+        }}>
+          <ActionIcon title="放大查看" onClick={onZoom}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /><line x1="11" y1="8" x2="11" y2="14" /><line x1="8" y1="11" x2="14" y2="11" />
             </svg>
-            清除
-          </button>
+          </ActionIcon>
+          <ActionIcon title="替换图片" onClick={onReplace}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
+          </ActionIcon>
+          <ActionIcon title="删除图片" onClick={onDelete}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+            </svg>
+          </ActionIcon>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ────────────────────────────────────────────────────────────
+// Small icon button
+// ────────────────────────────────────────────────────────────
+function ActionIcon({ title, onClick, children }: { title: string; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      title={title}
+      onClick={onClick}
+      style={{
+        background: 'none', border: 'none', padding: '4px',
+        cursor: 'pointer', color: '#555', borderRadius: '4px',
+        display: 'inline-flex', alignItems: 'center',
+      }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#2563eb' }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = '#555' }}
+    >
+      {children}
+    </button>
+  )
+}
+
+// ────────────────────────────────────────────────────────────
+// Thumbnail card for gallery images (产品图)
+// ────────────────────────────────────────────────────────────
+function ThumbCard({
+  url,
+  onReplace,
+  onDelete,
+  onZoom,
+}: {
+  url: string
+  onReplace: () => void
+  onDelete: () => void
+  onZoom: () => void
+}) {
+  const [imgErr, setImgErr] = useState(false)
+
+  return (
+    <div style={{
+      width: '140px',
+      border: '1px solid #e5e7eb',
+      borderRadius: '6px',
+      overflow: 'hidden',
+      background: '#fff',
+      position: 'relative',
+    }}>
+      <div style={{
+        width: '100%', height: '130px',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: '#fafafa',
+      }}>
+        {!imgErr ? (
+          <img
+            src={url}
+            alt="产品图"
+            style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+            onError={() => setImgErr(true)}
+          />
+        ) : (
+          <span style={{ color: '#ccc', fontSize: '11px' }}>加载失败</span>
         )}
       </div>
+      <div style={{
+        display: 'flex', justifyContent: 'center', gap: '8px',
+        padding: '4px 0', borderTop: '1px solid #f0f0f0',
+      }}>
+        <ActionIcon title="放大" onClick={onZoom}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /><line x1="11" y1="8" x2="11" y2="14" /><line x1="8" y1="11" x2="14" y2="11" />
+          </svg>
+        </ActionIcon>
+        <ActionIcon title="替换" onClick={onReplace}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
+          </svg>
+        </ActionIcon>
+        <ActionIcon title="删除" onClick={onDelete}>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+          </svg>
+        </ActionIcon>
+      </div>
+    </div>
+  )
+}
 
-      {/* Hidden file input */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*"
-        onChange={handleFileChange}
-        style={{ display: 'none' }}
+// ────────────────────────────────────────────────────────────
+// Zoom modal
+// ────────────────────────────────────────────────────────────
+function ZoomModal({ url, onClose }: { url: string; onClose: () => void }) {
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 99999,
+        background: 'rgba(0,0,0,.65)', display: 'flex',
+        alignItems: 'center', justifyContent: 'center',
+        cursor: 'zoom-out',
+      }}
+    >
+      <img
+        src={url}
+        alt="Zoom"
+        style={{ maxWidth: '90vw', maxHeight: '90vh', objectFit: 'contain', borderRadius: '8px', boxShadow: '0 8px 40px rgba(0,0,0,.4)' }}
+        onClick={(e) => e.stopPropagation()}
       />
+    </div>
+  )
+}
+
+// ════════════════════════════════════════════════════════════
+// Main exported component
+// ════════════════════════════════════════════════════════════
+export const ExternalImageField: React.FC<{ path?: string }> = ({ path: pathProp }) => {
+  const fieldPath = pathProp || 'externalImageUrl'
+  const { value: coverUrl = '', setValue: setCoverUrl } = useField<string>({ path: fieldPath })
+  const { value: additionalRaw, setValue: setAdditional } = useField<string[]>({ path: 'additionalImageUrls' })
+  const additionalUrls: string[] = Array.isArray(additionalRaw) ? additionalRaw.filter(Boolean) : []
+
+  const [uploading, setUploading] = useState<'cover' | number | 'new' | null>(null)
+  const [zoomUrl, setZoomUrl] = useState<string | null>(null)
+
+  const coverInputRef = useRef<HTMLInputElement>(null)
+  const galleryInputRef = useRef<HTMLInputElement>(null)
+  const replaceIdxRef = useRef<number | null>(null)
+
+  // ── Upload handler ──
+  const doUpload = useCallback(async (file: File, target: 'cover' | number | 'new') => {
+    if (uploading !== null) return
+    setUploading(target)
+    try {
+      const url = await uploadFile(file)
+      if (target === 'cover') {
+        setCoverUrl(url)
+      } else if (target === 'new') {
+        setAdditional([...additionalUrls, url])
+      } else {
+        const next = [...additionalUrls]
+        next[target] = url
+        setAdditional(next)
+      }
+      toast.success('图片上传成功')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : '上传失败')
+    } finally {
+      setUploading(null)
+    }
+  }, [uploading, setCoverUrl, setAdditional, additionalUrls])
+
+  // ── Cover file input ──
+  const onCoverFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]
+    if (f) doUpload(f, 'cover')
+    e.target.value = ''
+  }, [doUpload])
+
+  // ── Gallery file input (for add + replace) ──
+  const onGalleryFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]
+    if (!f) return
+    const idx = replaceIdxRef.current
+    doUpload(f, idx !== null ? idx : 'new')
+    replaceIdxRef.current = null
+    e.target.value = ''
+  }, [doUpload])
+
+  const triggerGalleryReplace = (idx: number) => {
+    replaceIdxRef.current = idx
+    galleryInputRef.current?.click()
+  }
+
+  const triggerGalleryAdd = () => {
+    replaceIdxRef.current = null
+    galleryInputRef.current?.click()
+  }
+
+  const deleteAdditional = (idx: number) => {
+    const next = additionalUrls.filter((_, i) => i !== idx)
+    setAdditional(next.length > 0 ? next : [])
+  }
+
+  // ── Cover drop ──
+  const onCoverDrop = useCallback((e: React.DragEvent) => {
+    const f = e.dataTransfer.files?.[0]
+    if (f && f.type.startsWith('image/')) doUpload(f, 'cover')
+  }, [doUpload])
+
+  return (
+    <div style={{ paddingBottom: '16px' }}>
+      <style>{`@keyframes eif-spin { to { transform: rotate(360deg) } }`}</style>
+
+      {/* ── 封面图 ── */}
+      <h4 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 12px', color: '#1a1a2e' }}>封面图</h4>
+      <CoverImageCard
+        url={(coverUrl as string) || ''}
+        uploading={uploading === 'cover'}
+        onUpload={() => coverInputRef.current?.click()}
+        onZoom={() => coverUrl && setZoomUrl(coverUrl as string)}
+        onReplace={() => coverInputRef.current?.click()}
+        onDelete={() => setCoverUrl('')}
+        onDrop={onCoverDrop}
+      />
+
+      {/* URL hint — collapsed, not prominent */}
+      {coverUrl && (
+        <input
+          type="text"
+          value={(coverUrl as string) || ''}
+          onChange={(e) => setCoverUrl(e.target.value)}
+          style={{
+            width: '200px', marginTop: '6px', padding: '4px 8px',
+            border: '1px solid #e5e7eb', borderRadius: '4px',
+            fontSize: '11px', fontFamily: 'monospace', color: '#888',
+            background: '#fafafa',
+          }}
+        />
+      )}
+
+      {/* ── 产品图 ── */}
+      <h4 style={{ fontSize: '16px', fontWeight: 700, margin: '28px 0 12px', color: '#1a1a2e' }}>产品图</h4>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+        {additionalUrls.map((url, idx) => (
+          <ThumbCard
+            key={`${url}-${idx}`}
+            url={url}
+            onZoom={() => setZoomUrl(url)}
+            onReplace={() => triggerGalleryReplace(idx)}
+            onDelete={() => deleteAdditional(idx)}
+          />
+        ))}
+
+        {/* Add new card */}
+        <div
+          onClick={uploading === 'new' ? undefined : triggerGalleryAdd}
+          style={{
+            width: '140px', height: '168px',
+            border: '2px dashed #d1d5db', borderRadius: '6px',
+            display: 'flex', flexDirection: 'column',
+            alignItems: 'center', justifyContent: 'center',
+            cursor: uploading === 'new' ? 'wait' : 'pointer',
+            color: '#aaa', fontSize: '12px',
+            background: '#fafafa',
+            transition: 'border-color .2s',
+          }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = '#3b82f6' }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = '#d1d5db' }}
+          onDragOver={(e) => { e.preventDefault(); (e.currentTarget as HTMLDivElement).style.borderColor = '#3b82f6' }}
+          onDragLeave={(e) => { (e.currentTarget as HTMLDivElement).style.borderColor = '#d1d5db' }}
+          onDrop={(e) => {
+            e.preventDefault()
+            ;(e.currentTarget as HTMLDivElement).style.borderColor = '#d1d5db'
+            const f = e.dataTransfer.files?.[0]
+            if (f && f.type.startsWith('image/')) doUpload(f, 'new')
+          }}
+        >
+          {uploading === 'new' ? (
+            <>
+              <div style={{
+                width: '24px', height: '24px',
+                border: '3px solid #e5e7eb', borderTopColor: '#3b82f6',
+                borderRadius: '50%', animation: 'eif-spin .8s linear infinite',
+                marginBottom: '6px',
+              }} />
+              上传中...
+            </>
+          ) : (
+            <>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ marginBottom: '4px', opacity: .5 }}>
+                <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              添加图片
+            </>
+          )}
+        </div>
+      </div>
+
+      {/* Hidden file inputs */}
+      <input ref={coverInputRef} type="file" accept="image/*" onChange={onCoverFileChange} style={{ display: 'none' }} />
+      <input ref={galleryInputRef} type="file" accept="image/*" onChange={onGalleryFileChange} style={{ display: 'none' }} />
+
+      {/* Zoom modal */}
+      {zoomUrl && <ZoomModal url={zoomUrl} onClose={() => setZoomUrl(null)} />}
     </div>
   )
 }

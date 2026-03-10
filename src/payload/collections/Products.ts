@@ -375,6 +375,7 @@ export const Products: CollectionConfig = {
               hasMany: true,
               admin: {
                 description: 'Additional external image URLs',
+                hidden: true,
               },
             },
             {
