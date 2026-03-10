@@ -6,22 +6,28 @@ let client: OSS | null = null
 function getOSSClient(): OSS {
   if (client) return client
 
-  const region = process.env.ALIYUN_OSS_REGION
   const accessKeyId = process.env.ALIYUN_OSS_ACCESS_KEY_ID
   const accessKeySecret = process.env.ALIYUN_OSS_ACCESS_KEY_SECRET
   const bucket = process.env.ALIYUN_OSS_BUCKET
   const endpoint = process.env.ALIYUN_OSS_ENDPOINT
 
-  if (!region || !accessKeyId || !accessKeySecret || !bucket) {
-    throw new Error('Missing Aliyun OSS environment variables. Required: ALIYUN_OSS_REGION, ALIYUN_OSS_ACCESS_KEY_ID, ALIYUN_OSS_ACCESS_KEY_SECRET, ALIYUN_OSS_BUCKET')
+  if (!accessKeyId || !accessKeySecret || !bucket || !endpoint) {
+    throw new Error('Missing Aliyun OSS environment variables. Required: ALIYUN_OSS_ACCESS_KEY_ID, ALIYUN_OSS_ACCESS_KEY_SECRET, ALIYUN_OSS_BUCKET, ALIYUN_OSS_ENDPOINT')
   }
 
+  // Validate bucket name format
+  if (!/^[a-z0-9][a-z0-9-]{1,62}[a-z0-9]$/.test(bucket)) {
+    throw new Error(`Invalid bucket name: ${bucket}. Bucket name must be 3-63 chars, lowercase letters, numbers, and hyphens only.`)
+  }
+
+  console.log('[OSS] Creating client with endpoint:', endpoint, 'bucket:', bucket)
+
+  // For Aliyun OSS, use endpoint directly
   client = new OSS({
-    region,
     accessKeyId,
     accessKeySecret,
     bucket,
-    ...(endpoint ? { endpoint } : {}),
+    endpoint,
   })
 
   return client

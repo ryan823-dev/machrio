@@ -52,8 +52,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, url })
   } catch (error) {
     console.error('[OSS Upload Error]', error)
+    const errorMessage = error instanceof Error ? error.message : '上传失败，请重试'
+    const errorStack = error instanceof Error ? error.stack : ''
+    console.error('[OSS Upload Error Stack]', errorStack)
     return NextResponse.json(
-      { success: false, error: error instanceof Error ? error.message : '上传失败，请重试' },
+      { success: false, error: errorMessage, details: errorStack },
       { status: 500 },
     )
   }
