@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Machrio Content Direct Import</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 40px auto; padding: 20px; background: #f5f5f5; }
+        .container { background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .status { padding: 15px; margin: 15px 0; border-radius: 5px; }
+        .status.info { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+        .status.success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .status.error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        button { background: #007bff; color: white; border: none; padding: 12px 25px; border-radius: 5px; cursor: pointer; font-size: 16px; margin: 10px 5px; }
+        button:hover { background: #0056b3; }
+        button:disabled { background: #6c757d; cursor: not-allowed; }
+        .progress { height: 20px; background: #e9ecef; border-radius: 10px; margin: 20px 0; overflow: hidden; }
+        .progress-bar { height: 100%; background: #007bff; width: 0%; transition: width 0.3s; }
+        pre { background: #f8f9fa; padding: 15px; border-radius: 5px; overflow-x: auto; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Machrio 内容直接导入</h1>
+        
+        <div class="status info">
+            <h3>ℹ️ 导入说明</h3>
+            <p>此工具将直接通过网站API导入3篇SEO优化的文章内容。</p>
+            <p><strong>要求：</strong>网站开发服务器必须正在运行 (http://localhost:3000)</p>
+        </div>
+        
+        <button id="startImport" onclick="startImport()">开始导入</button>
+        <button id="viewContent" onclick="viewContent()" disabled>查看导入内容</button>
+        
+        <div class="progress">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        
+        <div id="results"></div>
+        
+        <div id="logContainer" style="margin-top: 30px;">
+            <h3>📋 导入日志</h3>
+            <pre id="importLog">等待开始导入...</pre>
+        </div>
+    </div>
+
+    <script>
+        let importLog = '';
+        
+        function log(message) {
+            importLog += `[${new Date().toLocaleTimeString()}] ${message}\n`;
+            document.getElementById('importLog').textContent = importLog;
+            console.log(message);
+        }
+        
+        async function startImport() {
+            const startBtn = document.getElementById('startImport');
+            const viewBtn = document.getElementById('viewContent');
+            const progressBar = document.getElementById('progressBar');
+            const resultsDiv = document.getElementById('results');
+            
+            startBtn.disabled = true;
+            startBtn.textContent = '导入中...';
+            
+            log('🚀 开始内容导入过程...');
+            log('检查网站连接...');
+            
+            try {
+                // Test connection
+                const testResponse = await fetch('http://localhost:3000/api/articles');
+                if (!testResponse.ok) throw new Error('无法连接到网站API');
+                
+                log('✅ 网站连接正常');
+                
+                // Articles to import
+                const articles = [
+                    {
+                        title: "What Is MRO in Manufacturing? Definition, Examples, and Product Categories",
+                        slug: "what-is-mro-in-manufacturing",
+                        excerpt: "Learn what MRO means in manufacturing, what products count as MRO, and how industrial buyers use MRO supplies to support maintenance, repair, and operations.",
+                        category: "industry-insight",
+                        tags: ["mro", "manufacturing", "maintenance", "industrial supplies"],
+                        author: "Machrio Team",
+                        status: "published",
+                        seo: {
+                            metaTitle: "What Is MRO in Manufacturing? Definition, Examples, and Categories",
+                            metaDescription: "Learn what MRO means in manufacturing, what products count as MRO, and how industrial buyers use MRO supplies to support maintenance, repair, and operations."
+                        }
+                    },
+                    {
+                        title: "What Are MRO Products? Categories, Examples, and Buying Tips",
+                        slug: "what-are-mro-products",
+                        excerpt: "Discover what MRO products are, which categories they include, and how businesses source industrial MRO supplies for maintenance, repair, and operations.",
+                        category: "buying-guide",
+                        tags: ["mro products", "industrial supplies", "maintenance", "procurement"],
+                        author: "Machrio Team",
+                        status: "published",
+                        seo: {
+                            metaTitle: "What Are MRO Products? Categories, Examples, and Buying Tips",
+                            metaDescription: "Discover what MRO products are, which categories they include, and how businesses source industrial MRO supplies for maintenance, repair, and operations."
+                        }
+                    },
+                    {
+                        title: "Types of Respirators Explained: N95, Half-Face, Full-Face, PAPR, and Supplied-Air",
+                        slug: "types-of-respirators-explained",
+                        excerpt: "Learn about different types of respirators including N95 masks, half-face respirators, full-face respirators, PAPRs, and supplied-air systems for workplace safety.",
+                        category: "industry-insight",
+                        tags: ["respirators", "safety equipment", "ppe", "occupational health"],
+                        author: "Machrio Team",
+                        status: "published",
+                        seo: {
+                            metaTitle: "Types of Respirators Explained: N95, Half-Face, Full-Face, PAPR, and Supplied-Air",
+                            metaDescription: "Learn about different types of respirators including N95 masks, half-face respirators, full-face respirators, PAPRs, and supplied-air systems for workplace safety."
+                        }
+                    }
+                ];
+                
+                const imported = [];
+                const failed = [];
+                
+                log(`开始导入 ${articles.length} 篇文章...`);
+                
+                // Import each article
+                for (let i = 0; i < articles.length; i++) {
+                    const article = articles[i];
+                    const progress = ((i + 1) / articles.length) * 100;
+                    
+                    progressBar.style.width = `${progress}%`;
+                    log(`📄 正在导入: ${article.title}`);
+                    
+                    try {
+                        // Check if exists
+                        const checkResponse = await fetch(`http://localhost:3000/api/articles?where[slug][equals]=${article.slug}`);
+                        const checkData = await checkResponse.json();
+                        
+                        let result;
+                        
+                        if (checkData.docs && checkData.docs.length > 0) {
+                            log('   ⚠️  文章已存在，正在更新...');
+                            const updateResponse = await fetch(`http://localhost:3000/api/articles/${checkData.docs[0].id}`, {
+                                method: 'PATCH',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(article)
+                            });
+                            result = await updateResponse.json();
+                        } else {
+                            log('   ➕ 创建新文章...');
+                            const createResponse = await fetch('http://localhost:3000/api/articles', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify(article)
+                            });
+                            result = await createResponse.json();
+                        }
+                        
+                        if (result.id || result.doc) {
+                            log('   ✅ 导入成功!');
+                            imported.push({
+                                title: article.title,
+                                slug: article.slug,
+                                id: result.id || result.doc.id
+                            });
+                        } else {
+                            throw new Error(result.errors ? JSON.stringify(result.errors) : '未知错误');
+                        }
+                        
+                    } catch (error) {
+                        log(`   ❌ 导入失败: ${error.message}`);
+                        failed.push({
+                            title: article.title,
+                            error: error.message
+                        });
+                    }
+                }
+                
+                // Show results
+                progressBar.style.width = '100%';
+                log('\n📊 导入完成!');
+                log(`✅ 成功导入: ${imported.length} 篇`);
+                log(`❌ 失败: ${failed.length} 篇`);
+                
+                let resultsHTML = '<div class="status success"><h3>🎉 导入成功!</h3>';
+                resultsHTML += `<p>成功导入了 ${imported.length} 篇文章</p>`;
+                
+                if (imported.length > 0) {
+                    resultsHTML += '<h4>已导入的文章:</h4><ul>';
+                    imported.forEach(item => {
+                        resultsHTML += `<li><strong>${item.title}</strong><br/>`;
+                        resultsHTML += `访问地址: <a href="http://localhost:3000/knowledge-center/${item.slug}" target="_blank">/knowledge-center/${item.slug}</a></li>`;
+                    });
+                    resultsHTML += '</ul>';
+                }
+                
+                if (failed.length > 0) {
+                    resultsHTML += '<div class="status error"><h4>失败的文章:</h4><ul>';
+                    failed.forEach(item => {
+                        resultsHTML += `<li><strong>${item.title}</strong>: ${item.error}</li>`;
+                    });
+                    resultsHTML += '</ul></div>';
+                }
+                
+                resultsHTML += '<p><button onclick="window.location.reload()">刷新页面</button> 查看最新内容</p></div>';
+                
+                resultsDiv.innerHTML = resultsHTML;
+                viewBtn.disabled = false;
+                
+            } catch (error) {
+                log(`💥 导入过程出错: ${error.message}`);
+                resultsDiv.innerHTML = `<div class="status error"><h3>❌ 导入失败</h3><p>${error.message}</p></div>`;
+            } finally {
+                startBtn.disabled = false;
+                startBtn.textContent = '重新导入';
+            }
+        }
+        
+        function viewContent() {
+            window.open('http://localhost:3000/knowledge-center', '_blank');
+        }
+        
+        // Auto-start if accessed directly
+        if (window.location.hash === '#auto') {
+            setTimeout(startImport, 1000);
+        }
+    </script>
+</body>
+</html>

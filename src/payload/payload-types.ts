@@ -464,11 +464,7 @@ export interface Product {
     | null;
   pricing?: {
     /**
-     * Cost price (for margin calculation)
-     */
-    costPrice?: number | null;
-    /**
-     * Selling price (leave empty for RFQ-only)
+     * Standard unit price (leave empty for RFQ-only)
      */
     basePrice?: number | null;
     /**
@@ -566,6 +562,27 @@ export interface Product {
       }[]
     | null;
   /**
+   * Filterable attributes
+   */
+  facets?: {
+    /**
+     * e.g., Nitrile, Leather
+     */
+    material?: string[] | null;
+    /**
+     * e.g., S, M, L, XL
+     */
+    size?: string[] | null;
+    /**
+     * e.g., Blue, Black
+     */
+    color?: string[] | null;
+    /**
+     * e.g., ANSI, CE, ISO
+     */
+    certification?: string[] | null;
+  };
+  /**
    * Full product description (300+ words for SEO)
    */
   fullDescription: {
@@ -608,22 +625,6 @@ export interface Product {
    * Original product source URL (for tracking)
    */
   sourceUrl?: string | null;
-  /**
-   * Frequently Asked Questions (up to 3)
-   */
-  faq?:
-    | {
-        /**
-         * FAQ question
-         */
-        question: string;
-        /**
-         * FAQ answer
-         */
-        answer: string;
-        id?: string | null;
-      }[]
-    | null;
   updatedAt: string;
   createdAt: string;
   _status?: ('draft' | 'published') | null;
@@ -1316,20 +1317,6 @@ export interface Article {
     [k: string]: unknown;
   };
   /**
-   * Direct answer in ~50 words. AI engines (ChatGPT, Perplexity, Google SGE) prioritize this for citations. Leave empty to skip.
-   */
-  quickAnswer?: string | null;
-  /**
-   * FAQ pairs generate FAQPage Schema for Google Rich Results and AI engine extraction.
-   */
-  faq?:
-    | {
-        question: string;
-        answer: string;
-        id?: string | null;
-      }[]
-    | null;
-  /**
    * Primary content category
    */
   category: 'buying-guide' | 'industry-insight' | 'how-to' | 'product-comparison';
@@ -1883,7 +1870,6 @@ export interface ProductsSelect<T extends boolean = true> {
   pricing?:
     | T
     | {
-        costPrice?: T;
         basePrice?: T;
         compareAtPrice?: T;
         currency?: T;
@@ -1921,6 +1907,14 @@ export interface ProductsSelect<T extends boolean = true> {
         unit?: T;
         id?: T;
       };
+  facets?:
+    | T
+    | {
+        material?: T;
+        size?: T;
+        color?: T;
+        certification?: T;
+      };
   fullDescription?: T;
   seo?:
     | T
@@ -1931,13 +1925,6 @@ export interface ProductsSelect<T extends boolean = true> {
       };
   relatedProducts?: T;
   sourceUrl?: T;
-  faq?:
-    | T
-    | {
-        question?: T;
-        answer?: T;
-        id?: T;
-      };
   updatedAt?: T;
   createdAt?: T;
   _status?: T;
@@ -2318,14 +2305,6 @@ export interface ArticlesSelect<T extends boolean = true> {
   slug?: T;
   excerpt?: T;
   content?: T;
-  quickAnswer?: T;
-  faq?:
-    | T
-    | {
-        question?: T;
-        answer?: T;
-        id?: T;
-      };
   category?: T;
   tags?: T;
   author?: T;

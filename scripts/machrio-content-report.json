@@ -1,0 +1,78 @@
+{
+  "timestamp": "2026-03-11T03:32:41.238Z",
+  "contentImport": {
+    "status": "ready",
+    "articles": [
+      {
+        "title": "What Is MRO in Manufacturing? Definition, Examples, and Product Categories",
+        "slug": "what-is-mro-in-manufacturing",
+        "url": "/knowledge-center/what-is-mro-in-manufacturing"
+      },
+      {
+        "title": "What Are MRO Products? Categories, Examples, and Buying Tips",
+        "slug": "what-are-mro-products",
+        "url": "/knowledge-center/what-are-mro-products"
+      },
+      {
+        "title": "Types of Respirators Explained: N95, Half-Face, Full-Face, PAPR, and Supplied-Air",
+        "slug": "types-of-respirators-explained",
+        "url": "/knowledge-center/types-of-respirators-explained"
+      }
+    ]
+  },
+  "fourOhFourDiagnosis": [
+    {
+      "url": "https://machrio.com/product/welding-protection/cowhide-welding-apron-yellow-length-3543-in-width-2756-in-aa7537068",
+      "pageType": "Product Page",
+      "likelyCause": "Product slug not found in database or product not published",
+      "fixRecommendation": "Verify product exists in CMS, check slug accuracy, ensure status is \"published\""
+    },
+    {
+      "url": "https://machrio.com/product/cable-ties-wire-accessories/heat-shrink-tubing-diameter-0-47-inch-shrink-to-0-24-inch-black-length-16-40-foo-759028",
+      "pageType": "Product Page",
+      "likelyCause": "Product slug not found in database or product not published",
+      "fixRecommendation": "Verify product exists in CMS, check slug accuracy, ensure status is \"published\""
+    },
+    {
+      "url": "https://machrio.com/product/tape/primerless-acrylic-foam-tape-px5011-black-0045-in-thickness-0945-in-width-10827--ac8419329",
+      "pageType": "Product Page",
+      "likelyCause": "Product slug not found in database or product not published",
+      "fixRecommendation": "Verify product exists in CMS, check slug accuracy, ensure status is \"published\""
+    },
+    {
+      "url": "https://machrio.com/product/hand-protection/low-temperature-gloves-length-15-in-blue-aa7537010",
+      "pageType": "Product Page",
+      "likelyCause": "Product slug not found in database or product not published",
+      "fixRecommendation": "Verify product exists in CMS, check slug accuracy, ensure status is \"published\""
+    },
+    {
+      "url": "https://machrio.com/category/linen-carts",
+      "pageType": "Category Page",
+      "likelyCause": "Category slug not found in database or category not active",
+      "fixRecommendation": "Verify category exists in CMS, check parent-child relationships, ensure category is active"
+    },
+    {
+      "url": "https://machrio.com/product/storage-shelving/drawer-type-parts-box-18-compartments-length-18-90-inch-width-14-57-inch-height--759074",
+      "pageType": "Product Page",
+      "likelyCause": "Product slug not found in database or product not published",
+      "fixRecommendation": "Verify product exists in CMS, check slug accuracy, ensure status is \"published\""
+    }
+  ],
+  "recommendations": {
+    "immediate": [
+      "Import prepared content articles via Payload Admin Panel",
+      "Verify database records for 404 pages",
+      "Check publishing status of affected items"
+    ],
+    "mediumTerm": [
+      "Implement 404 monitoring and logging",
+      "Set up automated redirect management",
+      "Create content audit workflow"
+    ],
+    "longTerm": [
+      "Develop content lifecycle management system",
+      "Implement SEO monitoring dashboard",
+      "Create automated content quality checks"
+    ]
+  }
+}
