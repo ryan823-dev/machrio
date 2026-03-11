@@ -19,7 +19,8 @@ const articles = [
     category: "industry-insight",
     tags: ["mro", "manufacturing", "maintenance", "industrial supplies"],
     author: "Machrio Team",
-    status: "published"
+    status: "published",
+    publishedAt: new Date().toISOString()
   },
   {
     title: "What Are MRO Products? Categories, Examples, and Buying Tips",
@@ -35,7 +36,8 @@ const articles = [
     category: "buying-guide",
     tags: ["mro products", "industrial supplies", "maintenance", "procurement"],
     author: "Machrio Team",
-    status: "published"
+    status: "published",
+    publishedAt: new Date().toISOString()
   },
   {
     title: "Types of Respirators Explained: N95, Half-Face, Full-Face, PAPR, and Supplied-Air",
@@ -51,7 +53,8 @@ const articles = [
     category: "industry-insight",
     tags: ["respirators", "safety equipment", "ppe", "occupational health"],
     author: "Machrio Team",
-    status: "published"
+    status: "published",
+    publishedAt: new Date().toISOString()
   }
 ];
 
