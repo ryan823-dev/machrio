@@ -66,6 +66,69 @@ function extractChildren(children: unknown[]): string {
     .join('')
 }
 
+// Common section header patterns in product descriptions
+const SECTION_HEADERS = [
+  'Overview', 'Key Features', 'Features', 'Specifications', 'Applications',
+  'Product Information', 'Product Description', 'Material', 'Size Specifications',
+  'Technology & Construction', 'Benefits', 'Usage', 'Description', 'Details',
+  'Technical Specifications', 'Product Details', 'Important Notes', 'Note'
+]
+
+// Convert text with section headers to properly formatted HTML
+function formatTextWithHeaders(text: string): string {
+  // Create regex pattern for all headers
+  const headerPattern = SECTION_HEADERS.map(h => h.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')
+  const regex = new RegExp(`(${headerPattern})\\s*:?\\s*`, 'gi')
+  
+  // Split by header patterns, keeping the headers
+  const parts = text.split(regex).filter(Boolean)
+  
+  if (parts.length <= 1) {
+    // No headers found, return as paragraph
+    return text ? `<p>${text}</p>` : ''
+  }
+  
+  let result = ''
+  let currentHeader = ''
+  
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i].trim()
+    if (!part) continue
+    
+    // Check if this part is a header
+    const isHeader = SECTION_HEADERS.some(h => 
+      part.toLowerCase() === h.toLowerCase() || 
+      part.toLowerCase() === h.toLowerCase() + ':'
+    )
+    
+    if (isHeader) {
+      // Save previous content if any
+      if (currentHeader) {
+        // Previous header exists, this is a new header
+        result += `<h3>${currentHeader}</h3>`
+      }
+      currentHeader = part.replace(/:$/, '')
+    } else {
+      // This is content
+      if (currentHeader) {
+        // We have a header, add it with content
+        result += `<h3>${currentHeader}</h3><p>${part}</p>`
+        currentHeader = ''
+      } else {
+        // No header, just content
+        result += `<p>${part}</p>`
+      }
+    }
+  }
+  
+  // Handle remaining header without content
+  if (currentHeader) {
+    result += `<h3>${currentHeader}</h3>`
+  }
+  
+  return result
+}
+
 function lexicalToHtml(richText: unknown): string {
   if (!richText || typeof richText !== 'object') return ''
   const root = (richText as Record<string, unknown>).root as Record<string, unknown> | undefined
@@ -74,6 +137,10 @@ function lexicalToHtml(richText: unknown): string {
     .map((node) => {
       if (node.type === 'paragraph') {
         const text = extractChildren(node.children as unknown[])
+        // Check if this paragraph contains section headers
+        if (text && SECTION_HEADERS.some(h => new RegExp(`\\b${h}\\s*:?\\b`, 'i').test(text))) {
+          return formatTextWithHeaders(text)
+        }
         return text ? `<p>${text}</p>` : ''
       }
       if (node.type === 'heading') {
