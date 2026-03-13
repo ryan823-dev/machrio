@@ -67,18 +67,22 @@ function extractChildren(children: unknown[]): string {
 }
 
 // Common section header patterns in product descriptions
+// Only include headers that are unlikely to appear as regular words in sentences
 const SECTION_HEADERS = [
   'Overview', 'Key Features', 'Features', 'Specifications', 'Applications',
   'Product Information', 'Product Description', 'Material', 'Size Specifications',
-  'Technology & Construction', 'Benefits', 'Usage', 'Description', 'Details',
+  'Technology & Construction', 'Benefits', 'Description', 'Details',
   'Technical Specifications', 'Product Details', 'Important Notes', 'Note'
+  // Removed 'Usage' - it commonly appears in sentences like "high-volume usage"
 ]
 
 // Convert text with section headers to properly formatted HTML
 function formatTextWithHeaders(text: string): string {
-  // Create regex pattern for all headers
+  // Only match headers at the START of a line or after whitespace
+  // Header must be followed by colon, newline, or end of string
+  // This prevents matching words in the middle of sentences
   const headerPattern = SECTION_HEADERS.map(h => h.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')
-  const regex = new RegExp(`(${headerPattern})\\s*:?\\s*`, 'gi')
+  const regex = new RegExp(`(?:^|\\n)(${headerPattern})(?:\\s*:|\\s*\\n|\\s*$)`, 'gi')
   
   // Split by header patterns, keeping the headers
   const parts = text.split(regex).filter(Boolean)
@@ -95,19 +99,17 @@ function formatTextWithHeaders(text: string): string {
     const part = parts[i].trim()
     if (!part) continue
     
-    // Check if this part is a header
+    // Check if this part is a header (exact match, case insensitive)
     const isHeader = SECTION_HEADERS.some(h => 
-      part.toLowerCase() === h.toLowerCase() || 
-      part.toLowerCase() === h.toLowerCase() + ':'
+      part.toLowerCase() === h.toLowerCase()
     )
     
     if (isHeader) {
-      // Save previous content if any
+      // Save previous header with content if any
       if (currentHeader) {
-        // Previous header exists, this is a new header
         result += `<h3>${currentHeader}</h3>`
       }
-      currentHeader = part.replace(/:$/, '')
+      currentHeader = part
     } else {
       // This is content
       if (currentHeader) {
@@ -141,6 +143,10 @@ function lexicalToHtml(richText: unknown): string {
         if (text && SECTION_HEADERS.some(h => new RegExp(`\\b${h}\\s*:?\\b`, 'i').test(text))) {
           return formatTextWithHeaders(text)
         }
+        // Check if this paragraph is a text-based list (lines starting with - or *)
+        if (text && /^[\s]*[-*][\s]/.test(text)) {
+          return formatTextList(text)
+        }
         return text ? `<p>${text}</p>` : ''
       }
       if (node.type === 'heading') {
@@ -163,6 +169,31 @@ function lexicalToHtml(richText: unknown): string {
     })
     .filter(Boolean)
     .join('\n')
+}
+
+// Format text-based lists (lines starting with - or *)
+function formatTextList(text: string): string {
+  const lines = text.split('\n')
+  const listItems: string[] = []
+  const nonListLines: string[] = []
+  
+  for (const line of lines) {
+    const trimmed = line.trim()
+    if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+      listItems.push(trimmed.substring(2))
+    } else if (trimmed) {
+      nonListLines.push(trimmed)
+    }
+  }
+  
+  let result = ''
+  if (listItems.length > 0) {
+    result += '<ul>' + listItems.map(item => `<li>${item}</li>`).join('') + '</ul>'
+  }
+  if (nonListLines.length > 0) {
+    result += nonListLines.map(line => `<p>${line}</p>`).join('')
+  }
+  return result
 }
 
 async function getProductBySlug(slug: string) {
