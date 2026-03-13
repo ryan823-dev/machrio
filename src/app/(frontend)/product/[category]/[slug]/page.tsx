@@ -23,27 +23,49 @@ interface ProductPageProps {
   params: Promise<{ category: string; slug: string }>
 }
 
-// Extract plain text from Lexical richText JSON
+// Extract plain text from Lexical richText JSON (for meta descriptions, etc.)
 function extractTextFromLexical(richText: unknown): string {
   if (!richText || typeof richText !== 'object') return ''
   const root = (richText as Record<string, unknown>).root as Record<string, unknown> | undefined
   if (!root) return ''
-  return extractChildren(root.children as unknown[])
+  return extractChildrenPlain(root.children as unknown[])
 }
 
-function extractChildren(children: unknown[]): string {
+function extractChildrenPlain(children: unknown[]): string {
   if (!Array.isArray(children)) return ''
   return children
     .map((node) => {
       const n = node as Record<string, unknown>
       if (n.type === 'text') return n.text as string
+      if (n.children) return extractChildrenPlain(n.children as unknown[])
+      return ''
+    })
+    .join('')
+}
+
+// Render Lexical richText as HTML with proper formatting
+function extractChildren(children: unknown[]): string {
+  if (!Array.isArray(children)) return ''
+  return children
+    .map((node) => {
+      const n = node as Record<string, unknown>
+      if (n.type === 'text') {
+        let text = n.text as string
+        if (n.format === 1 || n.bold) text = `<strong>${text}</strong>`
+        if (n.format === 2 || n.italic) text = `<em>${text}</em>`
+        return text
+      }
+      if (n.type === 'link') {
+        const url = ((n.fields as Record<string, unknown>)?.url as string) || '#'
+        const inner = extractChildren(n.children as unknown[])
+        return `<a href="${url}" class="text-primary-600 underline hover:text-primary-800">${inner}</a>`
+      }
       if (n.children) return extractChildren(n.children as unknown[])
       return ''
     })
     .join('')
 }
 
-// Render Lexical richText as HTML paragraphs
 function lexicalToHtml(richText: unknown): string {
   if (!richText || typeof richText !== 'object') return ''
   const root = (richText as Record<string, unknown>).root as Record<string, unknown> | undefined
@@ -58,6 +80,17 @@ function lexicalToHtml(richText: unknown): string {
         const tag = (node.tag as string) || 'h3'
         const text = extractChildren(node.children as unknown[])
         return text ? `<${tag}>${text}</${tag}>` : ''
+      }
+      if (node.type === 'list') {
+        const tag = node.listType === 'number' ? 'ol' : 'ul'
+        const items = (node.children as Record<string, unknown>[])
+          .map((li) => `<li>${extractChildren(li.children as unknown[])}</li>`)
+          .join('')
+        return `<${tag}>${items}</${tag}>`
+      }
+      if (node.type === 'quote') {
+        const text = extractChildren(node.children as unknown[])
+        return text ? `<blockquote>${text}</blockquote>` : ''
       }
       return ''
     })
@@ -686,7 +719,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
         <section className="mt-10">
           <h2 className="text-lg font-bold text-secondary-900">Product Description</h2>
           <div
-            className="mt-4 prose prose-sm max-w-none text-secondary-600"
+            className="mt-4 article-content max-w-none"
             dangerouslySetInnerHTML={{ __html: descriptionHtml }}
           />
         </section>
