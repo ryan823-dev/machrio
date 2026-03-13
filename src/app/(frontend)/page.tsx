@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { Metadata } from 'next'
 import { StructuredData } from '@/components/shared/StructuredData'
 import { HeroAIChat } from '@/components/shared/HeroAIChat'
+import { CategoryPagination } from '@/components/shared/CategoryPagination'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 
@@ -64,7 +65,7 @@ const fallbackCategories = [
 async function getCategoriesWithCounts() {
   try {
     const payload = await getPayload({ config })
-    // Get top-level featured categories (no parent)
+    // Get all top-level featured categories (no parent)
     const categories = await payload.find({
       collection: 'categories',
       where: {
@@ -72,7 +73,7 @@ async function getCategoriesWithCounts() {
         parent: { exists: false },
       },
       sort: 'displayOrder',
-      limit: 12,
+      limit: 100, // Get all featured categories for pagination
     })
 
     if (categories.docs.length === 0) {
@@ -228,22 +229,8 @@ export default async function HomePage() {
         <div className="container-main">
           <h2 className="text-2xl font-bold text-secondary-900">Browse Categories</h2>
           <p className="mt-1 text-secondary-500">Find the right industrial products for your operation</p>
-          <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-            {categoriesWithCounts.map((cat) => (
-              <Link
-                key={cat.slug}
-                href={`/category/${cat.slug}`}
-                className="card flex flex-col items-center py-6 text-center transition-all hover:border-primary-200 hover:shadow-md"
-              >
-                <span className="text-3xl">{categoryIcons[cat.slug] || '📦'}</span>
-                <span className="mt-3 font-semibold text-secondary-800">{cat.name}</span>
-                {cat.productCount < 5 ? (
-                  <span className="mt-1 text-xs text-amber-600 font-medium">Coming Soon</span>
-                ) : (
-                  <span className="mt-1 text-xs text-secondary-500">{cat.productCount.toLocaleString()} products</span>
-                )}
-              </Link>
-            ))}
+          <div className="mt-6">
+            <CategoryPagination categories={categoriesWithCounts} itemsPerPage={12} />
           </div>
         </div>
       </section>
