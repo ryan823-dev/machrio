@@ -109,14 +109,43 @@ function CoverImageCard({
             src={url}
             alt="封面图"
             style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
-            onError={() => setImgErr(true)}
+            onError={(e) => {
+              console.error('[CoverImage] Failed to load:', url);
+              setImgErr(true);
+              // Try to reload after 1 second
+              setTimeout(() => {
+                const img = e.target as HTMLImageElement;
+                if (img.src !== url) {
+                  img.src = url;
+                }
+              }, 1000);
+            }}
           />
         ) : hasImage && imgErr ? (
           <div style={{ textAlign: 'center', color: '#ef4444', fontSize: '12px', padding: '16px' }}>
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ display: 'block', margin: '0 auto 6px' }}>
               <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" />
             </svg>
-            图片加载失败
+            <div style={{ marginTop: '4px' }}>图片加载失败</div>
+            <button
+              type="button"
+              onClick={() => {
+                setImgErr(false);
+                // Force reload
+                const container = document.getElementById(`cover-${Date.now()}`);
+                if (container) {
+                  const img = container.querySelector('img');
+                  if (img) img.src = url + '?t=' + Date.now();
+                }
+              }}
+              style={{
+                marginTop: '8px', padding: '4px 12px', fontSize: '11px',
+                background: '#3b82f6', color: '#fff', border: 'none',
+                borderRadius: '4px', cursor: 'pointer',
+              }}
+            >
+              重试
+            </button>
           </div>
         ) : (
           <div style={{ textAlign: 'center', color: '#9ca3af', fontSize: '13px' }}>
@@ -202,10 +231,29 @@ function ThumbCard({
             src={url}
             alt="产品图"
             style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
-            onError={() => setImgErr(true)}
+            onError={(e) => {
+              console.error('[ThumbCard] Failed to load:', url);
+              setImgErr(true);
+            }}
           />
         ) : (
-          <span style={{ color: '#ccc', fontSize: '11px' }}>加载失败</span>
+          <div style={{ textAlign: 'center', color: '#ef4444', fontSize: '10px', padding: '8px' }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ display: 'block', margin: '0 auto 4px' }}>
+              <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" />
+            </svg>
+            <div>加载失败</div>
+            <button
+              type="button"
+              onClick={() => setImgErr(false)}
+              style={{
+                marginTop: '4px', padding: '2px 8px', fontSize: '10px',
+                background: '#3b82f6', color: '#fff', border: 'none',
+                borderRadius: '3px', cursor: 'pointer',
+              }}
+            >
+              重试
+            </button>
+          </div>
         )}
       </div>
       <div style={{
