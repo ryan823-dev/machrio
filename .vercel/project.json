@@ -1,0 +1,16 @@
+{
+  "projectId": "prj_IRCEVjGeibKESzcfuwwWHudfRShi",
+  "orgId": "team_8CoQq2zAOASivxYqqI9A76s0",
+  "projectName": "machrio",
+  "settings": {
+    "createdAt": 1772282813687,
+    "framework": "nextjs",
+    "devCommand": null,
+    "installCommand": null,
+    "buildCommand": null,
+    "outputDirectory": null,
+    "rootDirectory": null,
+    "directoryListing": false,
+    "nodeVersion": "24.x"
+  }
+}

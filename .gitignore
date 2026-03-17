@@ -6,7 +6,10 @@ node_modules/
 next-env.d.ts
 out/
 dist/
-.vercel
+
+# Vercel - 但保留 project.json 以便团队成员共享项目配置
+.vercel/*
+!.vercel/project.json
 
 .env*
 .vercel-tmp/
