@@ -3,6 +3,7 @@ import type { CollectionConfig } from 'payload'
 export const Products: CollectionConfig = {
   slug: 'products',
   defaultSort: '-updatedAt',
+  defaultLimit: 20,
   labels: {
     singular: '产品',
     plural: '产品',
@@ -16,6 +17,16 @@ export const Products: CollectionConfig = {
       beforeListTable: ['/src/components/admin/ProductListHeader#ProductListHeader'],
     },
   },
+  // 确保分页查询稳定
+  indexes: [
+    {
+      fields: ['-updatedAt'],
+    },
+    {
+      fields: ['slug'],
+      unique: true,
+    },
+  ],
   versions: {
     drafts: true,
   },
