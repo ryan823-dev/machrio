@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 
-export const dynamic = 'force-dynamic'
+// 使用 ISR 缓存，每 1 小时重新验证
+export const revalidate = 3600
 
 interface NavCategory {
   id: string
@@ -11,7 +12,17 @@ interface NavCategory {
   children?: NavCategory[]
 }
 
+// 内存缓存
+let cachedCategories: NavCategory[] | null = null
+let cacheTime = 0
+const CACHE_TTL = 60 * 60 * 1000 // 1 小时
+
 export async function GET() {
+  // 检查内存缓存
+  if (cachedCategories && Date.now() - cacheTime < CACHE_TTL) {
+    return NextResponse.json({ categories: cachedCategories })
+  }
+
   try {
     const payload = await getPayload({ config })
 
@@ -69,6 +80,10 @@ export async function GET() {
       }
     })
 
+    // 保存到内存缓存
+    cachedCategories = categories
+    cacheTime = Date.now()
+
     return NextResponse.json({ categories }, {
       headers: { 
         'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=7200',
@@ -76,6 +91,10 @@ export async function GET() {
     })
   } catch (error) {
     console.error('Nav categories error:', error)
+    // 如果有缓存，返回过期缓存
+    if (cachedCategories) {
+      return NextResponse.json({ categories: cachedCategories })
+    }
     return NextResponse.json({ categories: [] }, { status: 500 })
   }
 }

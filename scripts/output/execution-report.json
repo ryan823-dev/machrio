@@ -1,0 +1,13 @@
+{
+  "timestamp": "2026-03-19T03:40:19.157Z",
+  "summary": {
+    "total": 274,
+    "updated": 11,
+    "skipped": 0,
+    "failed": 263
+  },
+  "details": {
+    "manualCategoriesUsed": 11,
+    "autoMatchedUsed": 0
+  }
+}
