@@ -1,12 +1,13 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { getPayload } from 'payload'
-import config from '@payload-config'
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 
-// 使用 ISR，每 10 分钟重新验证一次
-// 分类列表变化不频繁，可以使用较长的缓存时间
-export const revalidate = 600
+// 直接使用静态数据，避免繁重的数据库查询
+// 导航数据在构建时生成，包含完整的三层分类结构
+import navCategoriesData from '@/data/nav-categories.json'
+
+// 静态生成 - 这个页面不需要动态数据
+export const dynamic = 'force-static'
 
 export const metadata: Metadata = {
   title: 'All Categories | Machrio Industrial Supplies',
@@ -14,83 +15,31 @@ export const metadata: Metadata = {
   alternates: { canonical: '/category/' },
 }
 
-async function getTopLevelCategories() {
-  try {
-    const payload = await getPayload({ config })
-    const result = await payload.find({
-      collection: 'categories',
-      where: {
-        or: [
-          { parent: { exists: false } },
-          { parent: { equals: null } },
-        ],
-      },
-      sort: 'displayOrder',
-      limit: 50,
-    })
+// 从静态数据提取顶级分类
+function getTopLevelCategories() {
+  const categories = (navCategoriesData as { categories: Array<{
+    id: string
+    name: string
+    slug: string
+    children?: Array<{ name: string; slug: string }>
+  }> }).categories
 
-    // For each top-level category, get subcategories and product count
-    const categories = await Promise.all(
-      result.docs.map(async (cat) => {
-        // Get subcategories
-        const children = await payload.find({
-          collection: 'categories',
-          where: { parent: { equals: cat.id } },
-          sort: 'displayOrder',
-          limit: 50,
-        })
-
-        // Count products in this category + all subcategories + grandchildren
-        const allIds = [cat.id, ...children.docs.map(c => c.id)]
-        // Also get level-3 categories (grandchildren)
-        const grandchildrenResults = await Promise.all(
-          children.docs.map(child =>
-            payload.find({
-              collection: 'categories',
-              where: { parent: { equals: child.id } },
-              limit: 200,
-            })
-          )
-        )
-        const grandchildren = grandchildrenResults.flatMap(r => r.docs)
-        allIds.push(...grandchildren.map(c => c.id))
-        let productCount = 0
-        try {
-          const countResult = await payload.count({
-            collection: 'products',
-            where: {
-              primaryCategory: { in: allIds },
-              status: { equals: 'published' },
-            },
-          })
-          productCount = countResult.totalDocs
-        } catch { /* ignore */ }
-
-        const subcategories = children.docs.map(child => ({
-          name: child.name,
-          slug: child.slug,
-        }))
-
-        return {
-          id: cat.id,
-          name: cat.name,
-          slug: cat.slug,
-          icon: (cat as unknown as Record<string, unknown>).iconEmoji as string || '',
-          shortDescription: cat.shortDescription || '',
-          productCount,
-          subcategories,
-        }
-      })
-    )
-
-    return categories
-  } catch {
-    return []
-  }
+  return categories.map(cat => ({
+    id: cat.id,
+    name: cat.name,
+    slug: cat.slug,
+    icon: '',
+    shortDescription: '',
+    productCount: 0, // 静态数据不包含产品数量，避免繁重查询
+    subcategories: (cat.children || []).slice(0, 6).map(child => ({
+      name: child.name,
+      slug: child.slug,
+    })),
+  }))
 }
 
-export default async function AllCategoriesPage() {
-  const categories = await getTopLevelCategories()
+export default function AllCategoriesPage() {
+  const categories = getTopLevelCategories()
 
   const breadcrumbs = [
     { label: 'Home', href: '/' },
