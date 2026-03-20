@@ -4,7 +4,9 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 
-export const dynamic = 'force-dynamic'
+// 使用 ISR，每 10 分钟重新验证一次
+// 分类列表变化不频繁，可以使用较长的缓存时间
+export const revalidate = 600
 
 export const metadata: Metadata = {
   title: 'All Categories | Machrio Industrial Supplies',

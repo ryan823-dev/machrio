@@ -6,7 +6,9 @@ import { CategoryPagination } from '@/components/shared/CategoryPagination'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 
-export const dynamic = 'force-dynamic'
+// 使用 ISR，每 5 分钟重新验证一次
+// 这样大部分请求都会命中缓存，响应更快
+export const revalidate = 300
 
 export const metadata: Metadata = {
   title: 'Machrio - Tools, Parts & Industrial Essentials | Buy Online or Request a Quote',

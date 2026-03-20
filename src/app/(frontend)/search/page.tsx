@@ -4,7 +4,9 @@ import Link from 'next/link'
 import { CompareFloatingBar } from '@/components/search/ProductCompare'
 import { SearchResultsContent } from './SearchResultsContent'
 
-export const dynamic = 'force-dynamic'
+// 使用 ISR，每 2 分钟重新验证一次
+// 搜索页面需要相对新鲜的数据，但可以短暂缓存
+export const revalidate = 120
 
 export async function generateMetadata({
   searchParams,

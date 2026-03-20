@@ -16,7 +16,9 @@ import { FilterBar, DesktopSortBar } from '@/components/category/FilterBar'
 import { ExpandableIntro } from '@/components/category/ExpandableIntro'
 import { EmptyStateAIDialog } from '@/components/category/EmptyStateAIDialog'
 
-export const dynamic = 'force-dynamic'
+// 使用 ISR，每 5 分钟重新验证一次
+// 分类页面数据可以缓存，过滤和排序通过 URL 参数处理
+export const revalidate = 300
 
 // ---------------------------------------------------------------------------
 // Lexical richText rendering helpers
