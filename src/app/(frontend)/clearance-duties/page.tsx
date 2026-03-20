@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 export const metadata: Metadata = {
+// 完全静态生成，构建时生成 HTML
+export const dynamic = 'force-static'
   title: 'Clearance & Duties | Machrio',
   description: 'Machrio clearance and duties information - DDP duty-free delivery, customs documentation, and international shipping compliance.',
   alternates: { canonical: '/clearance-duties/' },

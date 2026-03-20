@@ -2,6 +2,9 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { StructuredData } from '@/components/shared/StructuredData'
 
+// 完全静态生成，构建时生成 HTML
+export const dynamic = 'force-static'
+
 export const metadata: Metadata = {
   title: 'How To Order | Machrio',
   description: 'Learn how to place an order on Machrio - online checkout, bulk quotations, purchase orders, and order tracking.',
