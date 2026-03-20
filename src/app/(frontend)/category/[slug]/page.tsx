@@ -15,6 +15,9 @@ import { EmptyStateAIDialog } from '@/components/category/EmptyStateAIDialog'
 // 使用 ISR，每 5 分钟重新验证一次
 export const revalidate = 300
 
+// 启用动态参数，允许未预生成的 slug 在运行时生成
+export const dynamicParams = true
+
 // 预生成所有分类页面
 export async function generateStaticParams() {
   try {
@@ -87,12 +90,11 @@ function hasRichTextContent(richText: unknown): boolean {
   return text.trim().length > 0
 }
 
-const PRODUCTS_PER_PAGE = 24
-
 interface CategoryPageProps {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ page?: string; sort?: string }>
 }
+
+const PRODUCTS_PER_PAGE = 24
 
 // 简化版：只获取分类信息和直接子分类
 async function getCategoryData(slug: string) {
@@ -219,10 +221,8 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
   }
 }
 
-export default async function CategoryPage({ params, searchParams }: CategoryPageProps) {
+export default async function CategoryPage({ params }: CategoryPageProps) {
   const { slug } = await params
-  const { page: pageParam, sort: sortParam } = await searchParams
-  const currentPage = Math.max(1, parseInt(pageParam || '1', 10))
 
   const data = await getCategoryData(slug)
   if (!data) notFound()
@@ -233,15 +233,11 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   const isL2 = parent && !grandparent
   const isL3 = parent && grandparent
 
-  let sortField = '-createdAt'
-  if (sortParam === 'price-asc') sortField = 'pricing.basePrice'
-  else if (sortParam === 'price-desc') sortField = '-pricing.basePrice'
-  else if (sortParam === 'name') sortField = 'name'
-
+  // 只有 L3 分类才显示产品列表（固定第一页，按最新排序）
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let productsResult: any = { docs: [], totalDocs: 0, page: 1, totalPages: 1, hasNextPage: false, hasPrevPage: false }
   if (isL3) {
-    productsResult = await getCategoryProducts(category.id, currentPage, sortField)
+    productsResult = await getCategoryProducts(category.id, 1, '-createdAt')
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -269,13 +265,6 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
       name: p.name,
     })),
   } : null
-
-  const buildPageUrl = (pageNum: number) => {
-    const params = new URLSearchParams()
-    params.set('page', String(pageNum))
-    if (sortParam) params.set('sort', sortParam)
-    return `/category/${slug}?${params.toString()}`
-  }
 
   return (
     <div className="container-main pb-12">
@@ -329,29 +318,9 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
           </div>
 
           {products.length > 0 ? (
-            <>
-              <Suspense fallback={<div className="h-96 animate-pulse rounded bg-secondary-100" />}>
-                <ProductGrid products={products} view="list" />
-              </Suspense>
-
-              {productsResult.totalPages > 1 && (
-                <div className="mt-8 flex items-center justify-center gap-2">
-                  {productsResult.hasPrevPage && (
-                    <Link href={buildPageUrl(currentPage - 1)} className="rounded border border-secondary-300 px-4 py-2 text-sm text-secondary-600 hover:bg-secondary-50">
-                      Previous
-                    </Link>
-                  )}
-                  <span className="px-4 text-sm text-secondary-500">
-                    Page {currentPage} of {productsResult.totalPages}
-                  </span>
-                  {productsResult.hasNextPage && (
-                    <Link href={buildPageUrl(currentPage + 1)} className="rounded border border-secondary-300 px-4 py-2 text-sm text-secondary-600 hover:bg-secondary-50">
-                      Next
-                    </Link>
-                  )}
-                </div>
-              )}
-            </>
+            <Suspense fallback={<div className="h-96 animate-pulse rounded bg-secondary-100" />}>
+              <ProductGrid products={products} view="list" />
+            </Suspense>
           ) : (
             <EmptyStateAIDialog
               categoryName={category.name}
