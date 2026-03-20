@@ -232,12 +232,20 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   else if (sortParam === 'name') sortField = 'name'
 
   // 只有 L3 分类才显示产品列表
-  let productsResult = { docs: [], totalDocs: 0, page: 1, totalPages: 1, hasNextPage: false, hasPrevPage: false }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let productsResult: any = { docs: [], totalDocs: 0, page: 1, totalPages: 1, hasNextPage: false, hasPrevPage: false }
   if (isL3) {
     productsResult = await getCategoryProducts(category.id, currentPage, sortField)
   }
 
-  const products = productsResult.docs.map(p => mapProductToCard(p as unknown as Record<string, unknown>))
+  // Product card type
+  type ProductCard = {
+    name: string
+    slug: string
+    categorySlug: string
+  }
+
+  const products: ProductCard[] = productsResult.docs.map((p: Record<string, unknown>) => mapProductToCard(p))
 
   // 面包屑
   const breadcrumbs = [
@@ -362,7 +370,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
       )}
 
       {/* SEO Content */}
-      {totalDocs > 0 && (
+      {productsResult.totalDocs > 0 && (
         <section className="mt-12 border-t border-secondary-200 pt-8">
           {hasRichTextContent(category.description) && (
             <div className="mb-10">
