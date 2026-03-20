@@ -9,12 +9,27 @@ import { FAQSchema, FAQSection } from '@/components/shared/FAQSchema'
 import { StructuredData } from '@/components/shared/StructuredData'
 import { CategoryBuyingGuide } from '@/components/shared/RelatedGuide'
 import { ProductGrid } from '@/components/category/ProductGrid'
-import { FilterBar, DesktopSortBar } from '@/components/category/FilterBar'
 import { ExpandableIntro } from '@/components/category/ExpandableIntro'
 import { EmptyStateAIDialog } from '@/components/category/EmptyStateAIDialog'
 
 // 使用 ISR，每 5 分钟重新验证一次
 export const revalidate = 300
+
+// 预生成所有分类页面
+export async function generateStaticParams() {
+  try {
+    const payload = await getPayload({ config })
+    const categories = await payload.find({
+      collection: 'categories',
+      limit: 500,
+    })
+    return categories.docs.map((cat) => ({
+      slug: cat.slug as string,
+    }))
+  } catch {
+    return []
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Lexical richText rendering helpers
@@ -76,15 +91,14 @@ const PRODUCTS_PER_PAGE = 24
 
 interface CategoryPageProps {
   params: Promise<{ slug: string }>
-  searchParams: Promise<{ page?: string; brand?: string; minPrice?: string; maxPrice?: string; sort?: string; view?: string; [key: string]: string | undefined }>
+  searchParams: Promise<{ page?: string; sort?: string }>
 }
 
-// 简化版：只获取分类信息和直接子分类（不递归查询孙分类）
+// 简化版：只获取分类信息和直接子分类
 async function getCategoryData(slug: string) {
   try {
     const payload = await getPayload({ config })
     
-    // 获取分类
     const result = await payload.find({
       collection: 'categories',
       where: { slug: { equals: slug } },
@@ -94,9 +108,9 @@ async function getCategoryData(slug: string) {
 
     const category = result.docs[0]
 
-    // 并行获取父分类和子分类
     let parent = null
     let grandparent = null
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let children: any[] = []
 
     const parentId = category.parent ? (typeof category.parent === 'object' ? category.parent.id : category.parent) : null
@@ -114,7 +128,6 @@ async function getCategoryData(slug: string) {
     parent = parentResult
     children = childrenResult
 
-    // 如果有父分类，再获取祖父分类
     if (parent?.parent) {
       const gpId = typeof parent.parent === 'object' ? parent.parent.id : parent.parent
       grandparent = await payload.findByID({ collection: 'categories', id: gpId }).catch(() => null)
@@ -126,7 +139,7 @@ async function getCategoryData(slug: string) {
   }
 }
 
-// 简化版：获取产品（直接查询，不递归）
+// 简化版：获取产品
 async function getCategoryProducts(categoryId: string, page: number, sort: string) {
   try {
     const payload = await getPayload({ config })
@@ -149,7 +162,8 @@ async function getCategoryProducts(categoryId: string, page: number, sort: strin
   }
 }
 
-function mapProductToCard(product: Record<string, unknown>) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function mapProductToCard(product: Record<string, unknown>): any {
   const pricing = product.pricing as Record<string, unknown> | undefined
   const brand = product.brand as Record<string, unknown> | null
   const primaryCategory = product.primaryCategory as Record<string, unknown> | string | null
@@ -186,9 +200,8 @@ function mapProductToCard(product: Record<string, unknown>) {
   }
 }
 
-export async function generateMetadata({ params, searchParams }: CategoryPageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
   const { slug } = await params
-  const resolvedSearchParams = await searchParams
   const data = await getCategoryData(slug)
   if (!data) return { title: 'Category Not Found' }
 
@@ -196,23 +209,19 @@ export async function generateMetadata({ params, searchParams }: CategoryPagePro
   const parentName = parent ? `${parent.name} - ` : ''
   const gpName = grandparent ? `${grandparent.name} - ` : ''
   const title = `${category.name} | ${gpName}${parentName}Machrio Industrial Supplies`
-  const description = category.shortDescription || `Browse ${category.name} at Machrio. Industrial-grade products with transparent pricing.`
-
-  const hasFilterParams = !!(resolvedSearchParams.brand || resolvedSearchParams.minPrice || resolvedSearchParams.maxPrice || resolvedSearchParams.sort)
+  const description = category.shortDescription || `Browse ${category.name} at Machrio.`
 
   return {
     title,
     description,
     alternates: { canonical: `/category/${slug}/` },
-    robots: hasFilterParams ? { index: false, follow: true } : { index: true, follow: true },
     openGraph: { title, description },
   }
 }
 
 export default async function CategoryPage({ params, searchParams }: CategoryPageProps) {
   const { slug } = await params
-  const resolvedSearchParams = await searchParams
-  const { page: pageParam, sort: sortParam } = resolvedSearchParams
+  const { page: pageParam, sort: sortParam } = await searchParams
   const currentPage = Math.max(1, parseInt(pageParam || '1', 10))
 
   const data = await getCategoryData(slug)
@@ -220,34 +229,24 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
 
   const { category, parent, grandparent, children } = data
 
-  // 判断分类层级
   const isL1 = !parent && !grandparent
   const isL2 = parent && !grandparent
   const isL3 = parent && grandparent
 
-  // 排序参数
   let sortField = '-createdAt'
   if (sortParam === 'price-asc') sortField = 'pricing.basePrice'
   else if (sortParam === 'price-desc') sortField = '-pricing.basePrice'
   else if (sortParam === 'name') sortField = 'name'
 
-  // 只有 L3 分类才显示产品列表
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let productsResult: any = { docs: [], totalDocs: 0, page: 1, totalPages: 1, hasNextPage: false, hasPrevPage: false }
   if (isL3) {
     productsResult = await getCategoryProducts(category.id, currentPage, sortField)
   }
 
-  // Product card type
-  type ProductCard = {
-    name: string
-    slug: string
-    categorySlug: string
-  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const products: any[] = productsResult.docs.map((p: Record<string, unknown>) => mapProductToCard(p))
 
-  const products: ProductCard[] = productsResult.docs.map((p: Record<string, unknown>) => mapProductToCard(p))
-
-  // 面包屑
   const breadcrumbs = [
     { label: 'Home', href: '/' },
     ...(grandparent ? [{ label: grandparent.name, href: `/category/${grandparent.slug}` }] : []),
@@ -257,12 +256,13 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
 
   const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'https://machrio.com'
 
-  const itemListSchema = products.length > 0 ? {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const itemListSchema: any = products.length > 0 ? {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
     name: `${category.name} - Industrial Supplies`,
     numberOfItems: productsResult.totalDocs,
-    itemListElement: products.slice(0, 20).map((p, idx) => ({
+    itemListElement: products.slice(0, 20).map((p: any, idx: number) => ({
       '@type': 'ListItem',
       position: idx + 1,
       url: `${serverUrl}/product/${p.categorySlug}/${p.slug}/`,
@@ -270,7 +270,6 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
     })),
   } : null
 
-  // 分页 URL 构建
   const buildPageUrl = (pageNum: number) => {
     const params = new URLSearchParams()
     params.set('page', String(pageNum))
@@ -283,7 +282,6 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
       <Breadcrumbs items={breadcrumbs} />
       {itemListSchema && <StructuredData data={itemListSchema} />}
 
-      {/* Category Hero */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-secondary-900">{category.name}</h1>
         {category.introContent ? (
@@ -295,10 +293,8 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
         )}
       </div>
 
-      {/* Buying Guide Banner */}
       <CategoryBuyingGuide categorySlug={slug} />
 
-      {/* L1/L2: 显示子分类卡片 */}
       {(isL1 || isL2) && children.length > 0 && (
         <section className="mb-8">
           <h2 className="mb-4 text-lg font-semibold text-secondary-800">
@@ -318,7 +314,6 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
         </section>
       )}
 
-      {/* L1/L2 无子分类时显示 AI 对话 */}
       {(isL1 || isL2) && children.length === 0 && (
         <EmptyStateAIDialog
           categoryName={category.name}
@@ -327,7 +322,6 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
         />
       )}
 
-      {/* L3: 显示产品列表 */}
       {isL3 && (
         <>
           <div className="mb-4 flex items-center justify-between">
@@ -340,7 +334,6 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
                 <ProductGrid products={products} view="list" />
               </Suspense>
 
-              {/* Pagination */}
               {productsResult.totalPages > 1 && (
                 <div className="mt-8 flex items-center justify-center gap-2">
                   {productsResult.hasPrevPage && (
@@ -369,7 +362,6 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
         </>
       )}
 
-      {/* SEO Content */}
       {productsResult.totalDocs > 0 && (
         <section className="mt-12 border-t border-secondary-200 pt-8">
           {hasRichTextContent(category.description) && (
