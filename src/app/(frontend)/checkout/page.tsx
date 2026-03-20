@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+// 完全静态生成，构建时生成 HTML
+export const dynamic = 'force-static'
 import { useRouter } from 'next/navigation'
 import { useCart } from '@/contexts/CartContext'
 

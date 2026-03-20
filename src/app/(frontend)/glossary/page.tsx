@@ -5,6 +5,9 @@ import config from '@payload-config'
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 import { StructuredData } from '@/components/shared/StructuredData'
 
+// 使用 ISR，每 1 小时重新验证一次
+export const revalidate = 3600
+
 export const metadata: Metadata = {
   title: 'Industrial Glossary — MRO & Supply Chain Terms | Machrio',
   description:

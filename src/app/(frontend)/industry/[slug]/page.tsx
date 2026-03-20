@@ -8,6 +8,9 @@ import { StructuredData } from '@/components/shared/StructuredData'
 import { FAQSchema, FAQSection } from '@/components/shared/FAQSchema'
 import { ProductGrid } from '@/components/category/ProductGrid'
 
+// 使用 ISR，每 1 小时重新验证一次
+export const revalidate = 3600
+
 // ---------------------------------------------------------------------------
 // Industry data — static content for 6 industries
 // ---------------------------------------------------------------------------

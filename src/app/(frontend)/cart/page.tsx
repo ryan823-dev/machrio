@@ -2,6 +2,8 @@
 
 import Link from 'next/link'
 import { useCart } from '@/contexts/CartContext'
+// 完全静态生成，构建时生成 HTML
+export const dynamic = 'force-static'
 
 const COUNTRIES = [
   { code: 'US', name: 'United States', flag: '\u{1F1FA}\u{1F1F8}' },

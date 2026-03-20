@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 import { RFQForm } from '@/components/forms/RFQForm'
 
+// 完全静态生成，构建时生成 HTML
+export const dynamic = 'force-static'
 export const metadata: Metadata = {
   title: 'Request a Quote',
   description: 'Request a quote for bulk orders, custom specifications, or products without listed pricing. Our team responds within 24 hours.',

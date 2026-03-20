@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { StructuredData } from '@/components/shared/StructuredData'
 
+// 完全静态生成，构建时生成 HTML
+export const dynamic = 'force-static'
 const SITE_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://machrio.com'
 
 export const metadata: Metadata = {

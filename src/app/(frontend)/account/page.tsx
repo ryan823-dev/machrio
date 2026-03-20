@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+// 完全静态生成，构建时生成 HTML
+export const dynamic = 'force-static'
 import { getSession, setSession, clearSession, fetchWithAuth } from '@/lib/account'
 
 // ─── Types ───────────────────────────────────────────────────────────────────

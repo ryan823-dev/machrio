@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import { ContactForm } from '@/components/forms/ContactForm'
 
 export const metadata: Metadata = {
+// 完全静态生成，构建时生成 HTML
+export const dynamic = 'force-static'
   title: 'Contact Us | Machrio',
   description: 'Get in touch with Machrio for customer support, sales inquiries, or business partnerships. We respond within 1 business day.',
   alternates: { canonical: '/contact/' },
