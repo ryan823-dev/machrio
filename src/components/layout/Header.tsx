@@ -49,7 +49,7 @@ function useFocusTrap(isActive: boolean, containerRef: React.RefObject<HTMLEleme
 
 const mainNav = [
   { label: 'Industries', href: '/industry/manufacturing' },
-  { label: 'New Arrivals', href: '/category?sort=newest' },
+  { label: 'New Arrivals', href: '/new-arrivals' },
   { label: 'Volume Pricing', href: '/deals' },
   { label: 'Knowledge Center', href: '/knowledge-center' },
   { label: 'Request a Quote', href: '/rfq' },
