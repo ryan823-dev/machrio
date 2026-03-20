@@ -145,9 +145,9 @@ export function Header() {
     setSearchHistory(getSearchHistory())
   }, [])
 
-  // Load nav categories on mount
+  // Load nav categories on mount - 直接从静态JSON获取，避免API冷启动
   useEffect(() => {
-    fetch('/api/categories/nav')
+    fetch('/data/nav-categories.json')
       .then(res => res.json())
       .then(data => setNavCategories(data.categories || []))
       .catch(() => {})
