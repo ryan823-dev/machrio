@@ -9,7 +9,7 @@ import { CategoryDrawerMenu } from './CategoryDrawerMenu'
 
 // 内联导航数据 - 打包时直接嵌入 JS bundle
 // 这样首次加载就有数据，无需额外请求
-import navCategoriesData from '@/../public/data/nav-categories.json'
+import navCategoriesData from '@/data/nav-categories.json'
 
 const HISTORY_KEY = 'machrio_search_history'
 const MAX_HISTORY = 5

@@ -82,12 +82,16 @@ async function generateNavData() {
       }
     })
     
-    // 保存到文件
-    const outputPath = path.resolve(__dirname, '../public/data/nav-categories.json')
-    fs.writeFileSync(outputPath, JSON.stringify({ categories }, null, 2))
+    // 保存到文件 - 同时生成到 public 和 src 目录
+    const publicPath = path.resolve(__dirname, '../public/data/nav-categories.json')
+    const srcPath = path.resolve(__dirname, '../src/data/nav-categories.json')
+    
+    fs.writeFileSync(publicPath, JSON.stringify({ categories }, null, 2))
+    fs.writeFileSync(srcPath, JSON.stringify({ categories }, null, 2))
     
     console.log(`\n✅ 成功生成导航数据`)
-    console.log(`   文件: ${outputPath}`)
+    console.log(`   Public: ${publicPath}`)
+    console.log(`   Src: ${srcPath}`)
     console.log(`   分类数: ${categories.length} 个顶级分类`)
     
     // 同时生成一个精简版本（只有 L1）
