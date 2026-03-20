@@ -6,9 +6,11 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "prebuild": "npx tsx scripts/generate-nav-data.ts || echo 'Warning: Failed to generate nav data'",
     "start": "next start",
     "lint": "next lint",
     "generate:types": "payload generate:types",
+    "generate:nav": "npx tsx scripts/generate-nav-data.ts",
     "seed": "tsx src/scripts/seed.ts"
   },
   "dependencies": {

@@ -1,0 +1,159 @@
+{
+  "categories": [
+    {
+      "id": "69a50eaad1138dde5e717e40",
+      "name": "Abrasives",
+      "slug": "abrasives"
+    },
+    {
+      "id": "69a50eabd1138dde5e717e41",
+      "name": "Adhesives, Sealants and Tape",
+      "slug": "adhesives-sealants-and-tape"
+    },
+    {
+      "id": "69a50eabd1138dde5e717e42",
+      "name": "Cleaning and Janitorial",
+      "slug": "cleaning-and-janitorial"
+    },
+    {
+      "id": "69a50eabd1138dde5e717e43",
+      "name": "Electrical",
+      "slug": "electrical"
+    },
+    {
+      "id": "69a50eacd1138dde5e717e44",
+      "name": "Fasteners",
+      "slug": "fasteners"
+    },
+    {
+      "id": "69a50eacd1138dde5e717e45",
+      "name": "Fleet & Vehicle Maintenance",
+      "slug": "fleet-and-vehicle-maintenance"
+    },
+    {
+      "id": "69a50eacd1138dde5e717e46",
+      "name": "Furnishings, Appliances & Hospitality",
+      "slug": "furnishings-appliances-and-hospitality"
+    },
+    {
+      "id": "69a50eacd1138dde5e717e47",
+      "name": "HVAC and Refrigeration",
+      "slug": "hvac-and-refrigeration"
+    },
+    {
+      "id": "69a50eadd1138dde5e717e48",
+      "name": "Hardware",
+      "slug": "hardware"
+    },
+    {
+      "id": "69a50eadd1138dde5e717e49",
+      "name": "Hydraulics",
+      "slug": "hydraulics"
+    },
+    {
+      "id": "69a50eadd1138dde5e717e4a",
+      "name": "Lab Supplies",
+      "slug": "lab-supplies"
+    },
+    {
+      "id": "69a50eaed1138dde5e717e4b",
+      "name": "Lighting",
+      "slug": "lighting"
+    },
+    {
+      "id": "69a50eaed1138dde5e717e4c",
+      "name": "Lubrication",
+      "slug": "lubrication"
+    },
+    {
+      "id": "69a50eaed1138dde5e717e4d",
+      "name": "Machining",
+      "slug": "machining"
+    },
+    {
+      "id": "69a50eaed1138dde5e717e4e",
+      "name": "Material Handling",
+      "slug": "material-handling"
+    },
+    {
+      "id": "69a50eafd1138dde5e717e4f",
+      "name": "Motors",
+      "slug": "motors"
+    },
+    {
+      "id": "69a50eafd1138dde5e717e50",
+      "name": "Office Supplies",
+      "slug": "office-supplies"
+    },
+    {
+      "id": "69a50eafd1138dde5e717e51",
+      "name": "Outdoor Equipment",
+      "slug": "outdoor-equipment"
+    },
+    {
+      "id": "69a50eafd1138dde5e717e52",
+      "name": "Packaging & Shipping",
+      "slug": "packaging-and-shipping"
+    },
+    {
+      "id": "69a50eb0d1138dde5e717e53",
+      "name": "Paints, Equipment and Supplies",
+      "slug": "paints-equipment-and-supplies"
+    },
+    {
+      "id": "69a50eb0d1138dde5e717e54",
+      "name": "Pipe, Hose, Tube & Fittings",
+      "slug": "pipe-hose-tube-and-fittings"
+    },
+    {
+      "id": "69a50eb0d1138dde5e717e55",
+      "name": "Plumbing",
+      "slug": "plumbing"
+    },
+    {
+      "id": "69a50eb1d1138dde5e717e56",
+      "name": "Pneumatics",
+      "slug": "pneumatics"
+    },
+    {
+      "id": "69a50eb1d1138dde5e717e57",
+      "name": "Power Transmission",
+      "slug": "power-transmission"
+    },
+    {
+      "id": "69a50eb1d1138dde5e717e58",
+      "name": "Pumps",
+      "slug": "pumps"
+    },
+    {
+      "id": "69a50eb1d1138dde5e717e59",
+      "name": "Raw Materials",
+      "slug": "raw-materials"
+    },
+    {
+      "id": "69a50eb2d1138dde5e717e5a",
+      "name": "Safety",
+      "slug": "safety"
+    },
+    {
+      "id": "69a50eb2d1138dde5e717e5b",
+      "name": "Security",
+      "slug": "security"
+    },
+    {
+      "id": "69a50eb2d1138dde5e717e5c",
+      "name": "Test Instruments",
+      "slug": "test-instruments"
+    },
+    {
+      "id": "69a50eb2d1138dde5e717e5d",
+      "name": "Tools",
+      "slug": "tools"
+    },
+    {
+      "id": "69a50eb3d1138dde5e717e5e",
+      "name": "Welding",
+      "slug": "welding"
+    }
+  ]
+}
