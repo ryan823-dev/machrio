@@ -7,6 +7,10 @@ import { useCart } from '@/contexts/CartContext'
 import { CategoryFlyoutMenu, type NavCategory } from './CategoryFlyoutMenu'
 import { CategoryDrawerMenu } from './CategoryDrawerMenu'
 
+// 内联导航数据 - 打包时直接嵌入 JS bundle
+// 这样首次加载就有数据，无需额外请求
+import navCategoriesData from '@/../public/data/nav-categories.json'
+
 const HISTORY_KEY = 'machrio_search_history'
 const MAX_HISTORY = 5
 
@@ -116,8 +120,8 @@ export function Header() {
   const searchRef = useRef<HTMLDivElement>(null)
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Categories mega-menu state
-  const [navCategories, setNavCategories] = useState<NavCategory[]>([])
+  // Categories mega-menu state - 直接使用内联数据，无需网络请求
+  const [navCategories] = useState<NavCategory[]>(() => (navCategoriesData as { categories: NavCategory[] }).categories || [])
   const [showMegaMenu, setShowMegaMenu] = useState(false)
   const [showMobileMenu, setShowMobileMenu] = useState(false)
   const megaMenuRef = useRef<HTMLDivElement>(null)
@@ -143,14 +147,6 @@ export function Header() {
   // Load search history on mount
   useEffect(() => {
     setSearchHistory(getSearchHistory())
-  }, [])
-
-  // Load nav categories on mount - 直接从静态JSON获取，避免API冷启动
-  useEffect(() => {
-    fetch('/data/nav-categories.json')
-      .then(res => res.json())
-      .then(data => setNavCategories(data.categories || []))
-      .catch(() => {})
   }, [])
 
   // Close mega-menu on outside click
