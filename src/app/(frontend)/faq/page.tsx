@@ -155,6 +155,13 @@ export default function FAQPage() {
           </section>
         ))}
       </div>
+
+      {/* Company Info */}
+      <section className="mt-10 rounded-lg bg-secondary-50 border border-secondary-200 p-6">
+        <p className="text-sm text-secondary-600">
+          Machrio is operated by <strong>VERTAX LIMITED</strong>, a Hong Kong registered company specializing in industrial supply chain solutions.
+        </p>
+      </section>
     </div>
   )
 }

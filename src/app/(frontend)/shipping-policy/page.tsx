@@ -98,6 +98,13 @@ export default function ShippingPolicyPage() {
         <span className="text-secondary-300">|</span>
         <Link href="/return-refund" className="text-sm text-primary-600 underline hover:text-primary-800">Return &amp; Refund Policy</Link>
       </section>
+
+      {/* Company Info */}
+      <section className="mt-10 rounded-lg bg-secondary-50 border border-secondary-200 p-6">
+        <p className="text-sm text-secondary-600">
+          Machrio is operated by <strong>VERTAX LIMITED</strong>, a Hong Kong registered company specializing in industrial supply chain solutions.
+        </p>
+      </section>
     </div>
   )
 }

@@ -147,6 +147,9 @@ export default function ReturnRefundPage() {
         <p className="text-sm text-secondary-700">
           For return authorization or inquiries: <strong>support@machrio.com</strong>
         </p>
+        <p className="mt-2 text-sm text-secondary-500">
+          Machrio is operated by <strong>VERTAX LIMITED</strong>, a Hong Kong registered company.
+        </p>
       </section>
     </div>
   )

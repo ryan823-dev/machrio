@@ -142,6 +142,13 @@ export default function PaymentMethodsPage() {
           <Link href="/rfq" className="btn-primary px-6 py-2.5 text-sm">Request a Quote</Link>
         </div>
       </section>
+
+      {/* Company Info */}
+      <section className="mt-10 rounded-lg bg-secondary-50 border border-secondary-200 p-6">
+        <p className="text-sm text-secondary-600">
+          Machrio is operated by <strong>VERTAX LIMITED</strong>, a Hong Kong registered company specializing in industrial supply chain solutions.
+        </p>
+      </section>
     </div>
   )
 }
