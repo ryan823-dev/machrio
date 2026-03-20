@@ -15,7 +15,7 @@ interface CheckoutForm {
   state: string
   postalCode: string
   country: string
-  paymentMethod: 'stripe' | 'bank-transfer'
+  paymentMethod: 'stripe' | 'paypal' | 'bank-transfer'
   preferredCurrency: string
   notes: string
 }
@@ -135,6 +135,36 @@ export default function CheckoutPage() {
       if (form.paymentMethod === 'stripe' && data.stripeUrl) {
         // Redirect to Stripe Checkout
         window.location.href = data.stripeUrl
+      } else if (form.paymentMethod === 'paypal') {
+        // Create PayPal order and redirect
+        const paypalRes = await fetch('/api/paypal/create-order', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            orderNumber: data.orderNumber,
+            orderId: data.orderId,
+            items: selectedCartItems.map(item => ({
+              name: item.name,
+              sku: item.sku,
+              quantity: item.quantity,
+              unitPrice: item.price,
+            })),
+            subtotal,
+            shippingCost,
+            total,
+            currency: 'USD',
+            customerEmail: form.email,
+          }),
+        })
+
+        const paypalData = await paypalRes.json()
+
+        if (!paypalRes.ok) {
+          throw new Error(paypalData.error || 'Failed to create PayPal order')
+        }
+
+        // Redirect to PayPal for payment
+        window.location.href = paypalData.approvalUrl
       } else {
         // Bank transfer - go to order confirmation with invoice
         router.push(`/order/${data.orderNumber}`)
@@ -298,6 +328,22 @@ export default function CheckoutPage() {
                   <span className="text-sm font-semibold text-secondary-900">Pay Online (Credit Card)</span>
                   <p className="mt-0.5 text-xs text-secondary-500">
                     Secure payment via Stripe. Visa, Mastercard, Amex accepted.
+                  </p>
+                </div>
+              </label>
+              <label className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors ${form.paymentMethod === 'paypal' ? 'border-primary-500 bg-primary-50' : 'border-secondary-200 hover:bg-secondary-50'}`}>
+                <input
+                  type="radio"
+                  name="paymentMethod"
+                  value="paypal"
+                  checked={form.paymentMethod === 'paypal'}
+                  onChange={() => updateField('paymentMethod', 'paypal')}
+                  className="mt-0.5"
+                />
+                <div>
+                  <span className="text-sm font-semibold text-secondary-900">PayPal</span>
+                  <p className="mt-0.5 text-xs text-secondary-500">
+                    Pay securely with your PayPal account or debit/credit card.
                   </p>
                 </div>
               </label>

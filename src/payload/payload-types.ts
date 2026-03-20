@@ -737,7 +737,7 @@ export interface Order {
   total: number;
   currency?: ('USD' | 'HKD' | 'EUR' | 'GBP' | 'CAD' | 'CNY') | null;
   payment?: {
-    method?: ('stripe' | 'bank-transfer') | null;
+    method?: ('stripe' | 'paypal' | 'bank-transfer') | null;
     /**
      * Stripe Checkout Session ID
      */
@@ -746,6 +746,14 @@ export interface Order {
      * Stripe Payment Intent ID
      */
     stripePaymentIntentId?: string | null;
+    /**
+     * PayPal Order ID
+     */
+    paypalOrderId?: string | null;
+    /**
+     * PayPal Capture ID
+     */
+    paypalCaptureId?: string | null;
     transactionId?: string | null;
   };
   /**
@@ -2059,6 +2067,8 @@ export interface OrdersSelect<T extends boolean = true> {
         method?: T;
         stripeSessionId?: T;
         stripePaymentIntentId?: T;
+        paypalOrderId?: T;
+        paypalCaptureId?: T;
         transactionId?: T;
       };
   customerNotes?: T;

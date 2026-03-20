@@ -14,8 +14,9 @@ interface OrderEmailData {
   company: string
   total: number
   currency: string
-  paymentMethod: 'stripe' | 'bank-transfer'
+  paymentMethod: 'stripe' | 'paypal' | 'bank-transfer'
   itemCount: number
+  paid?: boolean
 }
 
 export async function sendOrderConfirmationEmail(data: OrderEmailData) {
@@ -32,7 +33,10 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData) {
     ? `<p style="margin:0 0 8px"><strong>Payment Method:</strong> Bank Transfer</p>
        <p style="margin:0 0 8px">Please view your <a href="${invoiceUrl}" style="color:#2563eb">Proforma Invoice</a> for bank transfer details.</p>
        <p style="margin:0 0 8px">Payment is due within 14 days.</p>`
-    : `<p style="margin:0 0 8px"><strong>Payment Method:</strong> Online (Stripe)</p>
+    : data.paymentMethod === 'paypal'
+    ? `<p style="margin:0 0 8px"><strong>Payment Method:</strong> PayPal</p>
+       <p style="margin:0 0 8px">Your payment ${data.paid ? 'has been processed successfully' : 'is being processed'}.</p>`
+    : `<p style="margin:0 0 8px"><strong>Payment Method:</strong> Credit Card (Stripe)</p>
        <p style="margin:0 0 8px">Your payment is being processed.</p>`
 
   // Email to customer

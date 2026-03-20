@@ -241,6 +241,7 @@ export const Orders: CollectionConfig = {
           type: 'select',
           options: [
             { label: 'Stripe (Online)', value: 'stripe' },
+            { label: 'PayPal', value: 'paypal' },
             { label: 'Bank Transfer', value: 'bank-transfer' },
           ],
         },
@@ -253,6 +254,16 @@ export const Orders: CollectionConfig = {
           name: 'stripePaymentIntentId',
           type: 'text',
           admin: { description: 'Stripe Payment Intent ID', readOnly: true },
+        },
+        {
+          name: 'paypalOrderId',
+          type: 'text',
+          admin: { description: 'PayPal Order ID', readOnly: true },
+        },
+        {
+          name: 'paypalCaptureId',
+          type: 'text',
+          admin: { description: 'PayPal Capture ID', readOnly: true },
         },
         { name: 'transactionId', type: 'text' },
       ],

@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { getPayload } from 'payload'
 import config from '@payload-config'
+import { PayPalCaptureHandler } from '@/components/payment/PayPalCaptureHandler'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,8 +44,11 @@ export default async function OrderConfirmationPage({ params, searchParams }: Or
 
   return (
     <div className="container-main py-8">
+      {/* PayPal Capture Handler */}
+      <PayPalCaptureHandler orderNumber={orderNumber} />
+      
       {/* Status banner */}
-      {paymentSuccess && (
+      {paymentSuccess && paymentInfo?.method !== 'paypal' && (
         <div className="mb-6 rounded-lg bg-green-50 border border-green-200 p-4">
           <div className="flex items-center gap-2">
             <svg className="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">

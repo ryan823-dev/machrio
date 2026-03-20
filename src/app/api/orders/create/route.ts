@@ -37,7 +37,7 @@ interface OrderRequest {
   shippingCost: number
   total: number
   currency: string
-  paymentMethod: 'stripe' | 'bank-transfer'
+  paymentMethod: 'stripe' | 'paypal' | 'bank-transfer'
   shippingMethodCode?: string
   customerNotes?: string
 }
@@ -225,7 +225,8 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // Bank transfer - just return the order number
+    // Bank transfer or PayPal - return the order number
+    // For PayPal, the frontend will call /api/paypal/create-order separately
     return NextResponse.json({
       orderNumber,
       orderId: order.id,
