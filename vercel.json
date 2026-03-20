@@ -2,11 +2,9 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "functions": {
     "src/app/(payload)/**/*.{ts,tsx}": {
-      "memory": 1024,
       "maxDuration": 60
     },
     "src/app/api/**/*.{ts,tsx}": {
-      "memory": 1024,
       "maxDuration": 60
     }
   },
