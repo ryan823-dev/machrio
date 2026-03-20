@@ -7,6 +7,64 @@ const resend = process.env.RESEND_API_KEY
 const FROM_EMAIL = process.env.EMAIL_FROM || 'Machrio <orders@machrio.com>'
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'sales@machrio.com'
 
+// ==================== 类型定义 ====================
+
+export interface EmailAttachment {
+  filename: string
+  content: string  // Base64 encoded
+  contentType?: string
+}
+
+export interface EmailOptions {
+  to: string | string[]
+  subject: string
+  html: string
+  from?: string
+  attachments?: EmailAttachment[]
+}
+
+// ==================== 核心邮件发送函数 ====================
+
+/**
+ * 使用 Resend 发送带附件的邮件
+ */
+export async function sendEmail(options: EmailOptions): Promise<{
+  success: boolean
+  messageId?: string
+  error?: string
+}> {
+  if (!resend) {
+    console.warn('Resend not configured, skipping email')
+    return { success: false, error: 'Resend not configured' }
+  }
+
+  const emailPayload: any = {
+    from: options.from || FROM_EMAIL,
+    to: options.to,
+    subject: options.subject,
+    html: options.html,
+  }
+
+  // 添加附件（如果提供）
+  if (options.attachments && options.attachments.length > 0) {
+    emailPayload.attachments = options.attachments.map(att => ({
+      filename: att.filename,
+      content: att.content,
+      contentType: att.contentType,
+    }))
+  }
+
+  try {
+    const result = await resend.emails.send(emailPayload)
+    return { success: true, messageId: result.data?.id }
+  } catch (err: any) {
+    console.error('Failed to send email:', err)
+    return { success: false, error: err.message }
+  }
+}
+
+// ==================== 订单邮件 ====================
+
 interface OrderEmailData {
   orderNumber: string
   customerName: string
@@ -311,4 +369,119 @@ export async function sendVerificationCodeEmail(email: string, code: string) {
   } catch (err) {
     console.error('Failed to send verification code email:', err)
   }
+}
+
+// ==================== 外联邮件 (支持附件) ====================
+
+export interface EmailAttachment {
+  filename: string
+  content: string  // Base64 encoded
+  contentType?: string
+}
+
+export interface OutreachEmailData {
+  to: string
+  subject: string
+  html: string
+  attachments?: EmailAttachment[]
+  fromName?: string
+}
+
+/**
+ * 发送外联开发信（支持附件）
+ *
+ * @example
+ * // 发送带 PDF 目录的开发信
+ * await sendOutreachEmail({
+ *   to: 'contact@company.com',
+ *   subject: 'Industrial Equipment Solutions from Machrio',
+ *   html: '<p>Dear Sir/Madam...</p>',
+ *   attachments: [{
+ *     filename: 'Product-Catalog-2024.pdf',
+ *     content: base64EncodedPdfContent,
+ *     contentType: 'application/pdf'
+ *   }],
+ *   fromName: 'Machrio Sales Team'
+ * })
+ */
+export async function sendOutreachEmail(data: OutreachEmailData): Promise<{
+  success: boolean
+  messageId?: string
+  error?: string
+}> {
+  if (!resend) {
+    console.warn('Resend not configured, skipping outreach email')
+    return { success: false, error: 'Resend not configured' }
+  }
+
+  const fromAddress = FROM_EMAIL.replace(/^[^<]+</, '').replace(/>$/, '')
+  const fromHeader = data.fromName
+    ? `${data.fromName} <${fromAddress}>`
+    : FROM_EMAIL
+
+  try {
+    const result = await resend.emails.send({
+      from: fromHeader,
+      to: data.to,
+      subject: data.subject,
+      html: data.html,
+      ...(data.attachments && data.attachments.length > 0
+        ? {
+            attachments: data.attachments.map(att => ({
+              filename: att.filename,
+              content: att.content,
+              contentType: att.contentType,
+            })),
+          }
+        : {}),
+    })
+
+    return { success: true, messageId: result.data?.id }
+  } catch (err: any) {
+    console.error('Failed to send outreach email:', err)
+    return { success: false, error: err.message }
+  }
+}
+
+/**
+ * 批量发送外联邮件
+ *
+ * @param emails 邮件数据数组
+ * @param onProgress 进度回调 (成功数, 总数)
+ */
+export async function batchSendOutreachEmails(
+  emails: OutreachEmailData[],
+  onProgress?: (sent: number, total: number) => void
+): Promise<{
+  success: number
+  failed: number
+  errors: { email: string; error: string }[]
+}> {
+  const results = {
+    success: 0,
+    failed: 0,
+    errors: [] as { email: string; error: string }[],
+  }
+
+  for (let i = 0; i < emails.length; i++) {
+    const email = emails[i]
+    const result = await sendOutreachEmail(email)
+
+    if (result.success) {
+      results.success++
+    } else {
+      results.failed++
+      results.errors.push({ email: email.to, error: result.error || 'Unknown error' })
+    }
+
+    // 报告进度
+    onProgress?.(results.success, emails.length)
+
+    // 添加延迟避免频率限制
+    if (i < emails.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, 100))
+    }
+  }
+
+  return results
 }
