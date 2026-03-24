@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
-export const metadata: Metadata = {
 // 完全静态生成，构建时生成 HTML
 export const dynamic = 'force-static'
+
+export const metadata: Metadata = {
   title: 'Payment Methods | Machrio',
   description: 'Machrio accepts credit cards via Stripe, bank transfers, and will soon support BNPL options. Secure, flexible payment for B2B industrial procurement.',
   alternates: { canonical: '/payment-methods/' },

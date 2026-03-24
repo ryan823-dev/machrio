@@ -1,0 +1,154 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                      String    @id @default(uuid())
+  email                   String    @unique
+  password                String?
+  salt                    String?
+  name                    String?
+  role                    String    @default("customer")
+  emailVerified           Boolean   @default(false)
+  resetPasswordToken      String?   @map("reset_password_token")
+  resetPasswordExpiration DateTime? @map("reset_password_expiration")
+  createdAt               DateTime  @default(now()) @map("created_at")
+  updatedAt               DateTime  @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Category {
+  id          String    @id @default(uuid())
+  name        String
+  slug        String    @unique
+  description String?
+  parentId    String?   @map("parent_id")
+  parent      Category? @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Category[] @relation("CategoryHierarchy")
+  level       Int       @default(1)
+  displayOrder Int      @default(0) @map("display_order")
+  image       String?
+  icon        String?
+  metaTitle   String?   @map("meta_title")
+  metaDescription String? @map("meta_description")
+  buyingGuide Json?     @map("buying_guide")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@map("categories")
+}
+
+model Product {
+  id                  String   @id @default(uuid())
+  sku                 String   @unique
+  name                String
+  shortDescription    String?  @map("short_description")
+  fullDescription     Json?    @map("full_description")
+  primaryCategoryId   String?  @map("primary_category_id")
+  status              String   @default("draft")
+  availability        String   @default("contact")
+  purchaseMode        String   @default("both") @map("purchase_mode")
+  leadTime            String?  @map("lead_time")
+  minOrderQuantity    Int      @default(1) @map("min_order_quantity")
+  packageQty          Int?     @map("package_qty")
+  packageUnit         String?  @map("package_unit")
+  weight              Decimal?
+  pricing             Json?
+  specifications      Json?    @default("[]")
+  faq                 Json?    @default("[]")
+  images              Json?    @default("[]")
+  externalImageUrl    String?  @map("external_image_url")
+  additionalImageUrls Json?    @map("additional_image_urls")
+  categories          Json?    @default("[]")
+  tags                Json?    @default("[]")
+  metaTitle           String?  @map("meta_title")
+  metaDescription     String?  @map("meta_description")
+  focusKeyword        String?  @map("focus_keyword")
+  sourceUrl           String?  @map("source_url")
+  shippingInfo        Json?    @map("shipping_info")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  @@map("products")
+}
+
+model Brand {
+  id        String   @id @default(uuid())
+  name      String   @unique
+  slug      String   @unique
+  description String?
+  logo      String?
+  website   String?
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("brands")
+}
+
+model Order {
+  id             String   @id @default(uuid())
+  orderNumber    String   @unique @map("order_number")
+  customerId     String?  @map("customer_id")
+  customerEmail  String   @map("customer_email")
+  status         String   @default("pending")
+  items          Json?    @default("[]")
+  subtotal       Decimal  @default(0)
+  shippingCost   Decimal  @default(0) @map("shipping_cost")
+  tax            Decimal  @default(0)
+  total          Decimal  @default(0)
+  currency       String   @default("USD")
+  shippingAddress Json?   @map("shipping_address")
+  billingAddress  Json?   @map("billing_address")
+  paymentMethod   String? @map("payment_method")
+  paymentStatus   String? @default("pending") @map("payment_status")
+  trackingNumber  String? @map("tracking_number")
+  notes           String?
+  createdAt      DateTime @default(now()) @map("created_at")
+  updatedAt      DateTime @updatedAt @map("updated_at")
+
+  @@map("orders")
+}
+
+model Quote {
+  id           String   @id @default(uuid())
+  quoteNumber  String   @unique @map("quote_number")
+  customerId   String?  @map("customer_id")
+  customerEmail String  @map("customer_email")
+  companyName  String?  @map("company_name")
+  status       String   @default("pending")
+  items        Json?    @default("[]")
+  subtotal     Decimal  @default(0)
+  total        Decimal  @default(0)
+  currency     String   @default("USD")
+  notes        String?
+  validUntil   DateTime? @map("valid_until")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  @@map("quotes")
+}
+
+model Article {
+  id               String   @id @default(uuid())
+  title            String
+  slug             String   @unique
+  description      String?
+  content          Json?
+  category         String?
+  tags             Json?    @default("[]")
+  featuredImage    String?  @map("featured_image")
+  author           String?
+  status           String   @default("draft")
+  publishedAt      DateTime? @map("published_at")
+  metaTitle        String?  @map("meta_title")
+  metaDescription  String?  @map("meta_description")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  @@map("articles")
+}

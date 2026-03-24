@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 
-export const metadata: Metadata = {
 // 完全静态生成，构建时生成 HTML
 export const dynamic = 'force-static'
+
+export const metadata: Metadata = {
   title: 'Return & Refund Policy | Machrio',
   description: 'Machrio return and refund policy - 30-day return window, transparent process, and fair resolution for all industrial supply orders.',
   alternates: { canonical: '/return-refund/' },

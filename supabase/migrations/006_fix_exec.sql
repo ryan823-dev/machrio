@@ -1,0 +1,12 @@
+-- 修复 exec 函数
+DROP FUNCTION IF EXISTS exec(query TEXT);
+
+CREATE OR REPLACE FUNCTION exec(query TEXT)
+RETURNS TABLE(result jsonb) 
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+BEGIN
+  RETURN QUERY EXECUTE query;
+END;
+$$;

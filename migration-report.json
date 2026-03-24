@@ -1,0 +1,168 @@
+{
+  "timestamp": "2026-03-24T01:32:09.850Z",
+  "mongodb": {
+    "categories": {
+      "count": 635,
+      "hasData": true,
+      "sampleFields": [
+        "_id",
+        "name",
+        "slug",
+        "description",
+        "shortDescription",
+        "iconEmoji",
+        "featured",
+        "displayOrder",
+        "faq",
+        "facetGroups"
+      ]
+    },
+    "products": {
+      "count": 8292,
+      "hasData": true,
+      "sampleFields": [
+        "_id",
+        "createdAt",
+        "updatedAt",
+        "name",
+        "slug",
+        "sku",
+        "status",
+        "brand",
+        "shortDescription",
+        "fullDescription"
+      ]
+    },
+    "articles": {
+      "count": 33,
+      "hasData": true,
+      "sampleFields": [
+        "_id",
+        "title",
+        "slug",
+        "excerpt",
+        "content",
+        "category",
+        "tags",
+        "author",
+        "status",
+        "publishedAt"
+      ]
+    },
+    "brands": {
+      "count": 1,
+      "hasData": true,
+      "sampleFields": [
+        "_id",
+        "createdAt",
+        "updatedAt",
+        "name",
+        "slug",
+        "description",
+        "featured",
+        "seo",
+        "__v"
+      ]
+    }
+  },
+  "supabase": {
+    "categories": {
+      "count": 635,
+      "hasData": true,
+      "sampleFields": [
+        "id",
+        "name",
+        "slug",
+        "description",
+        "parent_id",
+        "level",
+        "display_order",
+        "image",
+        "icon",
+        "meta_title"
+      ]
+    },
+    "products": {
+      "count": 8292,
+      "hasData": true,
+      "sampleFields": [
+        "id",
+        "sku",
+        "name",
+        "short_description",
+        "full_description",
+        "primary_category_id",
+        "status",
+        "availability",
+        "purchase_mode",
+        "lead_time"
+      ]
+    },
+    "articles": {
+      "count": 33,
+      "hasData": true,
+      "sampleFields": [
+        "id",
+        "title",
+        "slug",
+        "description",
+        "content",
+        "category",
+        "tags",
+        "featured_image",
+        "author",
+        "status"
+      ]
+    },
+    "brands": {
+      "count": 1,
+      "hasData": true,
+      "sampleFields": [
+        "id",
+        "name",
+        "slug",
+        "description",
+        "logo",
+        "website",
+        "created_at",
+        "updated_at"
+      ]
+    }
+  },
+  "comparisons": [
+    {
+      "collection": "categories",
+      "mongo": 635,
+      "supabase": 635,
+      "match": true,
+      "status": "✅"
+    },
+    {
+      "collection": "products",
+      "mongo": 8292,
+      "supabase": 8292,
+      "match": true,
+      "status": "✅"
+    },
+    {
+      "collection": "articles",
+      "mongo": 33,
+      "supabase": 33,
+      "match": true,
+      "status": "✅"
+    },
+    {
+      "collection": "brands",
+      "mongo": 1,
+      "supabase": 1,
+      "match": true,
+      "status": "✅"
+    }
+  ],
+  "summary": {
+    "totalCollections": 4,
+    "migratedCollections": 4,
+    "fullyMigrated": 4,
+    "totalRecords": 8961
+  }
+}

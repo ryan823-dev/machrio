@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
 import { FAQSchema } from '@/components/shared/FAQSchema'
 
-export const metadata: Metadata = {
 // 完全静态生成，构建时生成 HTML
 export const dynamic = 'force-static'
+
+export const metadata: Metadata = {
   title: 'FAQ | Machrio',
   description: 'Frequently asked questions about ordering, payment, shipping, returns, and more at Machrio industrial supplies.',
   alternates: { canonical: '/faq/' },

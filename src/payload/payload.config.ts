@@ -1,4 +1,5 @@
 import { buildConfig } from 'payload'
+import { postgresAdapter } from '@payloadcms/db-postgres'
 import { mongooseAdapter } from '@payloadcms/db-mongodb'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { vercelBlobStorage } from '@payloadcms/storage-vercel-blob'
@@ -97,9 +98,20 @@ export default buildConfig({
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
-  db: mongooseAdapter({
-    url: process.env.MONGODB_URI || 'mongodb://localhost:27017/machrio',
-  }),
+  // Database: Only use PostgreSQL if USE_POSTGRES=1 is explicitly set
+  // MongoDB is used by default for local development
+  db: process.env.USE_POSTGRES === '1' && process.env.DATABASE_URI
+    ? postgresAdapter({
+        pool: {
+          connectionString: process.env.DATABASE_URI,
+          max: 10,
+          min: 2,
+          idleTimeoutMillis: 30000,
+        },
+      })
+    : mongooseAdapter({
+        url: process.env.MONGODB_URI || 'mongodb://localhost:27017/machrio',
+      }),
   plugins: [
     // Vercel Blob Storage for production
     ...(process.env.BLOB_READ_WRITE_TOKEN
