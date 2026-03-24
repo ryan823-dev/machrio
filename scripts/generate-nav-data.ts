@@ -28,7 +28,11 @@ interface NavCategory {
 // Fetch categories from Supabase REST API
 async function fetchFromSupabase(): Promise<any[]> {
   const SUPABASE_URL = 'https://yderhgkjcsaqrsfntpqm.supabase.co'
-  const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkZXJoZ2tqY3NhcXJzZm50cHFtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0MjY0NjI0MywiZXhwIjoyMDU4MjIyMjQzfQ.UJvWQFHvKVt4h5VdLMf_0G9T2eJNvZO6jBvYQqVpPqc'
+  const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+  
+  if (!SUPABASE_KEY) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY is not set in environment variables')
+  }
   
   const response = await fetch(`${SUPABASE_URL}/rest/v1/categories?select=id,name,slug,parent,displayOrder&order=displayOrder.asc`, {
     headers: {

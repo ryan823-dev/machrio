@@ -2,8 +2,7 @@ import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { getPayload } from 'payload'
-import config from '@payload-config'
+import { Pool } from 'pg'
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 import { FAQSchema, FAQSection } from '@/components/shared/FAQSchema'
 import { StructuredData } from '@/components/shared/StructuredData'
@@ -18,18 +17,23 @@ export const revalidate = 300
 // 启用动态参数，允许未预生成的 slug 在运行时生成
 export const dynamicParams = true
 
-// 预生成所有分类页面
+// 预生成所有分类页面 - 使用直接 PostgreSQL 查询避免连接池问题
 export async function generateStaticParams() {
   try {
-    const payload = await getPayload({ config })
-    const categories = await payload.find({
-      collection: 'categories',
-      limit: 500,
+    const { Pool } = require('pg')
+    const pool = new Pool({
+      connectionString: process.env.DATABASE_URI,
+      max: 1,
+      idleTimeoutMillis: 5000,
     })
-    return categories.docs.map((cat) => ({
-      slug: cat.slug as string,
-    }))
-  } catch {
+    
+    const result = await pool.query('SELECT slug FROM categories ORDER BY display_order')
+    const paths = result.rows.map((cat: { slug: string }) => ({ slug: cat.slug }))
+    
+    await pool.end()
+    return paths
+  } catch (error) {
+    console.error('[generateStaticParams] 错误:', error)
     return []
   }
 }
@@ -96,71 +100,125 @@ interface CategoryPageProps {
 
 const PRODUCTS_PER_PAGE = 24
 
-// 简化版：只获取分类信息和直接子分类
+// 使用 PostgreSQL 直接查询获取分类数据
 async function getCategoryData(slug: string) {
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URI,
+    max: 1,
+    idleTimeoutMillis: 5000,
+  })
+
   try {
-    const payload = await getPayload({ config })
+    console.log('[getCategoryData] 开始查询 slug:', slug)
+    console.log('[getCategoryData] DATABASE_URI exists:', !!process.env.DATABASE_URI)
     
-    const result = await payload.find({
-      collection: 'categories',
-      where: { slug: { equals: slug } },
-      limit: 1,
-    })
-    if (result.docs.length === 0) return null
+    // 获取分类信息
+    const catResult = await pool.query(
+      'SELECT id, name, slug, short_description, intro_content, description, buying_guide, parent_id, display_order FROM categories WHERE slug = $1',
+      [slug]
+    )
+    
+    console.log('[getCategoryData] 分类查询结果:', catResult.rows.length)
+    if (catResult.rows.length === 0) return null
+    const category = catResult.rows[0]
 
-    const category = result.docs[0]
-
+    // 获取父分类
     let parent = null
     let grandparent = null
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let children: any[] = []
-
-    const parentId = category.parent ? (typeof category.parent === 'object' ? category.parent.id : category.parent) : null
-
-    const [parentResult, childrenResult] = await Promise.all([
-      parentId ? payload.findByID({ collection: 'categories', id: parentId }).catch(() => null) : Promise.resolve(null),
-      payload.find({
-        collection: 'categories',
-        where: { parent: { equals: category.id } },
-        sort: 'displayOrder',
-        limit: 50,
-      }).then(r => r.docs).catch(() => []),
-    ])
-
-    parent = parentResult
-    children = childrenResult
-
-    if (parent?.parent) {
-      const gpId = typeof parent.parent === 'object' ? parent.parent.id : parent.parent
-      grandparent = await payload.findByID({ collection: 'categories', id: gpId }).catch(() => null)
+    if (category.parent_id) {
+      const parentResult = await pool.query(
+        'SELECT id, name, slug, parent_id FROM categories WHERE id = $1',
+        [category.parent_id]
+      )
+      parent = parentResult.rows[0]
+      
+      // 获取祖父分类
+      if (parent?.parent_id) {
+        const gpResult = await pool.query(
+          'SELECT id, name, slug FROM categories WHERE id = $1',
+          [parent.parent_id]
+        )
+        grandparent = gpResult.rows[0]
+      }
     }
 
+    // 获取子分类
+    const childrenResult = await pool.query(
+      'SELECT id, name, slug FROM categories WHERE parent_id = $1 ORDER BY display_order LIMIT 50',
+      [category.id]
+    )
+    const children = childrenResult.rows
+    console.log('[getCategoryData] 子分类数量:', children.length)
+
     return { category, parent, grandparent, children }
-  } catch {
+  } catch (error) {
+    console.error('[getCategoryData] 错误:', error)
     return null
+  } finally {
+    await pool.end()
   }
 }
 
-// 简化版：获取产品
+// 使用 PostgreSQL 直接查询获取产品
 async function getCategoryProducts(categoryId: string, page: number, sort: string) {
-  try {
-    const payload = await getPayload({ config })
-    
-    const result = await payload.find({
-      collection: 'products',
-      where: {
-        primaryCategory: { equals: categoryId },
-        status: { equals: 'published' },
-      },
-      limit: PRODUCTS_PER_PAGE,
-      page,
-      sort,
-      depth: 2,
-    })
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URI,
+    max: 1,
+    idleTimeoutMillis: 5000,
+  })
 
-    return result
-  } catch {
+  try {
+    const offset = (page - 1) * PRODUCTS_PER_PAGE
+    
+    // 处理排序
+    let orderBy = 'created_at DESC'
+    if (sort === '-createdAt') orderBy = 'created_at DESC'
+    else if (sort === 'createdAt') orderBy = 'created_at ASC'
+    else if (sort === '-name') orderBy = 'name DESC'
+    else if (sort === 'name') orderBy = 'name ASC'
+    
+    // 获取产品总数
+    const countResult = await pool.query(
+      'SELECT COUNT(*) FROM products WHERE primary_category_id = $1',
+      [categoryId]
+    )
+    const totalDocs = parseInt(countResult.rows[0].count)
+    
+    // 获取产品
+    const productsResult = await pool.query(
+      `SELECT id, name, slug, sku, short_description, primary_image_id, 
+              (SELECT url FROM media m WHERE m.id = p.primary_image_id) as image_url,
+              (SELECT name FROM brands b WHERE b.id = p.brand_id) as brand_name,
+              (SELECT id FROM categories c WHERE c.id = p.primary_category_id) as category_id,
+              (SELECT slug FROM categories c WHERE c.id = p.primary_category_id) as category_slug,
+              (SELECT parent_id FROM categories c WHERE c.id = p.primary_category_id) as category_parent_id
+       FROM products p
+       WHERE primary_category_id = $1
+       ORDER BY ${orderBy}
+       LIMIT $2 OFFSET $3`,
+      [categoryId, PRODUCTS_PER_PAGE, offset]
+    )
+    
+    const products = productsResult.rows.map(row => ({
+      ...row,
+      brand: row.brand_name ? { name: row.brand_name } : null,
+      primaryImage: row.image_url ? { url: row.image_url } : null,
+      pricing: { basePrice: null, currency: 'USD' },
+    }))
+
+    return {
+      docs: products,
+      totalDocs,
+      page,
+      totalPages: Math.ceil(totalDocs / PRODUCTS_PER_PAGE),
+      hasNextPage: offset + PRODUCTS_PER_PAGE < totalDocs,
+      hasPrevPage: page > 1,
+    }
+  } catch (error) {
+    console.error('[getCategoryProducts] 错误:', error)
     return { docs: [], totalDocs: 0, page: 1, totalPages: 1, hasNextPage: false, hasPrevPage: false }
+  } finally {
+    await pool.end()
   }
 }
 
@@ -233,10 +291,11 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   const isL2 = parent && !grandparent
   const isL3 = parent && grandparent
 
-  // 只有 L3 分类才显示产品列表（固定第一页，按最新排序）
+  // 显示产品列表：L3 分类 或 没有子分类的分类（叶子分类）
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let productsResult: any = { docs: [], totalDocs: 0, page: 1, totalPages: 1, hasNextPage: false, hasPrevPage: false }
-  if (isL3) {
+  const isLeafCategory = children.length === 0
+  if (isL3 || isLeafCategory) {
     productsResult = await getCategoryProducts(category.id, 1, '-createdAt')
   }
 

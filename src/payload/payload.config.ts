@@ -114,9 +114,10 @@ export default buildConfig({
     ? postgresAdapter({
         pool: {
           connectionString: process.env.DATABASE_URI!,
-          max: 10,
-          min: 2,
-          idleTimeoutMillis: 30000,
+          // Use max 1 connection for Vercel to avoid "max clients reached" error in Session mode
+          max: 1,
+          min: 0,
+          idleTimeoutMillis: 5000,
         },
       })
     : mongooseAdapter({
