@@ -3,6 +3,8 @@
  * 在构建时运行，生成 /public/data/nav-categories.json
  * 
  * 运行: npx tsx scripts/generate-nav-data.ts
+ * 
+ * 支持 MongoDB 和 PostgreSQL (Supabase)
  */
 
 import { MongoClient } from 'mongodb'
@@ -23,25 +25,66 @@ interface NavCategory {
   children?: NavCategory[]
 }
 
+// Fetch categories from Supabase REST API
+async function fetchFromSupabase(): Promise<any[]> {
+  const SUPABASE_URL = 'https://yderhgkjcsaqrsfntpqm.supabase.co'
+  const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlkZXJoZ2tqY3NhcXJzZm50cHFtIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0MjY0NjI0MywiZXhwIjoyMDU4MjIyMjQzfQ.UJvWQFHvKVt4h5VdLMf_0G9T2eJNvZO6jBvYQqVpPqc'
+  
+  const response = await fetch(`${SUPABASE_URL}/rest/v1/categories?select=id,name,slug,parent,displayOrder&order=displayOrder.asc`, {
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+    },
+  })
+  
+  if (!response.ok) {
+    throw new Error(`Supabase API error: ${response.status}`)
+  }
+  
+  return response.json()
+}
+
 async function generateNavData() {
+  const usePostgres = process.env.USE_POSTGRES?.trim() === '1'
   const MONGODB_URI = process.env.MONGODB_URI || ''
   
   console.log('🔄 开始生成导航数据...\n')
+  console.log(`   使用数据库: ${usePostgres ? 'PostgreSQL (Supabase)' : 'MongoDB'}`)
   
-  const client = new MongoClient(MONGODB_URI)
+  let allCategories: any[]
   
-  try {
-    await client.connect()
-    const db = client.db('machrio')
-    const categoriesCollection = db.collection('categories')
+  if (usePostgres || !MONGODB_URI) {
+    // Use Supabase REST API
+    console.log('   从 Supabase REST API 获取数据...')
+    allCategories = await fetchFromSupabase()
     
-    // 获取所有分类
-    const allCategories = await categoriesCollection.find({})
-      .sort({ displayOrder: 1 })
-      .project({ name: 1, slug: 1, parent: 1, displayOrder: 1 })
-      .toArray()
+    // Transform Supabase format to match MongoDB format
+    allCategories = allCategories.map(cat => ({
+      _id: { toString: () => cat.id },
+      name: cat.name,
+      slug: cat.slug,
+      parent: cat.parent ? { toString: () => cat.parent } : null,
+      displayOrder: cat.displayOrder,
+    }))
+  } else {
+    // Use MongoDB
+    const client = new MongoClient(MONGODB_URI)
     
-    console.log(`📊 找到 ${allCategories.length} 个分类`)
+    try {
+      await client.connect()
+      const db = client.db('machrio')
+      const categoriesCollection = db.collection('categories')
+      
+      allCategories = await categoriesCollection.find({})
+        .sort({ displayOrder: 1 })
+        .project({ name: 1, slug: 1, parent: 1, displayOrder: 1 })
+        .toArray()
+    } finally {
+      await client.close()
+    }
+  }
+  
+  console.log(`📊 找到 ${allCategories.length} 个分类`)
     
     // 构建父子关系
     const childrenByParent = new Map<string | null, any[]>()
@@ -103,8 +146,6 @@ async function generateNavData() {
   } catch (error) {
     console.error('生成失败:', error)
     process.exit(1)
-  } finally {
-    await client.close()
   }
 }
 
