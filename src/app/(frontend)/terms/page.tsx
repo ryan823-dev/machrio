@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = {
-  title: 'Terms & Conditions | Machrio',
 // 完全静态生成，构建时生成 HTML
 export const dynamic = 'force-static'
+
+export const metadata: Metadata = {
+  title: 'Terms & Conditions | Machrio',
   description: 'Machrio terms and conditions for global industrial buyers - pricing, warranties, customs duties, liability, and governing law.',
   alternates: { canonical: '/terms/' },
   openGraph: {

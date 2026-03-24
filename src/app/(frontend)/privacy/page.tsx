@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
 
-export const metadata: Metadata = {
-  title: 'Privacy Policy | Machrio',
 // 完全静态生成，构建时生成 HTML
 export const dynamic = 'force-static'
+
+export const metadata: Metadata = {
+  title: 'Privacy Policy | Machrio',
   description: 'Machrio privacy policy - how we collect, use, protect, and disclose your personal information.',
   alternates: { canonical: '/privacy/' },
   openGraph: {
