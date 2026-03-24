@@ -39,6 +39,15 @@ import { Navigation } from './globals/Navigation'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
+// Debug logging for production troubleshooting
+const usePostgres = process.env.USE_POSTGRES === '1' && !!process.env.DATABASE_URI
+console.log('Database config:', {
+  USE_POSTGRES: process.env.USE_POSTGRES,
+  DATABASE_URI: process.env.DATABASE_URI ? 'SET (hidden)' : 'NOT SET',
+  MONGODB_URI: process.env.MONGODB_URI ? 'SET (hidden)' : 'NOT SET',
+  usePostgres,
+})
+
 export default buildConfig({
   sharp,
   admin: {
@@ -100,10 +109,10 @@ export default buildConfig({
   },
   // Database: Only use PostgreSQL if USE_POSTGRES=1 is explicitly set
   // MongoDB is used by default for local development
-  db: process.env.USE_POSTGRES === '1' && process.env.DATABASE_URI
+  db: usePostgres
     ? postgresAdapter({
         pool: {
-          connectionString: process.env.DATABASE_URI,
+          connectionString: process.env.DATABASE_URI!,
           max: 10,
           min: 2,
           idleTimeoutMillis: 30000,
