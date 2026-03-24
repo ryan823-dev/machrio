@@ -6,7 +6,7 @@ import { sendOrderConfirmationEmail } from '@/lib/email'
 import { calculateShipping } from '@/lib/shipping/calculator'
 
 const stripe = process.env.STRIPE_SECRET_KEY
-  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2026-01-28.clover' })
+  ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2026-02-25.clover' })
   : null
 
 interface OrderItem {

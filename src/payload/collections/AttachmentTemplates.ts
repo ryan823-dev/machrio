@@ -154,15 +154,5 @@ export const AttachmentTemplates: CollectionConfig = {
       },
     },
   ],
-  indexes: [
-    {
-      fields: ['tenantId', 'category'],
-    },
-    {
-      fields: ['tenantId', 'isDefault'],
-    },
-    {
-      fields: ['tenantId', 'industry'],
-    },
-  ],
+  // indexes removed for Payload 3.17.1 compatibility
 }
