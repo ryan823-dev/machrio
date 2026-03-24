@@ -235,22 +235,65 @@ export async function POST(req: NextRequest) {
   try {
     const payload = await getPayload({ config: configPromise })
     
-    // Check authentication
-    const { user } = await payload.auth({ headers: req.headers })
+    // Check authentication - handle both MongoDB and PostgreSQL
+    let user;
+    try {
+      const authResult = await payload.auth({ headers: req.headers })
+      user = authResult.user
+    } catch (authError) {
+      console.error('Auth error:', authError)
+      return NextResponse.json({ 
+        error: '认证失败：数据库连接问题。请检查服务器配置。',
+        details: authError instanceof Error ? authError.message : 'Unknown auth error'
+      }, { status: 500 })
+    }
+    
     if (!user) {
       return NextResponse.json({ error: '请先登录管理后台' }, { status: 401 })
     }
 
-    const formData = await req.formData()
+    // Parse form data with error handling
+    let formData;
+    try {
+      formData = await req.formData()
+    } catch (parseError) {
+      console.error('Form data parse error:', parseError)
+      return NextResponse.json({ 
+        error: '无法解析表单数据',
+        details: parseError instanceof Error ? parseError.message : 'Unknown parse error'
+      }, { status: 400 })
+    }
+    
     const file = formData.get('file') as File
     
     if (!file) {
       return NextResponse.json({ error: '请选择要上传的文件' }, { status: 400 })
     }
 
+    console.log('File received:', file.name, 'Size:', file.size, 'Type:', file.type)
+
     // Read Excel file
-    const buffer = await file.arrayBuffer()
-    const workbook = XLSX.read(buffer, { type: 'array' })
+    let buffer: ArrayBuffer;
+    try {
+      buffer = await file.arrayBuffer()
+    } catch (readError) {
+      console.error('File read error:', readError)
+      return NextResponse.json({ 
+        error: '无法读取文件',
+        details: readError instanceof Error ? readError.message : 'Unknown read error'
+      }, { status: 500 })
+    }
+    
+    let workbook;
+    try {
+      workbook = XLSX.read(buffer, { type: 'array' })
+    } catch (xlsxError) {
+      console.error('XLSX parse error:', xlsxError)
+      return NextResponse.json({ 
+        error: '无法解析 Excel 文件，请确保文件格式正确',
+        details: xlsxError instanceof Error ? xlsxError.message : 'Unknown xlsx error'
+      }, { status: 400 })
+    }
     
     // Find products sheet
     const sheetName = workbook.SheetNames.find(n => 
@@ -272,10 +315,20 @@ export async function POST(req: NextRequest) {
     }
 
     // Get all categories for L1/L2/L3 path lookup
-    const categories = await payload.find({
-      collection: 'categories',
-      limit: 1000,
-    })
+    let categories;
+    try {
+      categories = await payload.find({
+        collection: 'categories',
+        limit: 1000,
+      })
+      console.log('Categories loaded:', categories.docs.length)
+    } catch (catError) {
+      console.error('Failed to load categories:', catError)
+      return NextResponse.json({ 
+        error: '无法加载分类数据',
+        details: catError instanceof Error ? catError.message : 'Unknown category error'
+      }, { status: 500 })
+    }
 
     // Build category lookup maps
     const catById = new Map(categories.docs.map(c => [c.id, c]))
@@ -304,10 +357,20 @@ export async function POST(req: NextRequest) {
     }
 
     // Get brands for lookup
-    const brands = await payload.find({
-      collection: 'brands',
-      limit: 1000,
-    })
+    let brands;
+    try {
+      brands = await payload.find({
+        collection: 'brands',
+        limit: 1000,
+      })
+      console.log('Brands loaded:', brands.docs.length)
+    } catch (brandError) {
+      console.error('Failed to load brands:', brandError)
+      return NextResponse.json({ 
+        error: '无法加载品牌数据',
+        details: brandError instanceof Error ? brandError.message : 'Unknown brand error'
+      }, { status: 500 })
+    }
     const brandMap = new Map(brands.docs.map(b => [b.name?.toLowerCase(), b.id]))
 
     const results = {
