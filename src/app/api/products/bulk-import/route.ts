@@ -607,8 +607,27 @@ export async function POST(req: NextRequest) {
     })
   } catch (error) {
     console.error('Bulk import error:', error)
+    
+    // Ensure we always return JSON, never a plain string
+    let errorMessage = '导入失败'
+    let errorDetails = ''
+    
+    if (error instanceof Error) {
+      errorMessage = error.message
+      errorDetails = error.stack || ''
+      console.error('Error stack:', error.stack)
+    } else if (typeof error === 'string') {
+      errorMessage = error
+    } else {
+      errorMessage = JSON.stringify(error)
+    }
+    
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : '导入失败' },
+      { 
+        error: errorMessage,
+        details: errorDetails,
+        type: error?.constructor?.name || 'UnknownError'
+      },
       { status: 500 }
     )
   }
