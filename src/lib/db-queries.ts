@@ -27,12 +27,17 @@ export interface DbCategory {
   slug: string
   parent_id: string | null
   display_order: number | null
+  // Payload CMS 可能使用 camelCase 或 snake_case
   short_description: string | null
+  shortDescription: string | null
   description: unknown | null
   intro_content: string | null
+  introContent: string | null
   buying_guide: unknown | null
+  buyingGuide: unknown | null
   faq: Array<{ question: string; answer: string }> | null
   seo_content: unknown | null
+  seoContent: unknown | null
 }
 
 export interface DbProduct {
@@ -96,9 +101,15 @@ export async function getCategoryBySlug(slug: string): Promise<{
   
   try {
     // 1. 获取当前分类（包含 SEO 字段）
+    // Payload CMS 可能使用 camelCase 或 snake_case 列名
     const catResult = await pool.query<DbCategory>(
-      `SELECT id, name, slug, parent_id, display_order, short_description, description,
-              intro_content, buying_guide, faq, seo_content
+      `SELECT id, name, slug, parent_id, display_order,
+              short_description, shortDescription,
+              description,
+              intro_content, introContent,
+              buying_guide, buyingGuide,
+              faq,
+              seo_content, seoContent
        FROM categories WHERE slug = $1`,
       [slug]
     )

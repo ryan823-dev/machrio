@@ -183,13 +183,14 @@ async function getCategorySeoContent(slug: string): Promise<{
     if (!result) return null
 
     const { category } = result
+    // 同时支持 camelCase 和 snake_case 字段名
     return {
-      shortDescription: category.short_description || undefined,
-      introContent: category.intro_content || undefined,
-      description: category.description || undefined,
-      buyingGuide: category.buying_guide || undefined,
-      faq: category.faq || undefined,
-      seoContent: category.seo_content || undefined,
+      shortDescription: (category as any).short_description || (category as any).shortDescription || undefined,
+      introContent: (category as any).intro_content || (category as any).introContent || undefined,
+      description: (category as any).description || undefined,
+      buyingGuide: (category as any).buying_guide || (category as any).buyingGuide || undefined,
+      faq: (category as any).faq || undefined,
+      seoContent: (category as any).seo_content || (category as any).seoContent || undefined,
     }
   } catch (e) {
     console.error('Failed to fetch SEO content from database:', e)
