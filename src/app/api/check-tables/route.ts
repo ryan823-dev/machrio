@@ -10,35 +10,26 @@ export async function GET() {
   })
 
   try {
-    // Get tables
-    const tablesResult = await pool.query(`
-      SELECT table_name
-      FROM information_schema.tables
-      WHERE table_schema = 'public'
-      ORDER BY table_name
+    // Check for specific product slug
+    const targetProduct = await pool.query(`
+      SELECT p.id, p.name, p.slug, p.primary_category_id, c.slug as category_slug, c.name as category_name
+      FROM products p
+      LEFT JOIN categories c ON p.primary_category_id = c.id
+      WHERE p.slug = 'surface-protection-tape'
     `)
 
-    // Check products table structure and sample data
-    const productsResult = await pool.query(`
-      SELECT id, name, slug, status, primary_category_id
-      FROM products
-      LIMIT 10
-    `)
-
-    // Check product slugs
-    const slugResult = await pool.query(`
-      SELECT slug, COUNT(*) as count
-      FROM products
-      GROUP BY slug
-      HAVING COUNT(*) > 1
+    // Get categories to check hierarchy
+    const categoriesResult = await pool.query(`
+      SELECT id, name, slug, parent_id, level
+      FROM categories
+      WHERE slug IN ('surface-protection-tape', 'tape', 'packing-tape')
     `)
 
     await pool.end()
 
     return NextResponse.json({
-      tables: tablesResult.rows.map(r => r.table_name),
-      sampleProducts: productsResult.rows,
-      duplicateSlugs: slugResult.rows,
+      targetProduct: targetProduct.rows,
+      categories: categoriesResult.rows,
     })
   } catch (error) {
     await pool.end()
