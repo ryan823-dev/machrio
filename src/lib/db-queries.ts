@@ -7,13 +7,18 @@ import pg from 'pg'
 
 const { Pool } = pg
 
-// 创建连接池
+// 创建连接池 - 带超时配置
 function createPool() {
   const connectionString = process.env.DATABASE_URI
   if (!connectionString) {
     throw new Error('DATABASE_URI environment variable is not set')
   }
-  return new Pool({ connectionString, max: 1 })
+  return new Pool({
+    connectionString,
+    max: 1,
+    connectionTimeoutMillis: 5000, // 5秒超时
+    idleTimeoutMillis: 10000,
+  })
 }
 
 export interface DbCategory {
