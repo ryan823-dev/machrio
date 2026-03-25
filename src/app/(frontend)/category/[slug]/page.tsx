@@ -21,13 +21,19 @@ export const dynamicParams = true
 export async function generateStaticParams() {
   try {
     const pool = getPool()
+    console.log('[generateStaticParams] 开始查询数据库...')
     const result = await pool.query('SELECT slug FROM categories ORDER BY display_order')
     const paths = result.rows.map((cat: { slug: string }) => ({ slug: cat.slug }))
-    console.log(`[generateStaticParams] 生成了 ${paths.length} 个分类页面`)
+    console.log(`[generateStaticParams] ✅ 生成了 ${paths.length} 个分类页面，前 5 个：${paths.slice(0, 5).map((p: any) => p.slug).join(', ')}`)
     return paths
   } catch (error) {
-    console.error('[generateStaticParams] 错误:', error)
-    return []
+    console.error('[generateStaticParams] ❌ 错误:', error)
+    // 返回空数组会导致所有未生成的页面 404，所以返回一些常见分类作为 fallback
+    return [
+      { slug: 'adhesives-sealants-and-tape' },
+      { slug: 'tape' },
+      { slug: 'surface-protection-tape' },
+    ]
   }
 }
 
