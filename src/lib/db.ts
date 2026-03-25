@@ -1,25 +1,23 @@
 import { Pool } from 'pg'
 
-// 全局数据库连接池 - 避免每次创建新连接
-let globalPool: Pool | null = null
-
-export function getPool(): Pool {
-  if (!globalPool) {
-    console.log('[getPool] DATABASE_URI exists:', !!process.env.DATABASE_URI)
-    console.log('[getPool] USE_POSTGRES:', process.env.USE_POSTGRES)
-    globalPool = new Pool({
-      connectionString: process.env.DATABASE_URI,
-      max: 2, // 最多 2 个连接
-      min: 0, // 最小 0 个空闲连接
-      idleTimeoutMillis: 10000, // 10 秒空闲超时
-    })
-  }
-  return globalPool
+// 为 Vercel Serverless 环境创建新连接池
+// 注意：在 Serverless 环境中，全局变量可能不可靠
+export function createPool(): Pool {
+  console.log('[createPool] DATABASE_URI exists:', !!process.env.DATABASE_URI)
+  console.log('[createPool] USE_POSTGRES:', process.env.USE_POSTGRES)
+  return new Pool({
+    connectionString: process.env.DATABASE_URI,
+    max: 1, // 只用 1 个连接
+    min: 0,
+    idleTimeoutMillis: 5000,
+  })
 }
 
-export async function closePool(): Promise<void> {
-  if (globalPool) {
-    await globalPool.end()
-    globalPool = null
-  }
+// 保留旧函数名以兼容
+export function getPool(): Pool {
+  return createPool()
+}
+
+export async function closePool(pool: Pool): Promise<void> {
+  await pool.end()
 }
