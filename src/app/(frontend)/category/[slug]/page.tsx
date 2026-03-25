@@ -2,7 +2,6 @@ import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { createPool } from '@/lib/db'
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 import { FAQSchema, FAQSection } from '@/components/shared/FAQSchema'
 import { StructuredData } from '@/components/shared/StructuredData'
@@ -11,8 +10,36 @@ import { ProductGrid } from '@/components/category/ProductGrid'
 import { ExpandableIntro } from '@/components/category/ExpandableIntro'
 import { EmptyStateAIDialog } from '@/components/category/EmptyStateAIDialog'
 
+// 强制动态渲染，但使用静态数据
 export const dynamic = 'force-dynamic'
-export const revalidate = 0
+
+// =============================================
+// 类型定义
+// =============================================
+
+interface ProductCardData {
+  id: string
+  name: string
+  slug: string
+  categorySlug: string
+  sku: string
+  brand: string
+  primaryImage: string | null
+  shortDescription: string
+  pricing: {
+    basePrice: number | null
+    currency: string
+    priceUnit?: string
+  }
+  purchaseMode: 'both' | 'buy-online' | 'rfq-only'
+  availability: string
+  packageQty?: number
+  packageUnit?: string
+}
+
+// =============================================
+// 辅助函数
+// =============================================
 
 function extractChildren(children: unknown[]): string {
   if (!Array.isArray(children)) return ''
@@ -66,113 +93,148 @@ function hasRichTextContent(richText: unknown): boolean {
   return text.trim().length > 0
 }
 
+// =============================================
+// 静态数据查询函数（使用 await import）
+// =============================================
+
+interface CategoryData {
+  category: {
+    id: string
+    name: string
+    slug: string
+    shortDescription?: string
+    introContent?: string
+    description?: unknown
+    buyingGuide?: unknown
+    faq?: Array<{ question: string; answer: string }>
+    displayOrder: number
+  }
+  parent: {
+    id: string
+    name: string
+    slug: string
+  } | null
+  grandparent: {
+    id: string
+    name: string
+    slug: string
+  } | null
+  children: Array<{
+    id: string
+    name: string
+    slug: string
+  }>
+  productCount: number
+}
+
+// 从数据库获取分类数据
+async function getCategoryDataFromDb(slug: string): Promise<CategoryData | null> {
+  const { getCategoryBySlug: getDbCategory } = await import('@/lib/db-queries')
+  const { staticL2Categories } = await import('@/data/static-catalog')
+
+  const dbData = await getDbCategory(slug)
+  if (!dbData) return null
+
+  const { category, parent, grandparent, children, productCount } = dbData
+
+  return {
+    category: {
+      id: category.id,
+      name: category.name,
+      slug: category.slug,
+      displayOrder: category.display_order || 0,
+    },
+    parent: parent ? { id: parent.id, name: parent.name, slug: parent.slug } : null,
+    grandparent: grandparent ? { id: grandparent.id, name: grandparent.name, slug: grandparent.slug } : null,
+    children: children.map(c => ({ id: c.id, name: c.name, slug: c.slug })),
+    productCount,
+  }
+}
+
+async function getStaticCategoryData(slug: string): Promise<CategoryData | null> {
+  // 优先从数据库获取
+  try {
+    const dbData = await getCategoryDataFromDb(slug)
+    if (dbData) return dbData
+  } catch (e) {
+    console.error('Database query failed, falling back to static data:', e)
+  }
+
+  // Fallback to static data
+  const { getCategoryBySlug } = await import('@/data/static-catalog')
+
+  const data = getCategoryBySlug(slug)
+  if (!data) return null
+
+  const { category, parent, grandparent } = data
+
+  // Get children from static L2 categories
+  let children: Array<{ id: string; name: string; slug: string }> = []
+  if (category.level === 1) {
+    children = staticL2Categories.filter(c => c.parentSlug === slug)
+      .map(c => ({ id: c.id, name: c.name, slug: c.slug }))
+  }
+
+  return {
+    category: {
+      id: category.id,
+      name: category.name,
+      slug: category.slug,
+      shortDescription: category.shortDescription,
+      introContent: category.introContent,
+      description: category.description,
+      buyingGuide: category.buyingGuide,
+      faq: category.faq,
+      displayOrder: category.displayOrder,
+    },
+    parent: parent ? { id: parent.id, name: parent.name, slug: parent.slug } : null,
+    grandparent: grandparent ? { id: grandparent.id, name: grandparent.name, slug: grandparent.slug } : null,
+    children,
+    productCount: 0,
+  }
+}
+
+async function getStaticProducts(slug: string, isL1: boolean): Promise<{ docs: ProductCardData[]; totalDocs: number }> {
+  // 使用动态 import 加载静态数据
+  const { getProductsByCategorySlug, getProductsByL1Slug } = await import('@/data/static-catalog')
+
+  const result = isL1 ? getProductsByL1Slug(slug) : getProductsByCategorySlug(slug)
+
+  return {
+    docs: result.docs.map(p => ({
+      id: p.id,
+      name: p.name,
+      slug: p.slug,
+      categorySlug: slug,
+      sku: p.sku,
+      brand: p.brand || 'Industrial',
+      primaryImage: p.primaryImage,
+      shortDescription: p.shortDescription,
+      pricing: { basePrice: p.pricing.basePrice, currency: 'USD' },
+      purchaseMode: 'both' as const,
+      availability: 'in-stock',
+    })),
+    totalDocs: result.totalDocs,
+  }
+}
+
+// =============================================
+// 页面组件
+// =============================================
+
 interface CategoryPageProps {
   params: Promise<{ slug: string }>
 }
 
 const PRODUCTS_PER_PAGE = 24
 
-async function getCategoryData(slug: string) {
-  const pool = createPool()
-  try {
-    const catResult = await pool.query(
-      `SELECT id::text, name, slug, short_description, intro_content, description, buying_guide,
-              parent_id::text, display_order
-       FROM categories WHERE slug = $1`,
-      [slug]
-    )
-    if (catResult.rows.length === 0) return null
-    const category = catResult.rows[0]
-
-    let parent = null
-    let grandparent = null
-    if (category.parent_id) {
-      const parentResult = await pool.query(
-        `SELECT id::text, name, slug, parent_id::text FROM categories WHERE id = $1::uuid`,
-        [category.parent_id]
-      )
-      parent = parentResult.rows[0]
-      if (parent?.parent_id) {
-        const gpResult = await pool.query(
-          `SELECT id::text, name, slug FROM categories WHERE id = $1::uuid`,
-          [parent.parent_id]
-        )
-        grandparent = gpResult.rows[0]
-      }
-    }
-
-    const childrenResult = await pool.query(
-      `SELECT id::text, name, slug FROM categories WHERE parent_id = $1::uuid ORDER BY display_order LIMIT 50`,
-      [category.id]
-    )
-    return { category, parent, grandparent, children: childrenResult.rows }
-  } catch (error) {
-    console.error('[getCategoryData] 错误:', error)
-    return null
-  }
-}
-
-async function getCategoryProducts(categoryId: string, page: number, sort: string) {
-  const pool = createPool()
-  try {
-    const offset = (page - 1) * PRODUCTS_PER_PAGE
-
-    let orderBy = 'created_at DESC'
-    if (sort === '-createdAt') orderBy = 'created_at DESC'
-    else if (sort === 'createdAt') orderBy = 'created_at ASC'
-    else if (sort === '-name') orderBy = 'name DESC'
-    else if (sort === 'name') orderBy = 'name ASC'
-
-    const countResult = await pool.query(
-      'SELECT COUNT(*) FROM products WHERE primary_category_id::text = $1',
-      [categoryId]
-    )
-    const totalDocs = parseInt(countResult.rows[0].count)
-
-    const productsResult = await pool.query(
-      `SELECT id, name, slug, sku, short_description, external_image_url
-       FROM products
-       WHERE primary_category_id::text = $1
-       ORDER BY ${orderBy}
-       LIMIT $2 OFFSET $3`,
-      [categoryId, PRODUCTS_PER_PAGE, offset]
-    )
-
-    const products = productsResult.rows.map(row => ({
-      id: row.id,
-      name: row.name,
-      slug: row.slug,
-      sku: row.sku,
-      shortDescription: row.short_description,
-      primaryImage: row.external_image_url,
-      pricing: { basePrice: null, currency: 'USD' },
-    }))
-
-    return {
-      docs: products,
-      totalDocs,
-      page,
-      totalPages: Math.ceil(totalDocs / PRODUCTS_PER_PAGE),
-      hasNextPage: offset + PRODUCTS_PER_PAGE < totalDocs,
-      hasPrevPage: page > 1,
-    }
-  } catch (error) {
-    console.error('[getCategoryProducts] 错误:', error)
-    return {
-      docs: [],
-      totalDocs: 0,
-      page: 1,
-      totalPages: 1,
-      hasNextPage: false,
-      hasPrevPage: false,
-    }
-  }
-}
-
 export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
   const { slug } = await params
-  const data = await getCategoryData(slug)
-  if (!data) return { title: 'Category Not Found' }
+  const data = await getStaticCategoryData(slug)
+
+  if (!data) {
+    return { title: 'Category Not Found' }
+  }
 
   const { category, parent, grandparent } = data
   const parentName = parent ? `${parent.name} - ` : ''
@@ -190,20 +252,23 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
 
 export default async function CategoryPage({ params }: CategoryPageProps) {
   const { slug } = await params
-  const data = await getCategoryData(slug)
-  if (!data) notFound()
+  const data = await getStaticCategoryData(slug)
+
+  if (!data) {
+    notFound()
+  }
 
   const { category, parent, grandparent, children } = data
-  const isL1 = !parent && !grandparent
+
+  // 判断分类层级
+  const isL1 = !parent
   const isL2 = !!parent && !grandparent
   const isL3 = !!parent && !!grandparent
 
-  let productsResult = { docs: [], totalDocs: 0, page: 1, totalPages: 1, hasNextPage: false, hasPrevPage: false }
-  const isLeafCategory = children.length === 0
-  if (isL3 || isLeafCategory) {
-    productsResult = await getCategoryProducts(category.id, 1, '-createdAt')
-  }
+  // 获取产品
+  const productsResult = await getStaticProducts(slug, isL1)
 
+  // 构建面包屑
   const breadcrumbs = [
     { label: 'Home', href: '/' },
     ...(grandparent ? [{ label: grandparent.name, href: `/category/${grandparent.slug}` }] : []),
@@ -221,7 +286,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
     itemListElement: productsResult.docs.slice(0, 20).map((p, idx) => ({
       '@type': 'ListItem',
       position: idx + 1,
-      url: `${serverUrl}/product/${category.slug}/${p.slug}/`,
+      url: `${serverUrl}/product/${slug}/${p.slug}/`,
       name: p.name,
     })),
   } : null
@@ -231,10 +296,11 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
       <Breadcrumbs items={breadcrumbs} />
       {itemListSchema && <StructuredData data={itemListSchema} />}
 
+      {/* 分类标题 */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-secondary-900">{category.name}</h1>
         {category.introContent ? (
-          <ExpandableIntro content={category.introContent as string} />
+          <ExpandableIntro content={category.introContent} />
         ) : (
           <p className="mt-2 text-sm leading-relaxed text-secondary-600">
             {category.shortDescription || `Browse our selection of ${category.name} products.`}
@@ -244,6 +310,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 
       <CategoryBuyingGuide categorySlug={slug} />
 
+      {/* 子分类展示（L1 或 L2 分类） */}
       {(isL1 || isL2) && children.length > 0 && (
         <section className="mb-8">
           <h2 className="mb-4 text-lg font-semibold text-secondary-800">
@@ -263,6 +330,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         </section>
       )}
 
+      {/* 空状态 */}
       {(isL1 || isL2) && children.length === 0 && (
         <EmptyStateAIDialog
           categoryName={category.name}
@@ -271,16 +339,24 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         />
       )}
 
-      {isL3 && (
+      {/* 产品列表（L1 或 L3 分类） */}
+      {(isL1 || isL3) && (
         <>
-          <div className="mb-4 flex items-center justify-between">
-            <p className="text-sm text-secondary-500">{productsResult.totalDocs} products</p>
-          </div>
+          {productsResult.totalDocs > 0 ? (
+            <>
+              <div className="mb-4 flex items-center justify-between">
+                <p className="text-sm text-secondary-500">{productsResult.totalDocs} products</p>
+                {isL1 && (
+                  <Link href={`/category/${slug}`} className="text-sm text-primary-600 hover:text-primary-800">
+                    View all products →
+                  </Link>
+                )}
+              </div>
 
-          {productsResult.docs.length > 0 ? (
-            <Suspense fallback={<div className="h-96 animate-pulse rounded bg-secondary-100" />}>
-              <ProductGrid products={productsResult.docs} view="list" />
-            </Suspense>
+              <Suspense fallback={<div className="h-96 animate-pulse rounded bg-secondary-100" />}>
+                <ProductGrid products={productsResult.docs} view="list" />
+              </Suspense>
+            </>
           ) : (
             <EmptyStateAIDialog
               categoryName={category.name}
@@ -291,27 +367,35 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         </>
       )}
 
+      {/* SEO 内容 */}
       {productsResult.totalDocs > 0 && (
         <section className="mt-12 border-t border-secondary-200 pt-8">
           {hasRichTextContent(category.description) && (
             <div className="mb-10">
-              <div className="prose prose-sm prose-secondary max-w-none text-secondary-600" dangerouslySetInnerHTML={{ __html: lexicalToHtml(category.description) }} />
+              <div
+                className="prose prose-sm prose-secondary max-w-none text-secondary-600"
+                dangerouslySetInnerHTML={{ __html: lexicalToHtml(category.description) }}
+              />
             </div>
           )}
           {hasRichTextContent(category.buyingGuide) && (
             <div className="mb-10">
               <h2 className="mb-4 text-lg font-bold text-secondary-900">How to Choose the Right {category.name}</h2>
-              <div className="prose prose-sm prose-secondary max-w-none text-secondary-600" dangerouslySetInnerHTML={{ __html: lexicalToHtml(category.buyingGuide) }} />
+              <div
+                className="prose prose-sm prose-secondary max-w-none text-secondary-600"
+                dangerouslySetInnerHTML={{ __html: lexicalToHtml(category.buyingGuide) }}
+              />
             </div>
           )}
-          {Array.isArray(category.faq) && category.faq.length > 0 && (
-            <FAQSection faqs={category.faq.map((item: { question?: string; answer?: string }) => ({ question: item.question || '', answer: item.answer || '' }))} title="Frequently Asked Questions" />
+          {category.faq && category.faq.length > 0 && (
+            <FAQSection faqs={category.faq} title="Frequently Asked Questions" />
           )}
         </section>
       )}
 
-      {Array.isArray(category.faq) && category.faq.length > 0 && (
-        <FAQSchema faqs={category.faq.map((item: { question?: string; answer?: string }) => ({ question: item.question || '', answer: item.answer || '' }))} />
+      {/* FAQ Schema */}
+      {category.faq && category.faq.length > 0 && (
+        <FAQSchema faqs={category.faq} />
       )}
     </div>
   )

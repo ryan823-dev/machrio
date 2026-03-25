@@ -3,11 +3,8 @@ import type { Metadata } from 'next'
 import { StructuredData } from '@/components/shared/StructuredData'
 import { HeroAIChat } from '@/components/shared/HeroAIChat'
 import { CategoryPagination } from '@/components/shared/CategoryPagination'
-import { getPayload } from 'payload'
-import config from '@payload-config'
 
-// 完全静态生成，构建时生成 HTML
-// 这样可以最快速度响应用户请求
+// SSR 模式，从数据库获取实时数据
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
@@ -29,17 +26,22 @@ export const metadata: Metadata = {
   },
 }
 
-// Category icons mapping
-const categoryIcons: Record<string, string> = {
-  'adhesives-sealants-tape': '🧴',
-  'material-handling': '📦',
-  'safety': '🛡️',
-  'packaging-shipping': '📬',
-  'cleaning-and-janitorial': '🧹',
-  'lighting': '💡',
-  'power-transmission': '⚙️',
-  'tool-storage-workbenches': '🗄️',
-  'plumbing-pumps': '🔧',
+// 从数据库获取分类和产品数量
+async function getCategoriesWithCounts() {
+  try {
+    const { getL1CategoriesWithCounts } = await import('@/lib/db-queries')
+    return await getL1CategoriesWithCounts()
+  } catch (e) {
+    console.error('Failed to fetch categories from database:', e)
+    // Fallback to static data
+    const { staticL1Categories } = await import('@/data/static-catalog')
+    return staticL1Categories.map(cat => ({
+      id: cat.id,
+      name: cat.name,
+      slug: cat.slug,
+      productCount: 0,
+    }))
+  }
 }
 
 const industries = [
@@ -51,80 +53,9 @@ const industries = [
   { name: 'Warehouse & Logistics', slug: 'warehouse' },
 ]
 
-// Fallback categories when Payload not ready
-const fallbackCategories = [
-  { name: 'Safety', slug: 'safety', featured: true, displayOrder: 1 },
-  { name: 'Material Handling', slug: 'material-handling', featured: true, displayOrder: 2 },
-  { name: 'Packaging & Shipping', slug: 'packaging-shipping', featured: true, displayOrder: 3 },
-  { name: 'Adhesives & Sealants & Tape', slug: 'adhesives-sealants-tape', featured: true, displayOrder: 4 },
-  { name: 'Cleaning and Janitorial', slug: 'cleaning-and-janitorial', featured: true, displayOrder: 5 },
-  { name: 'Lighting', slug: 'lighting', featured: true, displayOrder: 6 },
-  { name: 'Tool Storage & Workbenches', slug: 'tool-storage-workbenches', featured: true, displayOrder: 7 },
-  { name: 'Power Transmission', slug: 'power-transmission', featured: true, displayOrder: 8 },
-  { name: 'Plumbing & Pumps', slug: 'plumbing-pumps', featured: true, displayOrder: 9 },
-]
-
-async function getCategoriesWithCounts() {
-  try {
-    const payload = await getPayload({ config })
-    // Get all top-level featured categories (no parent)
-    const categories = await payload.find({
-      collection: 'categories',
-      where: {
-        featured: { equals: true },
-        parent: { exists: false },
-      },
-      sort: 'displayOrder',
-      limit: 100, // Get all featured categories for pagination
-    })
-
-    if (categories.docs.length === 0) {
-      return fallbackCategories.map(c => ({ ...c, productCount: 0 }))
-    }
-
-    // For each category, count products including all descendant subcategories (level 2 + level 3)
-    const results = await Promise.all(
-      categories.docs.map(async (cat) => {
-        try {
-          const children = await payload.find({
-            collection: 'categories',
-            where: { parent: { equals: cat.id } },
-            limit: 100,
-          })
-          // Also get grandchildren (level 3 categories where products actually live)
-          const grandchildrenResults = await Promise.all(
-            children.docs.map(child =>
-              payload.find({
-                collection: 'categories',
-                where: { parent: { equals: child.id } },
-                limit: 200,
-              })
-            )
-          )
-          const grandchildren = grandchildrenResults.flatMap(r => r.docs)
-          const allCategoryIds = [cat.id, ...children.docs.map(c => c.id), ...grandchildren.map(c => c.id)]
-          const count = await payload.count({
-            collection: 'products',
-            where: {
-              primaryCategory: { in: allCategoryIds },
-              status: { equals: 'published' },
-            },
-          })
-          return { ...cat, productCount: count.totalDocs }
-        } catch {
-          return { ...cat, productCount: 0 }
-        }
-      })
-    )
-    return results
-  } catch (error) {
-    console.error('Error fetching categories:', error)
-    return fallbackCategories.map(c => ({ ...c, productCount: 0 }))
-  }
-}
-
 export default async function HomePage() {
-  const categoriesWithCounts = await getCategoriesWithCounts()
+  // 使用静态数据，避免数据库连接问题
+  const categoriesWithCounts = await getStaticCategories()
 
   const orgSchema = {
     '@context': 'https://schema.org',
