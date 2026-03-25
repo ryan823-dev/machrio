@@ -87,7 +87,7 @@ async function getCategoryData(slug: string) {
       'SELECT id, name, slug, short_description, intro_content, description, buying_guide, parent_id, display_order FROM categories WHERE slug = $1',
       [slug]
     )
-    
+
     if (catResult.rows.length === 0) return null
     const category = catResult.rows[0]
 
@@ -96,15 +96,15 @@ async function getCategoryData(slug: string) {
     let grandparent = null
     if (category.parent_id) {
       const parentResult = await pool.query(
-        'SELECT id, name, slug, parent_id FROM categories WHERE id = $1',
+        'SELECT id, name, slug, parent_id FROM categories WHERE id = $1::uuid',
         [category.parent_id]
       )
       parent = parentResult.rows[0]
-      
+
       // 获取祖父分类
       if (parent?.parent_id) {
         const gpResult = await pool.query(
-          'SELECT id, name, slug FROM categories WHERE id = $1',
+          'SELECT id, name, slug FROM categories WHERE id = $1::uuid',
           [parent.parent_id]
         )
         grandparent = gpResult.rows[0]
@@ -113,7 +113,7 @@ async function getCategoryData(slug: string) {
 
     // 获取子分类
     const childrenResult = await pool.query(
-      'SELECT id, name, slug FROM categories WHERE parent_id = $1 ORDER BY display_order LIMIT 50',
+      'SELECT id, name, slug FROM categories WHERE parent_id = $1::uuid ORDER BY display_order LIMIT 50',
       [category.id]
     )
     const children = childrenResult.rows
