@@ -23,6 +23,7 @@ export async function generateStaticParams() {
     const pool = getPool()
     const result = await pool.query('SELECT slug FROM categories ORDER BY display_order')
     const paths = result.rows.map((cat: { slug: string }) => ({ slug: cat.slug }))
+    console.log(`[generateStaticParams] 生成了 ${paths.length} 个分类页面`)
     return paths
   } catch (error) {
     console.error('[generateStaticParams] 错误:', error)
@@ -132,6 +133,8 @@ async function getCategoryData(slug: string) {
       [category.id]
     )
     const children = childrenResult.rows
+
+    console.log(`[getCategoryData] ${category.name}: children=${children.length}, isL1=${!parent}, isL2=${parent && !grandparent}, isL3=${!!grandparent}`)
 
     return { category, parent, grandparent, children }
   } catch (error) {
