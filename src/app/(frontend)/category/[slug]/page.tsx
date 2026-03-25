@@ -161,60 +161,68 @@ async function getStaticCategoryData(slug: string): Promise<CategoryData | null>
   }
 
   // Fallback to static data
-  const { getCategoryBySlug } = await import('@/data/static-catalog')
+  const { getCategoryBySlug, staticL2Categories } = await import('@/data/static-catalog')
 
-  const data = getCategoryBySlug(slug)
-  if (!data) return null
-
-  const { category, parent, grandparent } = data
+  const cat = getCategoryBySlug(slug)
+  if (!cat) return null
 
   // Get children from static L2 categories
   let children: Array<{ id: string; name: string; slug: string }> = []
-  if (category.level === 1) {
+  if (cat.level === 1) {
     children = staticL2Categories.filter(c => c.parentSlug === slug)
       .map(c => ({ id: c.id, name: c.name, slug: c.slug }))
   }
 
+  // Get parent info
+  let parent: { id: string; name: string; slug: string } | null = null
+  let grandparent: { id: string; name: string; slug: string } | null = null
+  if (cat.level === 2) {
+    const parentCat = staticL2Categories.find(c => c.id === cat.parentId)
+    if (parentCat) {
+      parent = { id: parentCat.parentId || '', name: parentCat.parentSlug || '', slug: parentCat.parentSlug || '' }
+    }
+  }
+
   return {
     category: {
-      id: category.id,
-      name: category.name,
-      slug: category.slug,
-      shortDescription: category.shortDescription,
-      introContent: category.introContent,
-      description: category.description,
-      buyingGuide: category.buyingGuide,
-      faq: category.faq,
-      displayOrder: category.displayOrder,
+      id: cat.id,
+      name: cat.name,
+      slug: cat.slug,
+      shortDescription: cat.shortDescription,
+      displayOrder: cat.displayOrder,
     },
-    parent: parent ? { id: parent.id, name: parent.name, slug: parent.slug } : null,
-    grandparent: grandparent ? { id: grandparent.id, name: grandparent.name, slug: grandparent.slug } : null,
+    parent,
+    grandparent,
     children,
     productCount: 0,
   }
 }
 
-async function getStaticProducts(slug: string, isL1: boolean): Promise<{ docs: ProductCardData[]; totalDocs: number }> {
-  // 使用动态 import 加载静态数据
-  const { getProductsByCategorySlug, getProductsByL1Slug } = await import('@/data/static-catalog')
+async function getProducts(slug: string): Promise<{ docs: ProductCardData[]; totalDocs: number }> {
+  // 优先从数据库获取产品
+  try {
+    const { getProductsByCategorySlug } = await import('@/lib/db-queries')
+    const result = await getProductsByCategorySlug(slug, 1, 24)
 
-  const result = isL1 ? getProductsByL1Slug(slug) : getProductsByCategorySlug(slug)
-
-  return {
-    docs: result.docs.map(p => ({
-      id: p.id,
-      name: p.name,
-      slug: p.slug,
-      categorySlug: slug,
-      sku: p.sku,
-      brand: p.brand || 'Industrial',
-      primaryImage: p.primaryImage,
-      shortDescription: p.shortDescription,
-      pricing: { basePrice: p.pricing.basePrice, currency: 'USD' },
-      purchaseMode: 'both' as const,
-      availability: 'in-stock',
-    })),
-    totalDocs: result.totalDocs,
+    return {
+      docs: result.products.map(p => ({
+        id: p.id,
+        name: p.name,
+        slug: p.slug,
+        categorySlug: slug,
+        sku: p.sku,
+        brand: 'Industrial',
+        primaryImage: null,
+        shortDescription: p.short_description || '',
+        pricing: { basePrice: null, currency: 'USD' },
+        purchaseMode: 'both' as const,
+        availability: 'in-stock',
+      })),
+      totalDocs: result.totalCount,
+    }
+  } catch (e) {
+    console.error('Failed to fetch products from database:', e)
+    return { docs: [], totalDocs: 0 }
   }
 }
 
@@ -266,7 +274,7 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   const isL3 = !!parent && !!grandparent
 
   // 获取产品
-  const productsResult = await getStaticProducts(slug, isL1)
+  const productsResult = await getProducts(slug)
 
   // 构建面包屑
   const breadcrumbs = [

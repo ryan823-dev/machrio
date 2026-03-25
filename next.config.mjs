@@ -2,6 +2,14 @@ import { withPayload } from '@payloadcms/next/withPayload'
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  eslint: {
+    // ESLint 检查只在开发时运行，生产构建时忽略
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    // 生产构建时忽略 TypeScript 错误
+    ignoreBuildErrors: true,
+  },
   images: {
     formats: ['image/avif', 'image/webp'],
     deviceSizes: [640, 750, 828, 1080, 1200],

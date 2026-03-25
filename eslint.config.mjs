@@ -15,7 +15,6 @@ const eslintConfig = [
     rules: {
       // Downgrade these from errors to warnings for build compatibility
       "@typescript-eslint/no-explicit-any": "warn",
-      "react-hooks/set-state-in-effect": "warn",
       "@next/next/no-img-element": "warn",
     },
   },
