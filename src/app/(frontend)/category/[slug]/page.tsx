@@ -376,11 +376,11 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 
       <CategoryBuyingGuide categorySlug={slug} />
 
-      {/* 子分类展示（仅 L1 分类） */}
-      {isL1 && children.length > 0 && (
+      {/* 子分类展示（L1 和 L2 分类） */}
+      {(isL1 || isL2) && children.length > 0 && (
         <section className="mb-8">
           <h2 className="mb-4 text-lg font-semibold text-secondary-800">
-            Browse {category.name} Categories
+            {isL1 ? `Browse ${category.name} Categories` : `Browse ${category.name} Subcategories`}
           </h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {children.map((child) => (
@@ -396,23 +396,24 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         </section>
       )}
 
-      {/* 空状态（L2 无子分类时显示） */}
+      {/* L2 无子分类时显示引导 */}
       {isL2 && children.length === 0 && (
-        <EmptyStateAIDialog
-          categoryName={category.name}
-          categorySlug={slug}
-          parentCategories={parent ? [parent.name] : []}
-        />
+        <div className="rounded-lg border border-secondary-200 bg-secondary-50 p-6 text-center">
+          <p className="text-secondary-600">
+            Explore our {category.name} products by browsing the categories above or using the search.
+          </p>
+        </div>
       )}
 
-      {/* 产品列表（所有分类） */}
-      {(isL1 || isL2 || isL3) && (
+      {/* 产品列表（L2 无子分类时或 L3 分类） */}
+      {/* L2 有 L3 子分类时不显示产品列表，引导用户进入 L3 */}
+      {((isL2 && children.length === 0) || isL3) && (
         <>
           {productsResult.totalDocs > 0 ? (
             <>
               <div className="mb-4 flex items-center justify-between">
                 <p className="text-sm text-secondary-500">{productsResult.totalDocs} products</p>
-                {isL1 && (
+                {(isL1 || isL2) && (
                   <Link href={`/category/${slug}`} className="text-sm text-primary-600 hover:text-primary-800">
                     View all products →
                   </Link>
