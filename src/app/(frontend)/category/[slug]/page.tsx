@@ -249,19 +249,33 @@ async function getProducts(slug: string): Promise<{ docs: ProductCardData[]; tot
     const result = await getProductsByCategorySlug(slug, 1, 24)
 
     return {
-      docs: result.products.map(p => ({
-        id: p.id,
-        name: p.name,
-        slug: p.slug,
-        categorySlug: slug,
-        sku: p.sku,
-        brand: 'Industrial',
-        primaryImage: null,
-        shortDescription: p.short_description || '',
-        pricing: { basePrice: null, currency: 'USD' },
-        purchaseMode: 'both' as const,
-        availability: 'in-stock',
-      })),
+      docs: result.products.map(p => {
+        // 提取图片 URL
+        let imageUrl: string | null = null
+        if (p.images && Array.isArray(p.images) && p.images.length > 0) {
+          imageUrl = p.images[0].url || null
+        }
+
+        // 提取价格
+        let basePrice: number | null = null
+        if (p.pricing && typeof p.pricing === 'object' && 'basePrice' in p.pricing) {
+          basePrice = (p.pricing as { basePrice: number }).basePrice
+        }
+
+        return {
+          id: p.id,
+          name: p.name,
+          slug: p.slug,
+          categorySlug: slug,
+          sku: p.sku,
+          brand: 'Industrial',
+          primaryImage: imageUrl,
+          shortDescription: p.short_description || '',
+          pricing: { basePrice, currency: 'USD' },
+          purchaseMode: 'both' as const,
+          availability: 'in-stock',
+        }
+      }),
       totalDocs: result.totalCount,
     }
   } catch (e) {

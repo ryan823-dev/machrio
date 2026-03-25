@@ -36,8 +36,9 @@ export interface DbProduct {
   sku: string
   short_description: string | null
   primary_category_id: string | null
-  pricing: Record<string, unknown> | null
+  pricing: { basePrice: number; currency: string } | null
   status: string
+  images: Array<{ url: string }> | null
 }
 
 /**
@@ -272,8 +273,8 @@ export async function getProductsByCategorySlug(
     // 获取产品列表
     const offset = (page - 1) * limit
     const productsResult = await pool.query<DbProduct>(
-      `SELECT id, name, slug, sku, short_description, primary_category_id, pricing, status 
-       FROM products 
+      `SELECT id, name, slug, sku, short_description, primary_category_id, pricing, status, images
+       FROM products
        WHERE primary_category_id = ANY($1) AND status = 'published'
        ORDER BY name
        LIMIT $2 OFFSET $3`,
