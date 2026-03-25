@@ -161,25 +161,41 @@ async function getStaticCategoryData(slug: string): Promise<CategoryData | null>
   }
 
   // Fallback to static data
-  const { getCategoryBySlug, staticL2Categories } = await import('@/data/static-catalog')
+  const { getCategoryBySlug, staticL2Categories, staticL3Categories, staticL1Categories } = await import('@/data/static-catalog')
 
   const cat = getCategoryBySlug(slug)
   if (!cat) return null
 
-  // Get children from static L2 categories
   let children: Array<{ id: string; name: string; slug: string }> = []
-  if (cat.level === 1) {
-    children = staticL2Categories.filter(c => c.parentSlug === slug)
-      .map(c => ({ id: c.id, name: c.name, slug: c.slug }))
-  }
-
-  // Get parent info
   let parent: { id: string; name: string; slug: string } | null = null
   let grandparent: { id: string; name: string; slug: string } | null = null
-  if (cat.level === 2) {
-    const parentCat = staticL2Categories.find(c => c.id === cat.parentId)
-    if (parentCat) {
-      parent = { id: parentCat.parentId || '', name: parentCat.parentSlug || '', slug: parentCat.parentSlug || '' }
+
+  // 根据层级获取 children
+  if (cat.level === 1) {
+    // L1: 获取所有 L2 子分类
+    children = staticL2Categories
+      .filter(c => c.parentSlug === slug)
+      .map(c => ({ id: c.id, name: c.name, slug: c.slug }))
+  } else if (cat.level === 2) {
+    // L2: 获取所有 L3 子分类
+    children = staticL3Categories
+      .filter(c => c.parentSlug === slug)
+      .map(c => ({ id: c.id, name: c.name, slug: c.slug }))
+    // 获取 L1 父分类
+    const l1Parent = staticL1Categories.find(c => c.id === cat.parentId)
+    if (l1Parent) {
+      parent = { id: l1Parent.id, name: l1Parent.name, slug: l1Parent.slug }
+    }
+  } else if (cat.level === 3) {
+    // L3: 获取 L2 父分类
+    const l2Parent = staticL2Categories.find(c => c.id === cat.parentId)
+    if (l2Parent) {
+      parent = { id: l2Parent.id, name: l2Parent.name, slug: l2Parent.slug }
+      // 获取 L1 祖父分类
+      const l1Parent = staticL1Categories.find(c => c.id === l2Parent.parentId)
+      if (l1Parent) {
+        grandparent = { id: l1Parent.id, name: l1Parent.name, slug: l1Parent.slug }
+      }
     }
   }
 
