@@ -3,8 +3,8 @@ import Link from 'next/link'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 
-// ISR: revalidate every hour to show new articles
-export const revalidate = 3600
+// SSR: Supabase is fast enough, no need for ISR
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'Knowledge Center — Guides, Tips & Industry Insights | Machrio',
