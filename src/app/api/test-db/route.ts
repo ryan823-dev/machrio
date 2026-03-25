@@ -70,6 +70,28 @@ export async function GET() {
       LIMIT 10
     `)
 
+    // 测试8：检查 categories 表结构
+    const categoryColumns = await pool.query(`
+      SELECT column_name, data_type
+      FROM information_schema.columns
+      WHERE table_name = 'categories'
+      ORDER BY ordinal_position
+    `)
+
+    // 测试9：获取一个分类的 SEO 字段
+    const seoTest = await pool.query(`
+      SELECT id::text, name, slug,
+             short_description, shortdescription,
+             intro_content, introcontent,
+             description,
+             buying_guide, buyingguide,
+             seo_content, seocontent,
+             faq
+      FROM categories
+      WHERE slug = 'adhesives-sealants-and-tape'
+      LIMIT 1
+    `)
+
     await pool.end()
 
     return NextResponse.json({
