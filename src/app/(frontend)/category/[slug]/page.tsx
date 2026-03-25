@@ -127,40 +127,68 @@ interface CategoryData {
   productCount: number
 }
 
-// 从数据库获取分类数据
-async function getCategoryDataFromDb(slug: string): Promise<CategoryData | null> {
-  const { getCategoryBySlug: getDbCategory } = await import('@/lib/db-queries')
-  const { staticL2Categories } = await import('@/data/static-catalog')
+// 从 nav-categories.json 获取分类数据
+async function getCategoryDataFromNav(slug: string): Promise<CategoryData | null> {
+  const data = await import('@/data/nav-categories.json').then(m => m.default || m)
 
-  const dbData = await getDbCategory(slug)
-  if (!dbData) return null
+  // 查找分类
+  let category: { id: string; name: string; slug: string; shortDescription?: string } | null = null
+  let parent: { id: string; name: string; slug: string } | null = null
+  let grandparent: { id: string; name: string; slug: string } | null = null
+  let children: Array<{ id: string; name: string; slug: string }> = []
 
-  const { category, parent, grandparent, children, productCount } = dbData
+  // 遍历 L1
+  for (const l1 of data.categories || []) {
+    if (l1.slug === slug) {
+      category = { id: l1.id, name: l1.name, slug: l1.slug, shortDescription: l1.shortDescription }
+      // L1: 获取 L2 子分类
+      if (l1.children) {
+        children = l1.children.map(c => ({ id: c.id, name: c.name, slug: c.slug }))
+      }
+      return { category, parent, grandparent, children, productCount: 0 }
+    }
 
-  return {
-    category: {
-      id: category.id,
-      name: category.name,
-      slug: category.slug,
-      displayOrder: category.display_order || 0,
-    },
-    parent: parent ? { id: parent.id, name: parent.name, slug: parent.slug } : null,
-    grandparent: grandparent ? { id: grandparent.id, name: grandparent.name, slug: grandparent.slug } : null,
-    children: children.map(c => ({ id: c.id, name: c.name, slug: c.slug })),
-    productCount,
+    // 遍历 L2
+    if (l1.children) {
+      for (const l2 of l1.children) {
+        if (l2.slug === slug) {
+          category = { id: l2.id, name: l2.name, slug: l2.slug, shortDescription: l2.shortDescription }
+          parent = { id: l1.id, name: l1.name, slug: l1.slug }
+          // L2: 获取 L3 子分类
+          if (l2.children) {
+            children = l2.children.map(c => ({ id: c.id, name: c.name, slug: c.slug }))
+          }
+          return { category, parent, grandparent, children, productCount: 0 }
+        }
+
+        // 遍历 L3
+        if (l2.children) {
+          for (const l3 of l2.children) {
+            if (l3.slug === slug) {
+              category = { id: l3.id, name: l3.name, slug: l3.slug }
+              parent = { id: l2.id, name: l2.name, slug: l2.slug }
+              grandparent = { id: l1.id, name: l1.name, slug: l1.slug }
+              return { category, parent, grandparent, children, productCount: 0 }
+            }
+          }
+        }
+      }
+    }
   }
+
+  return null
 }
 
 async function getStaticCategoryData(slug: string): Promise<CategoryData | null> {
-  // 优先从数据库获取
+  // 优先从 nav-categories.json 获取（与导航栏一致）
   try {
-    const dbData = await getCategoryDataFromDb(slug)
-    if (dbData) return dbData
+    const navData = await getCategoryDataFromNav(slug)
+    if (navData) return navData
   } catch (e) {
-    console.error('Database query failed, falling back to static data:', e)
+    console.error('Failed to load nav-categories:', e)
   }
 
-  // Fallback to static data
+  // Fallback to static-catalog.ts
   const { getCategoryBySlug, staticL2Categories, staticL3Categories, staticL1Categories } = await import('@/data/static-catalog')
 
   const cat = getCategoryBySlug(slug)
@@ -334,8 +362,8 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 
       <CategoryBuyingGuide categorySlug={slug} />
 
-      {/* 子分类展示（L1 或 L2 分类） */}
-      {(isL1 || isL2) && children.length > 0 && (
+      {/* 子分类展示（仅 L1 分类） */}
+      {isL1 && children.length > 0 && (
         <section className="mb-8">
           <h2 className="mb-4 text-lg font-semibold text-secondary-800">
             Browse {category.name} Categories
@@ -354,8 +382,8 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         </section>
       )}
 
-      {/* 空状态 */}
-      {(isL1 || isL2) && children.length === 0 && (
+      {/* 空状态（L2 无子分类时显示） */}
+      {isL2 && children.length === 0 && (
         <EmptyStateAIDialog
           categoryName={category.name}
           categorySlug={slug}
@@ -363,8 +391,8 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         />
       )}
 
-      {/* 产品列表（L1 或 L3 分类） */}
-      {(isL1 || isL3) && (
+      {/* 产品列表（所有分类） */}
+      {(isL1 || isL2 || isL3) && (
         <>
           {productsResult.totalDocs > 0 ? (
             <>
