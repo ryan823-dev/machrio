@@ -5,6 +5,8 @@ let globalPool: Pool | null = null
 
 export function getPool(): Pool {
   if (!globalPool) {
+    console.log('[getPool] DATABASE_URI exists:', !!process.env.DATABASE_URI)
+    console.log('[getPool] USE_POSTGRES:', process.env.USE_POSTGRES)
     globalPool = new Pool({
       connectionString: process.env.DATABASE_URI,
       max: 2, // 最多 2 个连接
