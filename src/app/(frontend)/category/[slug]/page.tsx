@@ -82,21 +82,29 @@ async function getCategoryData(slug: string) {
   const pool = createPool()
 
   try {
-    // 获取分类信息
+    // 获取分类信息 - 显式将 UUID 转换为 text 确保返回字符串
     const catResult = await pool.query(
-      'SELECT id, name, slug, short_description, intro_content, description, buying_guide, parent_id, display_order FROM categories WHERE slug = $1',
+      `SELECT id::text, name, slug, short_description, intro_content, description, buying_guide,
+              parent_id::text, display_order
+       FROM categories WHERE slug = $1`,
       [slug]
     )
 
     if (catResult.rows.length === 0) return null
     const category = catResult.rows[0]
 
+    // DEBUG: 检查 category.id 的类型和值
+    console.log(`[DEBUG] getCategoryData: slug=${slug}`)
+    console.log(`  - category.id type: ${typeof category.id}`)
+    console.log(`  - category.id value: "${category.id}"`)
+    console.log(`  - category.parent_id: "${category.parent_id}"`)
+
     // 获取父分类
     let parent = null
     let grandparent = null
     if (category.parent_id) {
       const parentResult = await pool.query(
-        'SELECT id, name, slug, parent_id FROM categories WHERE id = $1::uuid',
+        `SELECT id::text, name, slug, parent_id::text FROM categories WHERE id = $1::uuid`,
         [category.parent_id]
       )
       parent = parentResult.rows[0]
@@ -104,7 +112,7 @@ async function getCategoryData(slug: string) {
       // 获取祖父分类
       if (parent?.parent_id) {
         const gpResult = await pool.query(
-          'SELECT id, name, slug FROM categories WHERE id = $1::uuid',
+          `SELECT id::text, name, slug FROM categories WHERE id = $1::uuid`,
           [parent.parent_id]
         )
         grandparent = gpResult.rows[0]
@@ -113,7 +121,7 @@ async function getCategoryData(slug: string) {
 
     // 获取子分类
     const childrenResult = await pool.query(
-      'SELECT id, name, slug FROM categories WHERE parent_id = $1::uuid ORDER BY display_order LIMIT 50',
+      `SELECT id::text, name, slug FROM categories WHERE parent_id = $1::uuid ORDER BY display_order LIMIT 50`,
       [category.id]
     )
     const children = childrenResult.rows
@@ -131,14 +139,46 @@ async function getCategoryProducts(categoryId: string, page: number, sort: strin
 
   try {
     const offset = (page - 1) * PRODUCTS_PER_PAGE
-    
+
     // 处理排序
     let orderBy = 'created_at DESC'
     if (sort === '-createdAt') orderBy = 'created_at DESC'
     else if (sort === 'createdAt') orderBy = 'created_at ASC'
     else if (sort === '-name') orderBy = 'name DESC'
     else if (sort === 'name') orderBy = 'name ASC'
-    
+
+    // DEBUG: 详细调试信息
+    console.log(`[DEBUG] getCategoryProducts called with:`)
+    console.log(`  - categoryId type: ${typeof categoryId}`)
+    console.log(`  - categoryId value: "${categoryId}"`)
+    console.log(`  - categoryId length: ${categoryId?.length}`)
+
+    // 测试1：使用硬编码 UUID（Surface Protection Tape）
+    const testResult = await pool.query(
+      "SELECT COUNT(*) FROM products WHERE primary_category_id = 'c32990b6-6dd3-4091-ba60-032d4d0eb987'::uuid"
+    )
+    console.log(`[DEBUG] Test 1 - Hardcoded UUID: ${testResult.rows[0].count} products`)
+
+    // 测试2：使用传入的 categoryId，不带 ::uuid
+    const testResult2 = await pool.query(
+      'SELECT COUNT(*) FROM products WHERE primary_category_id = $1',
+      [categoryId]
+    )
+    console.log(`[DEBUG] Test 2 - Param without ::uuid: ${testResult2.rows[0].count} products`)
+
+    // 测试3：使用传入的 categoryId，带 ::uuid
+    const testResult3 = await pool.query(
+      'SELECT COUNT(*) FROM products WHERE primary_category_id = $1::uuid',
+      [categoryId]
+    )
+    console.log(`[DEBUG] Test 3 - Param with ::uuid: ${testResult3.rows[0].count} products`)
+
+    // 测试4：使用字符串拼接（不安全，仅用于调试）
+    const testResult4 = await pool.query(
+      `SELECT COUNT(*) FROM products WHERE primary_category_id = '${categoryId}'::uuid`
+    )
+    console.log(`[DEBUG] Test 4 - String interpolation: ${testResult4.rows[0].count} products`)
+
     // 获取产品总数
     const countResult = await pool.query(
       'SELECT COUNT(*) FROM products WHERE primary_category_id = $1::uuid',
@@ -300,7 +340,9 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         <div className="my-2 rounded bg-yellow-100 p-2 text-xs">
           <p>DEBUG: parent={parent?.name || 'NULL'}, grandparent={grandparent?.name || 'NULL'}</p>
           <p>DEBUG: isL1={String(isL1)}, isL2={String(isL2)}, isL3={String(isL3)}</p>
-          <p>DEBUG: category.id={category.id}, productsResult.totalDocs={productsResult.totalDocs}</p>
+          <p>DEBUG: category.id={String(category.id)}</p>
+          <p>DEBUG: category.id type={typeof category.id}</p>
+          <p>DEBUG: productsResult.totalDocs={productsResult.totalDocs}</p>
         </div>
         {category.introContent ? (
           <ExpandableIntro content={category.introContent as string} />
