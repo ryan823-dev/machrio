@@ -2,7 +2,7 @@ import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { createPool, closePool } from '@/lib/db'
+import { createPool } from '@/lib/db'
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 import { FAQSchema, FAQSection } from '@/components/shared/FAQSchema'
 import { StructuredData } from '@/components/shared/StructuredData'
@@ -11,13 +11,8 @@ import { ProductGrid } from '@/components/category/ProductGrid'
 import { ExpandableIntro } from '@/components/category/ExpandableIntro'
 import { EmptyStateAIDialog } from '@/components/category/EmptyStateAIDialog'
 
-// 强制动态渲染（SSR），Supabase 性能足够好，不需要 ISR 缓存
 export const dynamic = 'force-dynamic'
 export const revalidate = 0
-
-// ---------------------------------------------------------------------------
-// Lexical richText rendering helpers
-// ---------------------------------------------------------------------------
 
 function extractChildren(children: unknown[]): string {
   if (!Array.isArray(children)) return ''
@@ -77,29 +72,18 @@ interface CategoryPageProps {
 
 const PRODUCTS_PER_PAGE = 24
 
-// 使用 PostgreSQL 直接查询获取分类数据
 async function getCategoryData(slug: string) {
   const pool = createPool()
-
   try {
-    // 获取分类信息 - 显式将 UUID 转换为 text 确保返回字符串
     const catResult = await pool.query(
       `SELECT id::text, name, slug, short_description, intro_content, description, buying_guide,
               parent_id::text, display_order
        FROM categories WHERE slug = $1`,
       [slug]
     )
-
     if (catResult.rows.length === 0) return null
     const category = catResult.rows[0]
 
-    // DEBUG: 检查 category.id 的类型和值
-    console.log(`[DEBUG] getCategoryData: slug=${slug}`)
-    console.log(`  - category.id type: ${typeof category.id}`)
-    console.log(`  - category.id value: "${category.id}"`)
-    console.log(`  - category.parent_id: "${category.parent_id}"`)
-
-    // 获取父分类
     let parent = null
     let grandparent = null
     if (category.parent_id) {
@@ -108,8 +92,6 @@ async function getCategoryData(slug: string) {
         [category.parent_id]
       )
       parent = parentResult.rows[0]
-
-      // 获取祖父分类
       if (parent?.parent_id) {
         const gpResult = await pool.query(
           `SELECT id::text, name, slug FROM categories WHERE id = $1::uuid`,
@@ -119,108 +101,50 @@ async function getCategoryData(slug: string) {
       }
     }
 
-    // 获取子分类
     const childrenResult = await pool.query(
       `SELECT id::text, name, slug FROM categories WHERE parent_id = $1::uuid ORDER BY display_order LIMIT 50`,
       [category.id]
     )
-    const children = childrenResult.rows
-
-    return { category, parent, grandparent, children }
+    return { category, parent, grandparent, children: childrenResult.rows }
   } catch (error) {
     console.error('[getCategoryData] 错误:', error)
     return null
   }
 }
 
-// 使用 PostgreSQL 直接查询获取产品
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function getCategoryProducts(categoryId: string, page: number, sort: string): Promise<any> {
+async function getCategoryProducts(categoryId: string, page: number, sort: string) {
   const pool = createPool()
-
-  // 调试信息对象
-  const debugInfo: Record<string, unknown> = {
-    categoryIdType: typeof categoryId,
-    categoryIdValue: categoryId,
-    categoryIdLength: categoryId?.length,
-  }
-
   try {
     const offset = (page - 1) * PRODUCTS_PER_PAGE
 
-    // 处理排序
     let orderBy = 'created_at DESC'
     if (sort === '-createdAt') orderBy = 'created_at DESC'
     else if (sort === 'createdAt') orderBy = 'created_at ASC'
     else if (sort === '-name') orderBy = 'name DESC'
     else if (sort === 'name') orderBy = 'name ASC'
 
-    // 测试1：总产品数
-    const totalResult = await pool.query('SELECT COUNT(*) FROM products')
-    debugInfo.totalProductsInDb = totalResult.rows[0].count
-
-    // 测试2：检查 products 表是否有 primary_category_id 列
-    const colCheck = await pool.query(`
-      SELECT column_name FROM information_schema.columns
-      WHERE table_name = 'products' AND column_name = 'primary_category_id'
-    `)
-    debugInfo.hasPrimaryCategoryIdColumn = colCheck.rows.length > 0
-
-    // 测试3：硬编码 UUID
-    const test1 = await pool.query(
-      "SELECT COUNT(*) FROM products WHERE primary_category_id = 'c32990b6-6dd3-4091-ba60-032d4d0eb987'::uuid"
-    )
-    debugInfo.test1HardcodedUuid = test1.rows[0].count
-
-    // 测试4：参数不带 ::uuid
-    const test2 = await pool.query(
-      'SELECT COUNT(*) FROM products WHERE primary_category_id = $1',
-      [categoryId]
-    )
-    debugInfo.test2ParamNoCast = test2.rows[0].count
-
-    // 测试5：参数带 ::uuid
-    const test3 = await pool.query(
-      'SELECT COUNT(*) FROM products WHERE primary_category_id = $1::uuid',
-      [categoryId]
-    )
-    debugInfo.test3ParamWithUuid = test3.rows[0].count
-
-    // 测试6：查看产品实际关联的分类
-    const actualCats = await pool.query(`
-      SELECT primary_category_id::text, COUNT(*) as cnt
-      FROM products
-      GROUP BY primary_category_id
-      ORDER BY cnt DESC
-      LIMIT 5
-    `)
-    debugInfo.topCategoriesInProducts = actualCats.rows
-
-    // 获取产品总数
     const countResult = await pool.query(
       'SELECT COUNT(*) FROM products WHERE primary_category_id::text = $1',
       [categoryId]
     )
     const totalDocs = parseInt(countResult.rows[0].count)
 
-    // 获取产品
     const productsResult = await pool.query(
-      `SELECT id, name, slug, sku, short_description, primary_image_id,
-              p.primary_image_id as image_url,
-              (SELECT c.id::text FROM categories c WHERE c.id = p.primary_category_id) as category_id,
-              (SELECT c.slug FROM categories c WHERE c.id = p.primary_category_id) as category_slug,
-              (SELECT c.parent_id::text FROM categories c WHERE c.id = p.primary_category_id) as category_parent_id
-       FROM products p
-       WHERE p.primary_category_id::text = $1
+      `SELECT id, name, slug, sku, short_description, external_image_url
+       FROM products
+       WHERE primary_category_id::text = $1
        ORDER BY ${orderBy}
        LIMIT $2 OFFSET $3`,
       [categoryId, PRODUCTS_PER_PAGE, offset]
     )
 
     const products = productsResult.rows.map(row => ({
-      ...row,
-      brand: row.brand_name ? { name: row.brand_name } : null,
-      primaryImage: row.image_url ? { url: row.image_url } : null,
+      id: row.id,
+      name: row.name,
+      slug: row.slug,
+      sku: row.sku,
+      shortDescription: row.short_description,
+      primaryImage: row.external_image_url,
       pricing: { basePrice: null, currency: 'USD' },
     }))
 
@@ -231,10 +155,9 @@ async function getCategoryProducts(categoryId: string, page: number, sort: strin
       totalPages: Math.ceil(totalDocs / PRODUCTS_PER_PAGE),
       hasNextPage: offset + PRODUCTS_PER_PAGE < totalDocs,
       hasPrevPage: page > 1,
-      debugInfo,
     }
   } catch (error) {
-    debugInfo.error = error instanceof Error ? error.message : String(error)
+    console.error('[getCategoryProducts] 错误:', error)
     return {
       docs: [],
       totalDocs: 0,
@@ -242,46 +165,7 @@ async function getCategoryProducts(categoryId: string, page: number, sort: strin
       totalPages: 1,
       hasNextPage: false,
       hasPrevPage: false,
-      debugInfo
     }
-  }
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function mapProductToCard(product: Record<string, unknown>): any {
-  const pricing = product.pricing as Record<string, unknown> | undefined
-  const brand = product.brand as Record<string, unknown> | null
-  const primaryCategory = product.primaryCategory as Record<string, unknown> | string | null
-  let categorySlug = 'products'
-  if (primaryCategory && typeof primaryCategory === 'object') {
-    const parent = (primaryCategory as Record<string, unknown>).parent as Record<string, unknown> | string | null
-    if (parent && typeof parent === 'object') {
-      categorySlug = (parent as Record<string, unknown>).slug as string || 'products'
-    } else {
-      categorySlug = (primaryCategory as Record<string, unknown>).slug as string || 'products'
-    }
-  }
-  const primaryImageObj = product.primaryImage && typeof product.primaryImage === 'object'
-    ? product.primaryImage as Record<string, unknown>
-    : null
-  const primaryImage = (primaryImageObj?.url as string) || (product.externalImageUrl as string) || undefined
-
-  return {
-    name: product.name as string,
-    slug: product.slug as string,
-    categorySlug,
-    sku: product.sku as string,
-    brand: brand ? (brand.name as string || 'Unbranded') : 'Unbranded',
-    primaryImage,
-    shortDescription: (product.shortDescription as string) || '',
-    pricing: {
-      basePrice: pricing?.basePrice as number | undefined,
-      currency: (pricing?.currency as string) || 'USD',
-      priceUnit: pricing?.priceUnit as string | undefined,
-    },
-    packageQty: (product.packageQty as number) || undefined,
-    purchaseMode: (product.purchaseMode as 'both' | 'buy-online' | 'rfq-only') || 'both',
-    availability: (product.availability as string) || 'contact',
   }
 }
 
@@ -306,26 +190,19 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
 
 export default async function CategoryPage({ params }: CategoryPageProps) {
   const { slug } = await params
-
   const data = await getCategoryData(slug)
   if (!data) notFound()
 
   const { category, parent, grandparent, children } = data
-
   const isL1 = !parent && !grandparent
   const isL2 = !!parent && !grandparent
   const isL3 = !!parent && !!grandparent
 
-  // 显示产品列表：L3 分类 或 没有子分类的分类（叶子分类）
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let productsResult: any = { docs: [], totalDocs: 0, page: 1, totalPages: 1, hasNextPage: false, hasPrevPage: false }
+  let productsResult = { docs: [], totalDocs: 0, page: 1, totalPages: 1, hasNextPage: false, hasPrevPage: false }
   const isLeafCategory = children.length === 0
   if (isL3 || isLeafCategory) {
     productsResult = await getCategoryProducts(category.id, 1, '-createdAt')
   }
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const products: any[] = productsResult.docs.map((p: Record<string, unknown>) => mapProductToCard(p))
 
   const breadcrumbs = [
     { label: 'Home', href: '/' },
@@ -336,16 +213,15 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 
   const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'https://machrio.com'
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const itemListSchema: any = products.length > 0 ? {
+  const itemListSchema = productsResult.docs.length > 0 ? {
     '@context': 'https://schema.org',
     '@type': 'ItemList',
     name: `${category.name} - Industrial Supplies`,
     numberOfItems: productsResult.totalDocs,
-    itemListElement: products.slice(0, 20).map((p: any, idx: number) => ({
+    itemListElement: productsResult.docs.slice(0, 20).map((p, idx) => ({
       '@type': 'ListItem',
       position: idx + 1,
-      url: `${serverUrl}/product/${p.categorySlug}/${p.slug}/`,
+      url: `${serverUrl}/product/${category.slug}/${p.slug}/`,
       name: p.name,
     })),
   } : null
@@ -357,7 +233,6 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-secondary-900">{category.name}</h1>
-
         {category.introContent ? (
           <ExpandableIntro content={category.introContent as string} />
         ) : (
@@ -402,9 +277,9 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
             <p className="text-sm text-secondary-500">{productsResult.totalDocs} products</p>
           </div>
 
-          {products.length > 0 ? (
+          {productsResult.docs.length > 0 ? (
             <Suspense fallback={<div className="h-96 animate-pulse rounded bg-secondary-100" />}>
-              <ProductGrid products={products} view="list" />
+              <ProductGrid products={productsResult.docs} view="list" />
             </Suspense>
           ) : (
             <EmptyStateAIDialog
