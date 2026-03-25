@@ -111,7 +111,8 @@ export default buildConfig({
           // Use max 1 connection for Vercel to avoid "max clients reached" error in Session mode
           max: 1,
           min: 0,
-          idleTimeoutMillis: 5000,
+          idleTimeoutMillis: 30000,
+          connectionTimeoutMillis: 30000,
         },
       })
     : mongooseAdapter({
