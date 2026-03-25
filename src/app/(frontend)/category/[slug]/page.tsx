@@ -198,7 +198,7 @@ async function getCategoryProducts(categoryId: string, page: number, sort: strin
 
     // 获取产品总数
     const countResult = await pool.query(
-      'SELECT COUNT(*) FROM products WHERE primary_category_id = $1::uuid',
+      'SELECT COUNT(*) FROM products WHERE primary_category_id::text = $1',
       [categoryId]
     )
     const totalDocs = parseInt(countResult.rows[0].count)
