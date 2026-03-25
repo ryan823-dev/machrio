@@ -20,17 +20,9 @@ export const dynamicParams = true
 // 预生成所有分类页面 - 使用直接 PostgreSQL 查询避免连接池问题
 export async function generateStaticParams() {
   try {
-    const { Pool } = require('pg')
-    const pool = new Pool({
-      connectionString: process.env.DATABASE_URI,
-      max: 1,
-      idleTimeoutMillis: 5000,
-    })
-    
+    const pool = getPool()
     const result = await pool.query('SELECT slug FROM categories ORDER BY display_order')
     const paths = result.rows.map((cat: { slug: string }) => ({ slug: cat.slug }))
-    
-    await pool.end()
     return paths
   } catch (error) {
     console.error('[generateStaticParams] 错误:', error)
