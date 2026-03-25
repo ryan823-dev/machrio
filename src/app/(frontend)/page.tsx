@@ -8,7 +8,7 @@ import config from '@payload-config'
 
 // 完全静态生成，构建时生成 HTML
 // 这样可以最快速度响应用户请求
-export const dynamic = 'force-static'
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'Machrio - Tools, Parts & Industrial Essentials | Buy Online or Request a Quote',

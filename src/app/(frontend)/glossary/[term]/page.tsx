@@ -134,21 +134,6 @@ export async function generateMetadata({
   }
 }
 
-export async function generateStaticParams() {
-  try {
-    const payload = await getPayload({ config })
-    const result = await payload.find({
-      collection: 'glossary-terms',
-      where: { status: { equals: 'published' } },
-      limit: 500,
-      depth: 0,
-    })
-    return result.docs.map((doc) => ({ term: doc.slug as string }))
-  } catch {
-    return []
-  }
-}
-
 // ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------

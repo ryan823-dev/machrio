@@ -404,10 +404,6 @@ export async function generateMetadata({
   }
 }
 
-export async function generateStaticParams() {
-  return Object.keys(industryData).map((slug) => ({ slug }))
-}
-
 // ---------------------------------------------------------------------------
 // Page Component
 // ---------------------------------------------------------------------------
