@@ -134,8 +134,16 @@ async function getCategoryData(slug: string) {
 }
 
 // 使用 PostgreSQL 直接查询获取产品
-async function getCategoryProducts(categoryId: string, page: number, sort: string) {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function getCategoryProducts(categoryId: string, page: number, sort: string): Promise<any> {
   const pool = createPool()
+
+  // 调试信息对象
+  const debugInfo: Record<string, unknown> = {
+    categoryIdType: typeof categoryId,
+    categoryIdValue: categoryId,
+    categoryIdLength: categoryId?.length,
+  }
 
   try {
     const offset = (page - 1) * PRODUCTS_PER_PAGE
@@ -147,37 +155,46 @@ async function getCategoryProducts(categoryId: string, page: number, sort: strin
     else if (sort === '-name') orderBy = 'name DESC'
     else if (sort === 'name') orderBy = 'name ASC'
 
-    // DEBUG: 详细调试信息
-    console.log(`[DEBUG] getCategoryProducts called with:`)
-    console.log(`  - categoryId type: ${typeof categoryId}`)
-    console.log(`  - categoryId value: "${categoryId}"`)
-    console.log(`  - categoryId length: ${categoryId?.length}`)
+    // 测试1：总产品数
+    const totalResult = await pool.query('SELECT COUNT(*) FROM products')
+    debugInfo.totalProductsInDb = totalResult.rows[0].count
 
-    // 测试1：使用硬编码 UUID（Surface Protection Tape）
-    const testResult = await pool.query(
+    // 测试2：检查 products 表是否有 primary_category_id 列
+    const colCheck = await pool.query(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_name = 'products' AND column_name = 'primary_category_id'
+    `)
+    debugInfo.hasPrimaryCategoryIdColumn = colCheck.rows.length > 0
+
+    // 测试3：硬编码 UUID
+    const test1 = await pool.query(
       "SELECT COUNT(*) FROM products WHERE primary_category_id = 'c32990b6-6dd3-4091-ba60-032d4d0eb987'::uuid"
     )
-    console.log(`[DEBUG] Test 1 - Hardcoded UUID: ${testResult.rows[0].count} products`)
+    debugInfo.test1HardcodedUuid = test1.rows[0].count
 
-    // 测试2：使用传入的 categoryId，不带 ::uuid
-    const testResult2 = await pool.query(
+    // 测试4：参数不带 ::uuid
+    const test2 = await pool.query(
       'SELECT COUNT(*) FROM products WHERE primary_category_id = $1',
       [categoryId]
     )
-    console.log(`[DEBUG] Test 2 - Param without ::uuid: ${testResult2.rows[0].count} products`)
+    debugInfo.test2ParamNoCast = test2.rows[0].count
 
-    // 测试3：使用传入的 categoryId，带 ::uuid
-    const testResult3 = await pool.query(
+    // 测试5：参数带 ::uuid
+    const test3 = await pool.query(
       'SELECT COUNT(*) FROM products WHERE primary_category_id = $1::uuid',
       [categoryId]
     )
-    console.log(`[DEBUG] Test 3 - Param with ::uuid: ${testResult3.rows[0].count} products`)
+    debugInfo.test3ParamWithUuid = test3.rows[0].count
 
-    // 测试4：使用字符串拼接（不安全，仅用于调试）
-    const testResult4 = await pool.query(
-      `SELECT COUNT(*) FROM products WHERE primary_category_id = '${categoryId}'::uuid`
-    )
-    console.log(`[DEBUG] Test 4 - String interpolation: ${testResult4.rows[0].count} products`)
+    // 测试6：查看产品实际关联的分类
+    const actualCats = await pool.query(`
+      SELECT primary_category_id::text, COUNT(*) as cnt
+      FROM products
+      GROUP BY primary_category_id
+      ORDER BY cnt DESC
+      LIMIT 5
+    `)
+    debugInfo.topCategoriesInProducts = actualCats.rows
 
     // 获取产品总数
     const countResult = await pool.query(
@@ -185,11 +202,10 @@ async function getCategoryProducts(categoryId: string, page: number, sort: strin
       [categoryId]
     )
     const totalDocs = parseInt(countResult.rows[0].count)
-    console.log(`[DEBUG] getCategoryProducts: categoryId=${categoryId}, totalDocs=${totalDocs}`)
-    
+
     // 获取产品
     const productsResult = await pool.query(
-      `SELECT id, name, slug, sku, short_description, primary_image_id, 
+      `SELECT id, name, slug, sku, short_description, primary_image_id,
               (SELECT url FROM media m WHERE m.id = p.primary_image_id) as image_url,
               (SELECT name FROM brands b WHERE b.id = p.brand_id) as brand_name,
               (SELECT id FROM categories c WHERE c.id = p.primary_category_id) as category_id,
@@ -201,7 +217,7 @@ async function getCategoryProducts(categoryId: string, page: number, sort: strin
        LIMIT $2 OFFSET $3`,
       [categoryId, PRODUCTS_PER_PAGE, offset]
     )
-    
+
     const products = productsResult.rows.map(row => ({
       ...row,
       brand: row.brand_name ? { name: row.brand_name } : null,
@@ -216,10 +232,19 @@ async function getCategoryProducts(categoryId: string, page: number, sort: strin
       totalPages: Math.ceil(totalDocs / PRODUCTS_PER_PAGE),
       hasNextPage: offset + PRODUCTS_PER_PAGE < totalDocs,
       hasPrevPage: page > 1,
+      debugInfo,
     }
   } catch (error) {
-    console.error('[getCategoryProducts] 错误:', error)
-    return { docs: [], totalDocs: 0, page: 1, totalPages: 1, hasNextPage: false, hasPrevPage: false }
+    debugInfo.error = error instanceof Error ? error.message : String(error)
+    return {
+      docs: [],
+      totalDocs: 0,
+      page: 1,
+      totalPages: 1,
+      hasNextPage: false,
+      hasPrevPage: false,
+      debugInfo
+    }
   }
 }
 
