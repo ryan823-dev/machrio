@@ -55,7 +55,7 @@ const industries = [
 
 export default async function HomePage() {
   // 使用静态数据，避免数据库连接问题
-  const categoriesWithCounts = await getStaticCategories()
+  const categoriesWithCounts = await getCategoriesWithCounts()
 
   const orgSchema = {
     '@context': 'https://schema.org',
