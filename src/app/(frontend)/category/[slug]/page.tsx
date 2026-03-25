@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import { getPool } from '@/lib/db'
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 import { FAQSchema, FAQSection } from '@/components/shared/FAQSchema'
 import { StructuredData } from '@/components/shared/StructuredData'
@@ -10,35 +11,12 @@ import { ProductGrid } from '@/components/category/ProductGrid'
 import { ExpandableIntro } from '@/components/category/ExpandableIntro'
 import { EmptyStateAIDialog } from '@/components/category/EmptyStateAIDialog'
 
-// 强制动态渲染，但使用静态数据
+// 强制动态渲染（SSR）
 export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 // =============================================
-// 类型定义
-// =============================================
-
-interface ProductCardData {
-  id: string
-  name: string
-  slug: string
-  categorySlug: string
-  sku: string
-  brand: string
-  primaryImage: string | null
-  shortDescription: string
-  pricing: {
-    basePrice: number | null
-    currency: string
-    priceUnit?: string
-  }
-  purchaseMode: 'both' | 'buy-online' | 'rfq-only'
-  availability: string
-  packageQty?: number
-  packageUnit?: string
-}
-
-// =============================================
-// 辅助函数
+// Lexical richText rendering helpers
 // =============================================
 
 function extractChildren(children: unknown[]): string {
@@ -94,199 +72,150 @@ function hasRichTextContent(richText: unknown): boolean {
 }
 
 // =============================================
-// 静态数据查询函数（使用 await import）
+// 数据库查询函数
 // =============================================
 
-interface CategoryData {
-  category: {
-    id: string
-    name: string
-    slug: string
-    shortDescription?: string
-    introContent?: string
-    description?: unknown
-    buyingGuide?: unknown
-    faq?: Array<{ question: string; answer: string }>
-    seoContent?: unknown
-    displayOrder: number
-  }
-  parent: {
-    id: string
-    name: string
-    slug: string
-  } | null
-  grandparent: {
-    id: string
-    name: string
-    slug: string
-  } | null
-  children: Array<{
-    id: string
-    name: string
-    slug: string
-  }>
-  productCount: number
+interface CategoryRow {
+  id: string
+  name: string
+  slug: string
+  short_description: string | null
+  intro_content: string | null
+  description: unknown | null
+  buying_guide: unknown | null
+  faq: unknown | null
+  seo_content: unknown | null
+  parent_id: string | null
+  display_order: number | null
 }
 
-// 从 nav-categories.json 获取分类层级关系（与导航一致）
-async function getCategoryDataFromNav(slug: string): Promise<CategoryData | null> {
-  const data = await import('@/data/nav-categories.json').then(m => m.default || m)
+interface ChildCategory {
+  id: string
+  name: string
+  slug: string
+}
 
-  // 遍历 L1
-  for (const l1 of data.categories || []) {
-    if (l1.slug === slug) {
-      const category = { id: l1.id, name: l1.name, slug: l1.slug, shortDescription: l1.shortDescription }
-      const children = l1.children ? l1.children.map(c => ({ id: c.id, name: c.name, slug: c.slug })) : []
-      return { category, parent: null, grandparent: null, children, productCount: 0 }
-    }
+// 使用 PostgreSQL 直接查询获取分类数据
+async function getCategoryData(slug: string) {
+  const pool = getPool()
 
-    // 遍历 L2
-    if (l1.children) {
-      for (const l2 of l1.children) {
-        if (l2.slug === slug) {
-          const category = { id: l2.id, name: l2.name, slug: l2.slug, shortDescription: l2.shortDescription }
-          const parent = { id: l1.id, name: l1.name, slug: l1.slug }
-          const children = l2.children ? l2.children.map(c => ({ id: c.id, name: c.name, slug: c.slug })) : []
-          return { category, parent, grandparent: null, children, productCount: 0 }
-        }
+  try {
+    // 获取分类信息（包含所有 SEO 字段）
+    const catResult = await pool.query<CategoryRow>(
+      `SELECT id, name, slug, short_description, intro_content, description, buying_guide, faq, seo_content, parent_id, display_order
+       FROM categories WHERE slug = $1`,
+      [slug]
+    )
 
-        // 遍历 L3
-        if (l2.children) {
-          for (const l3 of l2.children) {
-            if (l3.slug === slug) {
-              const category = { id: l3.id, name: l3.name, slug: l3.slug }
-              const parent = { id: l2.id, name: l2.name, slug: l2.slug }
-              const grandparent = { id: l1.id, name: l1.name, slug: l1.slug }
-              return { category, parent, grandparent, children: [], productCount: 0 }
-            }
+    if (catResult.rows.length === 0) return null
+    const category = catResult.rows[0]
+
+    // 获取父分类
+    let parent: { id: string; name: string; slug: string } | null = null
+    let grandparent: { id: string; name: string; slug: string } | null = null
+    if (category.parent_id) {
+      const parentResult = await pool.query<{ id: string; name: string; slug: string; parent_id: string | null }>(
+        'SELECT id, name, slug, parent_id FROM categories WHERE id = $1::uuid',
+        [category.parent_id]
+      )
+      if (parentResult.rows[0]) {
+        parent = { id: parentResult.rows[0].id, name: parentResult.rows[0].name, slug: parentResult.rows[0].slug }
+
+        // 获取祖父分类
+        if (parentResult.rows[0].parent_id) {
+          const gpResult = await pool.query<{ id: string; name: string; slug: string }>(
+            'SELECT id, name, slug FROM categories WHERE id = $1::uuid',
+            [parentResult.rows[0].parent_id]
+          )
+          if (gpResult.rows[0]) {
+            grandparent = { id: gpResult.rows[0].id, name: gpResult.rows[0].name, slug: gpResult.rows[0].slug }
           }
         }
       }
     }
-  }
 
-  return null
-}
+    // 获取子分类
+    const childrenResult = await pool.query<ChildCategory>(
+      'SELECT id, name, slug FROM categories WHERE parent_id = $1::uuid ORDER BY display_order LIMIT 50',
+      [category.id]
+    )
+    const children = childrenResult.rows
 
-// 从数据库获取分类的 SEO 内容
-async function getCategorySeoContent(slug: string): Promise<{
-  shortDescription?: string
-  introContent?: string
-  description?: unknown
-  buyingGuide?: unknown
-  faq?: Array<{ question: string; answer: string }>
-  seoContent?: unknown
-} | null> {
-  try {
-    const { getCategoryBySlug } = await import('@/lib/db-queries')
-    const result = await getCategoryBySlug(slug)
-    if (!result) return null
-
-    const { category } = result
-    // 同时支持 camelCase 和 snake_case 字段名
-    return {
-      shortDescription: (category as any).short_description || (category as any).shortDescription || undefined,
-      introContent: (category as any).intro_content || (category as any).introContent || undefined,
-      description: (category as any).description || undefined,
-      buyingGuide: (category as any).buying_guide || (category as any).buyingGuide || undefined,
-      faq: (category as any).faq || undefined,
-      seoContent: (category as any).seo_content || (category as any).seoContent || undefined,
-    }
-  } catch (e) {
-    console.error('Failed to fetch SEO content from database:', e)
+    return { category, parent, grandparent, children }
+  } catch (error) {
+    console.error('[getCategoryData] 错误:', error)
     return null
   }
 }
 
-// 组合函数：获取分类完整数据（层级关系 + SEO 内容）
-async function getStaticCategoryData(slug: string): Promise<CategoryData | null> {
-  // 1. 获取层级关系（从 nav-categories.json）
-  const navData = await getCategoryDataFromNav(slug)
-  if (!navData) return null
+// 获取分类产品
+async function getCategoryProducts(categoryId: string) {
+  const pool = getPool()
+  const PRODUCTS_PER_PAGE = 24
 
-  // 2. 获取 SEO 内容（从数据库）
-  const seoContent = await getCategorySeoContent(slug)
-
-  // 3. 合并数据
-  return {
-    ...navData,
-    category: {
-      ...navData.category,
-      shortDescription: seoContent?.shortDescription || navData.category.shortDescription,
-      introContent: seoContent?.introContent,
-      description: seoContent?.description,
-      buyingGuide: seoContent?.buyingGuide,
-      faq: seoContent?.faq,
-      seoContent: seoContent?.seoContent,
-    },
-  }
-}
-
-async function getProducts(slug: string): Promise<{ docs: ProductCardData[]; totalDocs: number }> {
-  // 优先从数据库获取产品
   try {
-    const { getProductsByCategorySlug } = await import('@/lib/db-queries')
-    const result = await getProductsByCategorySlug(slug, 1, 24)
+    // 获取产品总数
+    const countResult = await pool.query<{ count: string }>(
+      'SELECT COUNT(*) FROM products WHERE primary_category_id = $1::uuid',
+      [categoryId]
+    )
+    const totalDocs = parseInt(countResult.rows[0].count)
 
-    return {
-      docs: result.products.map(p => {
-        // 提取图片 URL
-        let imageUrl: string | null = null
-        if (p.images && Array.isArray(p.images) && p.images.length > 0) {
-          imageUrl = p.images[0].url || null
-        }
+    // 获取产品（包含图片和价格）
+    const productsResult = await pool.query(
+      `SELECT id, name, slug, sku, short_description, pricing, images, status
+       FROM products
+       WHERE primary_category_id = $1::uuid AND status = 'published'
+       ORDER BY name
+       LIMIT $2`,
+      [categoryId, PRODUCTS_PER_PAGE]
+    )
 
-        // 提取价格
-        let basePrice: number | null = null
-        if (p.pricing && typeof p.pricing === 'object' && 'basePrice' in p.pricing) {
-          basePrice = (p.pricing as { basePrice: number }).basePrice
-        }
+    const docs = productsResult.rows.map((p) => {
+      let imageUrl: string | null = null
+      if (p.images && Array.isArray(p.images) && p.images.length > 0) {
+        imageUrl = (p.images[0] as { url?: string })?.url || null
+      }
+      let basePrice: number | null = null
+      if (p.pricing && typeof p.pricing === 'object' && 'basePrice' in p.pricing) {
+        basePrice = (p.pricing as { basePrice: number }).basePrice
+      }
+      return {
+        id: p.id,
+        name: p.name,
+        slug: p.slug,
+        categorySlug: '',
+        sku: p.sku,
+        brand: 'Industrial',
+        primaryImage: imageUrl,
+        shortDescription: p.short_description || '',
+        pricing: { basePrice, currency: 'USD' },
+        purchaseMode: 'both' as const,
+        availability: 'in-stock',
+      }
+    })
 
-        return {
-          id: p.id,
-          name: p.name,
-          slug: p.slug,
-          categorySlug: slug,
-          sku: p.sku,
-          brand: 'Industrial',
-          primaryImage: imageUrl,
-          shortDescription: p.short_description || '',
-          pricing: { basePrice, currency: 'USD' },
-          purchaseMode: 'both' as const,
-          availability: 'in-stock',
-        }
-      }),
-      totalDocs: result.totalCount,
-    }
-  } catch (e) {
-    console.error('Failed to fetch products from database:', e)
+    return { docs, totalDocs }
+  } catch (error) {
+    console.error('[getCategoryProducts] 错误:', error)
     return { docs: [], totalDocs: 0 }
   }
 }
-
-// =============================================
-// 页面组件
-// =============================================
 
 interface CategoryPageProps {
   params: Promise<{ slug: string }>
 }
 
-const PRODUCTS_PER_PAGE = 24
-
 export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
   const { slug } = await params
-  const data = await getStaticCategoryData(slug)
-
-  if (!data) {
-    return { title: 'Category Not Found' }
-  }
+  const data = await getCategoryData(slug)
+  if (!data) return { title: 'Category Not Found' }
 
   const { category, parent, grandparent } = data
   const parentName = parent ? `${parent.name} - ` : ''
   const gpName = grandparent ? `${grandparent.name} - ` : ''
   const title = `${category.name} | ${gpName}${parentName}Machrio Industrial Supplies`
-  const description = category.shortDescription || `Browse ${category.name} at Machrio.`
+  const description = category.short_description || `Browse ${category.name} at Machrio.`
 
   return {
     title,
@@ -298,23 +227,25 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
 
 export default async function CategoryPage({ params }: CategoryPageProps) {
   const { slug } = await params
-  const data = await getStaticCategoryData(slug)
 
-  if (!data) {
-    notFound()
-  }
+  const data = await getCategoryData(slug)
+  if (!data) notFound()
 
   const { category, parent, grandparent, children } = data
 
-  // 判断分类层级
-  const isL1 = !parent
-  const isL2 = !!parent && !grandparent
-  const isL3 = !!parent && !!grandparent
+  const isL1 = !parent && !grandparent
+  const isL2 = parent && !grandparent
+  const isL3 = parent && grandparent
 
-  // 获取产品
-  const productsResult = await getProducts(slug)
+  // 判断是否为叶子分类（没有子分类）
+  const isLeafCategory = children.length === 0
 
-  // 构建面包屑
+  // 只在叶子分类或 L3 分类显示产品
+  let productsResult = { docs: [], totalDocs: 0 }
+  if (isL3 || isLeafCategory) {
+    productsResult = await getCategoryProducts(category.id)
+  }
+
   const breadcrumbs = [
     { label: 'Home', href: '/' },
     ...(grandparent ? [{ label: grandparent.name, href: `/category/${grandparent.slug}` }] : []),
@@ -337,30 +268,36 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
     })),
   } : null
 
+  // 解析 FAQ 数据
+  const faqList = Array.isArray(category.faq)
+    ? (category.faq as Array<{ question?: string; answer?: string }>).map(item => ({
+        question: item.question || '',
+        answer: item.answer || ''
+      }))
+    : []
+
   return (
     <div className="container-main pb-12">
       <Breadcrumbs items={breadcrumbs} />
       {itemListSchema && <StructuredData data={itemListSchema} />}
 
-      {/* 分类标题 */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-secondary-900">{category.name}</h1>
-        {category.introContent ? (
-          <ExpandableIntro content={category.introContent} />
+        {category.intro_content ? (
+          <ExpandableIntro content={category.intro_content} />
         ) : (
           <p className="mt-2 text-sm leading-relaxed text-secondary-600">
-            {category.shortDescription || `Browse our selection of ${category.name} products.`}
+            {category.short_description || `Browse our selection of ${category.name} products.`}
           </p>
         )}
       </div>
 
       <CategoryBuyingGuide categorySlug={slug} />
 
-      {/* 子分类展示（L1 和 L2 分类） */}
       {(isL1 || isL2) && children.length > 0 && (
         <section className="mb-8">
           <h2 className="mb-4 text-lg font-semibold text-secondary-800">
-            {isL1 ? `Browse ${category.name} Categories` : `Browse ${category.name} Subcategories`}
+            Browse {category.name} Categories
           </h2>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
             {children.map((child) => (
@@ -376,34 +313,26 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         </section>
       )}
 
-      {/* L2 无子分类时显示引导 */}
-      {isL2 && children.length === 0 && (
-        <div className="rounded-lg border border-secondary-200 bg-secondary-50 p-6 text-center">
-          <p className="text-secondary-600">
-            Explore our {category.name} products by browsing the categories above or using the search.
-          </p>
-        </div>
+      {/* 无子分类时显示 EmptyStateAIDialog */}
+      {(isL1 || isL2) && children.length === 0 && (
+        <EmptyStateAIDialog
+          categoryName={category.name}
+          categorySlug={slug}
+          parentCategories={parent ? [parent.name] : []}
+        />
       )}
 
-      {/* 产品列表（L2 无子分类时或 L3 分类） */}
-      {/* L2 有 L3 子分类时不显示产品列表，引导用户进入 L3 */}
-      {((isL2 && children.length === 0) || isL3) && (
+      {/* L3 分类显示产品 */}
+      {isL3 && (
         <>
-          {productsResult.totalDocs > 0 ? (
-            <>
-              <div className="mb-4 flex items-center justify-between">
-                <p className="text-sm text-secondary-500">{productsResult.totalDocs} products</p>
-                {(isL1 || isL2) && (
-                  <Link href={`/category/${slug}`} className="text-sm text-primary-600 hover:text-primary-800">
-                    View all products →
-                  </Link>
-                )}
-              </div>
+          <div className="mb-4 flex items-center justify-between">
+            <p className="text-sm text-secondary-500">{productsResult.totalDocs} products</p>
+          </div>
 
-              <Suspense fallback={<div className="h-96 animate-pulse rounded bg-secondary-100" />}>
-                <ProductGrid products={productsResult.docs} view="list" />
-              </Suspense>
-            </>
+          {productsResult.docs.length > 0 ? (
+            <Suspense fallback={<div className="h-96 animate-pulse rounded bg-secondary-100" />}>
+              <ProductGrid products={productsResult.docs} view="list" />
+            </Suspense>
           ) : (
             <EmptyStateAIDialog
               categoryName={category.name}
@@ -414,43 +343,34 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         </>
       )}
 
-      {/* SEO 内容（所有分类层级） */}
-      {(hasRichTextContent(category.description) || hasRichTextContent(category.buyingGuide) || hasRichTextContent(category.seoContent) || (category.faq && category.faq.length > 0)) && (
+      {/* SEO 内容 */}
+      {(hasRichTextContent(category.description) || hasRichTextContent(category.buying_guide) || hasRichTextContent(category.seo_content) || faqList.length > 0) && (
         <section className="mt-12 border-t border-secondary-200 pt-8">
           {hasRichTextContent(category.description) && (
             <div className="mb-10">
-              <div
-                className="prose prose-sm prose-secondary max-w-none text-secondary-600"
-                dangerouslySetInnerHTML={{ __html: lexicalToHtml(category.description) }}
-              />
+              <div className="prose prose-sm prose-secondary max-w-none text-secondary-600" dangerouslySetInnerHTML={{ __html: lexicalToHtml(category.description) }} />
             </div>
           )}
-          {hasRichTextContent(category.buyingGuide) && (
+          {hasRichTextContent(category.buying_guide) && (
             <div className="mb-10">
               <h2 className="mb-4 text-lg font-bold text-secondary-900">How to Choose the Right {category.name}</h2>
-              <div
-                className="prose prose-sm prose-secondary max-w-none text-secondary-600"
-                dangerouslySetInnerHTML={{ __html: lexicalToHtml(category.buyingGuide) }}
-              />
+              <div className="prose prose-sm prose-secondary max-w-none text-secondary-600" dangerouslySetInnerHTML={{ __html: lexicalToHtml(category.buying_guide) }} />
             </div>
           )}
-          {hasRichTextContent(category.seoContent) && (
+          {hasRichTextContent(category.seo_content) && (
             <div className="mb-10">
-              <div
-                className="prose prose-sm prose-secondary max-w-none text-secondary-600"
-                dangerouslySetInnerHTML={{ __html: lexicalToHtml(category.seoContent) }}
-              />
+              <div className="prose prose-sm prose-secondary max-w-none text-secondary-600" dangerouslySetInnerHTML={{ __html: lexicalToHtml(category.seo_content) }} />
             </div>
           )}
-          {category.faq && category.faq.length > 0 && (
-            <FAQSection faqs={category.faq} title="Frequently Asked Questions" />
+          {faqList.length > 0 && (
+            <FAQSection faqs={faqList} title="Frequently Asked Questions" />
           )}
         </section>
       )}
 
       {/* FAQ Schema */}
-      {category.faq && category.faq.length > 0 && (
-        <FAQSchema faqs={category.faq} />
+      {faqList.length > 0 && (
+        <FAQSchema faqs={faqList} />
       )}
     </div>
   )
