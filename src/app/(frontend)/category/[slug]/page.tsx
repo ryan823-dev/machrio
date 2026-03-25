@@ -2,7 +2,7 @@ import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { Pool } from 'pg'
+import { getPool } from '@/lib/db'
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 import { FAQSchema, FAQSection } from '@/components/shared/FAQSchema'
 import { StructuredData } from '@/components/shared/StructuredData'
@@ -161,11 +161,7 @@ async function getCategoryData(slug: string) {
 
 // 使用 PostgreSQL 直接查询获取产品
 async function getCategoryProducts(categoryId: string, page: number, sort: string) {
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URI,
-    max: 1,
-    idleTimeoutMillis: 5000,
-  })
+  const pool = getPool()
 
   try {
     const offset = (page - 1) * PRODUCTS_PER_PAGE
@@ -217,8 +213,6 @@ async function getCategoryProducts(categoryId: string, page: number, sort: strin
   } catch (error) {
     console.error('[getCategoryProducts] 错误:', error)
     return { docs: [], totalDocs: 0, page: 1, totalPages: 1, hasNextPage: false, hasPrevPage: false }
-  } finally {
-    await pool.end()
   }
 }
 
