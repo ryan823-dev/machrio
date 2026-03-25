@@ -321,7 +321,6 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   let productsResult: any = { docs: [], totalDocs: 0, page: 1, totalPages: 1, hasNextPage: false, hasPrevPage: false }
   const isLeafCategory = children.length === 0
   if (isL3 || isLeafCategory) {
-    console.log(`[DEBUG] Fetching products for category.id=${category.id}, isL3=${isL3}, isLeafCategory=${isLeafCategory}`)
     productsResult = await getCategoryProducts(category.id, 1, '-createdAt')
   }
 
@@ -359,15 +358,6 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-secondary-900">{category.name}</h1>
 
-
-        {/* DEBUG */}
-        <div className="my-2 rounded bg-yellow-100 p-2 text-xs">
-          <p>DEBUG: parent={parent?.name || 'NULL'}, grandparent={grandparent?.name || 'NULL'}</p>
-          <p>DEBUG: isL1={String(isL1)}, isL2={String(isL2)}, isL3={String(isL3)}</p>
-          <p>DEBUG: category.id={String(category.id)}</p>
-          <p>DEBUG: category.id type={typeof category.id}</p>
-          <p>DEBUG: productsResult.totalDocs={productsResult.totalDocs}</p>
-        </div>
         {category.introContent ? (
           <ExpandableIntro content={category.introContent as string} />
         ) : (
