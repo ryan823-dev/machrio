@@ -102,23 +102,15 @@ const PRODUCTS_PER_PAGE = 24
 
 // 使用 PostgreSQL 直接查询获取分类数据
 async function getCategoryData(slug: string) {
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URI,
-    max: 1,
-    idleTimeoutMillis: 5000,
-  })
+  const pool = getPool()
 
   try {
-    console.log('[getCategoryData] 开始查询 slug:', slug)
-    console.log('[getCategoryData] DATABASE_URI exists:', !!process.env.DATABASE_URI)
-    
     // 获取分类信息
     const catResult = await pool.query(
       'SELECT id, name, slug, short_description, intro_content, description, buying_guide, parent_id, display_order FROM categories WHERE slug = $1',
       [slug]
     )
     
-    console.log('[getCategoryData] 分类查询结果:', catResult.rows.length)
     if (catResult.rows.length === 0) return null
     const category = catResult.rows[0]
 
@@ -148,14 +140,11 @@ async function getCategoryData(slug: string) {
       [category.id]
     )
     const children = childrenResult.rows
-    console.log('[getCategoryData] 子分类数量:', children.length)
 
     return { category, parent, grandparent, children }
   } catch (error) {
     console.error('[getCategoryData] 错误:', error)
     return null
-  } finally {
-    await pool.end()
   }
 }
 
