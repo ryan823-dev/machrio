@@ -107,6 +107,7 @@ interface CategoryData {
     description?: unknown
     buyingGuide?: unknown
     faq?: Array<{ question: string; answer: string }>
+    seoContent?: unknown
     displayOrder: number
   }
   parent: {
@@ -127,48 +128,36 @@ interface CategoryData {
   productCount: number
 }
 
-// 从 nav-categories.json 获取分类数据
+// 从 nav-categories.json 获取分类层级关系（与导航一致）
 async function getCategoryDataFromNav(slug: string): Promise<CategoryData | null> {
   const data = await import('@/data/nav-categories.json').then(m => m.default || m)
-
-  // 查找分类
-  let category: { id: string; name: string; slug: string; shortDescription?: string } | null = null
-  let parent: { id: string; name: string; slug: string } | null = null
-  let grandparent: { id: string; name: string; slug: string } | null = null
-  let children: Array<{ id: string; name: string; slug: string }> = []
 
   // 遍历 L1
   for (const l1 of data.categories || []) {
     if (l1.slug === slug) {
-      category = { id: l1.id, name: l1.name, slug: l1.slug, shortDescription: l1.shortDescription }
-      // L1: 获取 L2 子分类
-      if (l1.children) {
-        children = l1.children.map(c => ({ id: c.id, name: c.name, slug: c.slug }))
-      }
-      return { category, parent, grandparent, children, productCount: 0 }
+      const category = { id: l1.id, name: l1.name, slug: l1.slug, shortDescription: l1.shortDescription }
+      const children = l1.children ? l1.children.map(c => ({ id: c.id, name: c.name, slug: c.slug })) : []
+      return { category, parent: null, grandparent: null, children, productCount: 0 }
     }
 
     // 遍历 L2
     if (l1.children) {
       for (const l2 of l1.children) {
         if (l2.slug === slug) {
-          category = { id: l2.id, name: l2.name, slug: l2.slug, shortDescription: l2.shortDescription }
-          parent = { id: l1.id, name: l1.name, slug: l1.slug }
-          // L2: 获取 L3 子分类
-          if (l2.children) {
-            children = l2.children.map(c => ({ id: c.id, name: c.name, slug: c.slug }))
-          }
-          return { category, parent, grandparent, children, productCount: 0 }
+          const category = { id: l2.id, name: l2.name, slug: l2.slug, shortDescription: l2.shortDescription }
+          const parent = { id: l1.id, name: l1.name, slug: l1.slug }
+          const children = l2.children ? l2.children.map(c => ({ id: c.id, name: c.name, slug: c.slug })) : []
+          return { category, parent, grandparent: null, children, productCount: 0 }
         }
 
         // 遍历 L3
         if (l2.children) {
           for (const l3 of l2.children) {
             if (l3.slug === slug) {
-              category = { id: l3.id, name: l3.name, slug: l3.slug }
-              parent = { id: l2.id, name: l2.name, slug: l2.slug }
-              grandparent = { id: l1.id, name: l1.name, slug: l1.slug }
-              return { category, parent, grandparent, children, productCount: 0 }
+              const category = { id: l3.id, name: l3.name, slug: l3.slug }
+              const parent = { id: l2.id, name: l2.name, slug: l2.slug }
+              const grandparent = { id: l1.id, name: l1.name, slug: l1.slug }
+              return { category, parent, grandparent, children: [], productCount: 0 }
             }
           }
         }
@@ -179,66 +168,56 @@ async function getCategoryDataFromNav(slug: string): Promise<CategoryData | null
   return null
 }
 
-async function getStaticCategoryData(slug: string): Promise<CategoryData | null> {
-  // 优先从 nav-categories.json 获取（与导航栏一致）
+// 从数据库获取分类的 SEO 内容
+async function getCategorySeoContent(slug: string): Promise<{
+  shortDescription?: string
+  introContent?: string
+  description?: unknown
+  buyingGuide?: unknown
+  faq?: Array<{ question: string; answer: string }>
+  seoContent?: unknown
+} | null> {
   try {
-    const navData = await getCategoryDataFromNav(slug)
-    if (navData) return navData
+    const { getCategoryBySlug } = await import('@/lib/db-queries')
+    const result = await getCategoryBySlug(slug)
+    if (!result) return null
+
+    const { category } = result
+    return {
+      shortDescription: category.short_description || undefined,
+      introContent: category.intro_content || undefined,
+      description: category.description || undefined,
+      buyingGuide: category.buying_guide || undefined,
+      faq: category.faq || undefined,
+      seoContent: category.seo_content || undefined,
+    }
   } catch (e) {
-    console.error('Failed to load nav-categories:', e)
+    console.error('Failed to fetch SEO content from database:', e)
+    return null
   }
+}
 
-  // Fallback to static-catalog.ts
-  const { getCategoryBySlug, staticL2Categories, staticL3Categories, staticL1Categories } = await import('@/data/static-catalog')
+// 组合函数：获取分类完整数据（层级关系 + SEO 内容）
+async function getStaticCategoryData(slug: string): Promise<CategoryData | null> {
+  // 1. 获取层级关系（从 nav-categories.json）
+  const navData = await getCategoryDataFromNav(slug)
+  if (!navData) return null
 
-  const cat = getCategoryBySlug(slug)
-  if (!cat) return null
+  // 2. 获取 SEO 内容（从数据库）
+  const seoContent = await getCategorySeoContent(slug)
 
-  let children: Array<{ id: string; name: string; slug: string }> = []
-  let parent: { id: string; name: string; slug: string } | null = null
-  let grandparent: { id: string; name: string; slug: string } | null = null
-
-  // 根据层级获取 children
-  if (cat.level === 1) {
-    // L1: 获取所有 L2 子分类
-    children = staticL2Categories
-      .filter(c => c.parentSlug === slug)
-      .map(c => ({ id: c.id, name: c.name, slug: c.slug }))
-  } else if (cat.level === 2) {
-    // L2: 获取所有 L3 子分类
-    children = staticL3Categories
-      .filter(c => c.parentSlug === slug)
-      .map(c => ({ id: c.id, name: c.name, slug: c.slug }))
-    // 获取 L1 父分类
-    const l1Parent = staticL1Categories.find(c => c.id === cat.parentId)
-    if (l1Parent) {
-      parent = { id: l1Parent.id, name: l1Parent.name, slug: l1Parent.slug }
-    }
-  } else if (cat.level === 3) {
-    // L3: 获取 L2 父分类
-    const l2Parent = staticL2Categories.find(c => c.id === cat.parentId)
-    if (l2Parent) {
-      parent = { id: l2Parent.id, name: l2Parent.name, slug: l2Parent.slug }
-      // 获取 L1 祖父分类
-      const l1Parent = staticL1Categories.find(c => c.id === l2Parent.parentId)
-      if (l1Parent) {
-        grandparent = { id: l1Parent.id, name: l1Parent.name, slug: l1Parent.slug }
-      }
-    }
-  }
-
+  // 3. 合并数据
   return {
+    ...navData,
     category: {
-      id: cat.id,
-      name: cat.name,
-      slug: cat.slug,
-      shortDescription: cat.shortDescription,
-      displayOrder: cat.displayOrder,
+      ...navData.category,
+      shortDescription: seoContent?.shortDescription || navData.category.shortDescription,
+      introContent: seoContent?.introContent,
+      description: seoContent?.description,
+      buyingGuide: seoContent?.buyingGuide,
+      faq: seoContent?.faq,
+      seoContent: seoContent?.seoContent,
     },
-    parent,
-    grandparent,
-    children,
-    productCount: 0,
   }
 }
 
@@ -434,8 +413,8 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
         </>
       )}
 
-      {/* SEO 内容 */}
-      {productsResult.totalDocs > 0 && (
+      {/* SEO 内容（所有分类层级） */}
+      {(hasRichTextContent(category.description) || hasRichTextContent(category.buyingGuide) || hasRichTextContent(category.seoContent) || (category.faq && category.faq.length > 0)) && (
         <section className="mt-12 border-t border-secondary-200 pt-8">
           {hasRichTextContent(category.description) && (
             <div className="mb-10">
@@ -451,6 +430,14 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
               <div
                 className="prose prose-sm prose-secondary max-w-none text-secondary-600"
                 dangerouslySetInnerHTML={{ __html: lexicalToHtml(category.buyingGuide) }}
+              />
+            </div>
+          )}
+          {hasRichTextContent(category.seoContent) && (
+            <div className="mb-10">
+              <div
+                className="prose prose-sm prose-secondary max-w-none text-secondary-600"
+                dangerouslySetInnerHTML={{ __html: lexicalToHtml(category.seoContent) }}
               />
             </div>
           )}

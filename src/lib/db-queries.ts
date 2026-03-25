@@ -27,6 +27,12 @@ export interface DbCategory {
   slug: string
   parent_id: string | null
   display_order: number | null
+  short_description: string | null
+  description: unknown | null
+  intro_content: string | null
+  buying_guide: unknown | null
+  faq: Array<{ question: string; answer: string }> | null
+  seo_content: unknown | null
 }
 
 export interface DbProduct {
@@ -89,9 +95,11 @@ export async function getCategoryBySlug(slug: string): Promise<{
   const pool = await createPool()
   
   try {
-    // 1. 获取当前分类
+    // 1. 获取当前分类（包含 SEO 字段）
     const catResult = await pool.query<DbCategory>(
-      'SELECT * FROM categories WHERE slug = $1',
+      `SELECT id, name, slug, parent_id, display_order, short_description, description,
+              intro_content, buying_guide, faq, seo_content
+       FROM categories WHERE slug = $1`,
       [slug]
     )
     
