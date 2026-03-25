@@ -11,31 +11,9 @@ import { ProductGrid } from '@/components/category/ProductGrid'
 import { ExpandableIntro } from '@/components/category/ExpandableIntro'
 import { EmptyStateAIDialog } from '@/components/category/EmptyStateAIDialog'
 
-// 使用 ISR，每 5 分钟重新验证一次
-export const revalidate = 300
-
-// 启用动态参数，允许未预生成的 slug 在运行时生成
-export const dynamicParams = true
-
-// 预生成所有分类页面 - 使用直接 PostgreSQL 查询避免连接池问题
-export async function generateStaticParams() {
-  try {
-    const pool = getPool()
-    console.log('[generateStaticParams] 开始查询数据库...')
-    const result = await pool.query('SELECT slug FROM categories ORDER BY display_order')
-    const paths = result.rows.map((cat: { slug: string }) => ({ slug: cat.slug }))
-    console.log(`[generateStaticParams] ✅ 生成了 ${paths.length} 个分类页面，前 5 个：${paths.slice(0, 5).map((p: any) => p.slug).join(', ')}`)
-    return paths
-  } catch (error) {
-    console.error('[generateStaticParams] ❌ 错误:', error)
-    // 返回空数组会导致所有未生成的页面 404，所以返回一些常见分类作为 fallback
-    return [
-      { slug: 'adhesives-sealants-and-tape' },
-      { slug: 'tape' },
-      { slug: 'surface-protection-tape' },
-    ]
-  }
-}
+// 强制动态渲染（SSR），Supabase 性能足够好，不需要 ISR 缓存
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
 
 // ---------------------------------------------------------------------------
 // Lexical richText rendering helpers
