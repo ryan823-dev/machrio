@@ -206,13 +206,12 @@ async function getCategoryProducts(categoryId: string, page: number, sort: strin
     // 获取产品
     const productsResult = await pool.query(
       `SELECT id, name, slug, sku, short_description, primary_image_id,
-              (SELECT url FROM media m WHERE m.id = p.primary_image_id) as image_url,
-              (SELECT name FROM brands b WHERE b.id = p.brand_id) as brand_name,
-              (SELECT id FROM categories c WHERE c.id = p.primary_category_id) as category_id,
-              (SELECT slug FROM categories c WHERE c.id = p.primary_category_id) as category_slug,
-              (SELECT parent_id FROM categories c WHERE c.id = p.primary_category_id) as category_parent_id
+              p.primary_image_id as image_url,
+              (SELECT c.id::text FROM categories c WHERE c.id = p.primary_category_id) as category_id,
+              (SELECT c.slug FROM categories c WHERE c.id = p.primary_category_id) as category_slug,
+              (SELECT c.parent_id::text FROM categories c WHERE c.id = p.primary_category_id) as category_parent_id
        FROM products p
-       WHERE primary_category_id = $1::uuid
+       WHERE p.primary_category_id::text = $1
        ORDER BY ${orderBy}
        LIMIT $2 OFFSET $3`,
       [categoryId, PRODUCTS_PER_PAGE, offset]
