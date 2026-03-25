@@ -7,9 +7,8 @@ import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 import { StructuredData } from '@/components/shared/StructuredData'
 import { FAQSchema, FAQSection } from '@/components/shared/FAQSchema'
 
-// ISR: allow new articles without redeploy, revalidate every hour
-export const dynamicParams = true
-export const revalidate = 3600
+// SSR: Supabase is fast enough, no need for ISR
+export const dynamic = 'force-dynamic'
 
 // ---------------------------------------------------------------------------
 // Lexical richText helpers (shared pattern from product page)
@@ -224,21 +223,6 @@ export async function generateMetadata({
       title,
       description,
     },
-  }
-}
-
-export async function generateStaticParams() {
-  try {
-    const payload = await getPayload({ config })
-    const result = await payload.find({
-      collection: 'articles',
-      where: { status: { equals: 'published' } },
-      limit: 500,
-      depth: 0,
-    })
-    return result.docs.map((doc) => ({ slug: doc.slug as string }))
-  } catch {
-    return []
   }
 }
 

@@ -5,8 +5,8 @@ import config from '@payload-config'
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 import { ProductGrid } from '@/components/category/ProductGrid'
 
-// 使用 ISR，每 5 分钟重新验证一次
-export const revalidate = 300
+// SSR: Supabase is fast enough, no need for ISR
+export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'New Arrivals | Machrio Industrial Supplies',

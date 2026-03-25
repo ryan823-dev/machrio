@@ -17,9 +17,8 @@ import { AlsoViewed, TrackProductViewServer } from '@/components/product/AlsoVie
 import { BoughtTogether } from '@/components/product/BoughtTogether'
 import { RelatedGuide } from '@/components/shared/RelatedGuide'
 
-// 使用 ISR，每 5 分钟重新验证一次
-// 产品页面数据可以缓存，库存和价格变化时会通过后台更新
-export const revalidate = 300
+// SSR: Supabase is fast enough, no need for ISR
+export const dynamic = 'force-dynamic'
 
 interface ProductPageProps {
   params: Promise<{ category: string; slug: string }>
