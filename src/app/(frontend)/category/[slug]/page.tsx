@@ -118,8 +118,6 @@ async function getCategoryData(slug: string) {
     )
     const children = childrenResult.rows
 
-    console.log(`[getCategoryData] ${category.name}: children=${children.length}, isL1=${!parent}, isL2=${parent && !grandparent}, isL3=${!!grandparent}`)
-
     return { category, parent, grandparent, children }
   } catch (error) {
     console.error('[getCategoryData] 错误:', error)

@@ -28,3 +28,4 @@ backup/
 docs/
 test-*.cjs
 migration-report.json
+.vercel

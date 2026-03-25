@@ -39,15 +39,9 @@ import { Navigation } from './globals/Navigation'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
-// Debug logging for production troubleshooting
+// Use PostgreSQL if USE_POSTGRES=1 is explicitly set
 // Use trim() to handle trailing newlines from Vercel env vars
 const usePostgres = (process.env.USE_POSTGRES?.trim() === '1') && !!process.env.DATABASE_URI
-console.log('Database config:', {
-  USE_POSTGRES: process.env.USE_POSTGRES,
-  DATABASE_URI: process.env.DATABASE_URI ? 'SET (hidden)' : 'NOT SET',
-  MONGODB_URI: process.env.MONGODB_URI ? 'SET (hidden)' : 'NOT SET',
-  usePostgres,
-})
 
 export default buildConfig({
   sharp,
