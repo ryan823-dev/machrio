@@ -78,15 +78,12 @@ export async function GET() {
       ORDER BY ordinal_position
     `)
 
-    // 测试9：获取一个分类的 SEO 字段
+    // 测试9：获取一个分类的 SEO 字段（使用 snake_case）
     const seoTest = await pool.query(`
       SELECT id::text, name, slug,
-             short_description, shortdescription,
-             intro_content, introcontent,
-             description,
-             buying_guide, buyingguide,
-             seo_content, seocontent,
-             faq
+             short_description, intro_content,
+             description, buying_guide,
+             seo_content, faq
       FROM categories
       WHERE slug = 'adhesives-sealants-and-tape'
       LIMIT 1
@@ -107,6 +104,8 @@ export async function GET() {
       sampleProducts: sampleProducts.rows,
       distinctCategories: distinctCategories.rows,
       columns: columnsResult.rows.map(r => `${r.column_name} (${r.data_type})`),
+      categoryColumns: categoryColumns.rows.map(r => `${r.column_name} (${r.data_type})`),
+      seoTest,
     })
   } catch (error) {
     await pool.end()
