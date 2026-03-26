@@ -1,9 +1,6 @@
 import { buildConfig } from 'payload'
 import { postgresAdapter } from '@payloadcms/db-postgres'
-import { mongooseAdapter } from '@payloadcms/db-mongodb'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
-import { vercelBlobStorage } from '@payloadcms/storage-vercel-blob'
-import { zh } from '@payloadcms/translations/languages/zh'
 import { en } from '@payloadcms/translations/languages/en'
 import path from 'path'
 import sharp from 'sharp'
@@ -39,9 +36,8 @@ import { Navigation } from './globals/Navigation'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
-// Use PostgreSQL if USE_POSTGRES=1 is explicitly set
-// Use trim() to handle trailing newlines from Vercel env vars
-const usePostgres = (process.env.USE_POSTGRES?.trim() === '1') && !!process.env.DATABASE_URI
+// 使用 PostgreSQL 作为默认数据库（迁移后不再支持 MongoDB）
+const usePostgres = process.env.USE_POSTGRES !== '0' && !!process.env.DATABASE_URI
 
 export default buildConfig({
   sharp,
@@ -50,6 +46,7 @@ export default buildConfig({
     meta: {
       titleSuffix: '- Machrio Admin',
     },
+    // 简化 admin 配置，加快加载
     components: {
       graphics: {
         Logo: '/src/components/admin/Logo#Logo',
@@ -63,9 +60,15 @@ export default buildConfig({
         },
       },
     },
+    // 禁用不需要的功能
+    disable: {
+      // 保留数据，可以稍后清理
+      dataLoader: false,
+    },
   },
+  // 保留 i18n 但可以精简
   i18n: {
-    supportedLanguages: { zh, en },
+    supportedLanguages: { en }, // 只保留英文
     fallbackLanguage: 'en',
   },
   collections: [
@@ -97,38 +100,26 @@ export default buildConfig({
     SiteSettings,
     Navigation,
   ],
-  editor: lexicalEditor(),
+  // 简化编辑器
+  editor: lexicalEditor({
+    features: ({ rootFeatures }) => rootFeatures,
+  }),
   secret: process.env.PAYLOAD_SECRET || 'default-secret-change-me',
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
-  // Database: Only use PostgreSQL if USE_POSTGRES=1 is explicitly set
-  // MongoDB is used by default for local development
+  // Database
   db: usePostgres
     ? postgresAdapter({
         pool: {
           connectionString: process.env.DATABASE_URI!,
-          // Use max 1 connection for Vercel to avoid "max clients reached" error in Session mode
           max: 1,
           min: 0,
           idleTimeoutMillis: 30000,
           connectionTimeoutMillis: 30000,
         },
       })
-    : mongooseAdapter({
-        url: process.env.MONGODB_URI || 'mongodb://localhost:27017/machrio',
-      }),
-  plugins: [
-    // Vercel Blob Storage for production
-    ...(process.env.BLOB_READ_WRITE_TOKEN
-      ? [
-          vercelBlobStorage({
-            collections: {
-              media: true,
-            },
-            token: process.env.BLOB_READ_WRITE_TOKEN,
-          }),
-        ]
-      : []),
-  ],
+    : undefined,
+  // 简化 plugins
+  plugins: [],
 })

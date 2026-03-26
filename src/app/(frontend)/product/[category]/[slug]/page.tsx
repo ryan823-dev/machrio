@@ -1,8 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { getPayload } from 'payload'
-import config from '@payload-config'
+import { getProductBySlug, createPool } from '@/lib/db-queries'
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 import { StructuredData } from '@/components/shared/StructuredData'
 import { FAQSchema, FAQSection } from '@/components/shared/FAQSchema'
@@ -24,8 +23,8 @@ interface ProductPageProps {
   params: Promise<{ category: string; slug: string }>
 }
 
-// Extract plain text from Lexical richText JSON (for meta descriptions, etc.)
-function extractTextFromLexical(richText: unknown): string {
+// Simplified text extraction for plain text fields
+function extractPlainText(richText: unknown): string {
   if (!richText || typeof richText !== 'object') return ''
   const root = (richText as Record<string, unknown>).root as Record<string, unknown> | undefined
   if (!root) return ''
@@ -44,7 +43,59 @@ function extractChildrenPlain(children: unknown[]): string {
     .join('')
 }
 
-// Render Lexical richText as HTML with proper formatting
+// Common section header patterns in product descriptions
+const SECTION_HEADERS = [
+  'Overview', 'Key Features', 'Features', 'Specifications', 'Applications',
+  'Product Information', 'Product Description', 'Material', 'Size Specifications',
+  'Technology & Construction', 'Benefits', 'Description', 'Details',
+  'Technical Specifications', 'Product Details', 'Important Notes', 'Note'
+]
+
+// Convert text with section headers to properly formatted HTML
+function formatTextWithHeaders(text: string): string {
+  const headerPattern = SECTION_HEADERS.map(h => h.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')
+  const regex = new RegExp(`(?:^|\\n)(${headerPattern})(?:\\s*:|\\s*\\n|\\s*$)`, 'gi')
+  
+  const parts = text.split(regex).filter(Boolean)
+  
+  if (parts.length <= 1) {
+    return text ? `<p>${text}</p>` : ''
+  }
+  
+  let result = ''
+  let currentHeader = ''
+  
+  for (let i = 0; i < parts.length; i++) {
+    const part = parts[i].trim()
+    if (!part) continue
+    
+    const isHeader = SECTION_HEADERS.some(h => 
+      part.toLowerCase() === h.toLowerCase()
+    )
+    
+    if (isHeader) {
+      if (currentHeader) {
+        result += `<h3>${currentHeader}</h3>`
+      }
+      currentHeader = part
+    } else {
+      if (currentHeader) {
+        result += `<h3>${currentHeader}</h3><p>${part}</p>`
+        currentHeader = ''
+      } else {
+        result += `<p>${part}</p>`
+      }
+    }
+  }
+  
+  if (currentHeader) {
+    result += `<h3>${currentHeader}</h3>`
+  }
+  
+  return result
+}
+
+// Extract children from Lexical nodes
 function extractChildren(children: unknown[]): string {
   if (!Array.isArray(children)) return ''
   return children
@@ -67,71 +118,6 @@ function extractChildren(children: unknown[]): string {
     .join('')
 }
 
-// Common section header patterns in product descriptions
-// Only include headers that are unlikely to appear as regular words in sentences
-const SECTION_HEADERS = [
-  'Overview', 'Key Features', 'Features', 'Specifications', 'Applications',
-  'Product Information', 'Product Description', 'Material', 'Size Specifications',
-  'Technology & Construction', 'Benefits', 'Description', 'Details',
-  'Technical Specifications', 'Product Details', 'Important Notes', 'Note'
-  // Removed 'Usage' - it commonly appears in sentences like "high-volume usage"
-]
-
-// Convert text with section headers to properly formatted HTML
-function formatTextWithHeaders(text: string): string {
-  // Only match headers at the START of a line or after whitespace
-  // Header must be followed by colon, newline, or end of string
-  // This prevents matching words in the middle of sentences
-  const headerPattern = SECTION_HEADERS.map(h => h.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|')
-  const regex = new RegExp(`(?:^|\\n)(${headerPattern})(?:\\s*:|\\s*\\n|\\s*$)`, 'gi')
-  
-  // Split by header patterns, keeping the headers
-  const parts = text.split(regex).filter(Boolean)
-  
-  if (parts.length <= 1) {
-    // No headers found, return as paragraph
-    return text ? `<p>${text}</p>` : ''
-  }
-  
-  let result = ''
-  let currentHeader = ''
-  
-  for (let i = 0; i < parts.length; i++) {
-    const part = parts[i].trim()
-    if (!part) continue
-    
-    // Check if this part is a header (exact match, case insensitive)
-    const isHeader = SECTION_HEADERS.some(h => 
-      part.toLowerCase() === h.toLowerCase()
-    )
-    
-    if (isHeader) {
-      // Save previous header with content if any
-      if (currentHeader) {
-        result += `<h3>${currentHeader}</h3>`
-      }
-      currentHeader = part
-    } else {
-      // This is content
-      if (currentHeader) {
-        // We have a header, add it with content
-        result += `<h3>${currentHeader}</h3><p>${part}</p>`
-        currentHeader = ''
-      } else {
-        // No header, just content
-        result += `<p>${part}</p>`
-      }
-    }
-  }
-  
-  // Handle remaining header without content
-  if (currentHeader) {
-    result += `<h3>${currentHeader}</h3>`
-  }
-  
-  return result
-}
-
 function lexicalToHtml(richText: unknown): string {
   if (!richText || typeof richText !== 'object') return ''
   const root = (richText as Record<string, unknown>).root as Record<string, unknown> | undefined
@@ -140,11 +126,9 @@ function lexicalToHtml(richText: unknown): string {
     .map((node) => {
       if (node.type === 'paragraph') {
         const text = extractChildren(node.children as unknown[])
-        // Check if this paragraph contains section headers
         if (text && SECTION_HEADERS.some(h => new RegExp(`\\b${h}\\s*:?\\b`, 'i').test(text))) {
           return formatTextWithHeaders(text)
         }
-        // Check if this paragraph is a text-based list (lines starting with - or *)
         if (text && /^[\s]*[-*][\s]/.test(text)) {
           return formatTextList(text)
         }
@@ -172,7 +156,7 @@ function lexicalToHtml(richText: unknown): string {
     .join('\n')
 }
 
-// Format text-based lists (lines starting with - or *)
+// Format text-based lists
 function formatTextList(text: string): string {
   const lines = text.split('\n')
   const listItems: string[] = []
@@ -197,25 +181,7 @@ function formatTextList(text: string): string {
   return result
 }
 
-async function getProductBySlug(slug: string) {
-  try {
-    const payload = await getPayload({ config })
-    const result = await payload.find({
-      collection: 'products',
-      where: {
-        slug: { equals: slug },
-        status: { equals: 'published' },
-      },
-      limit: 1,
-      depth: 2, // populate brand, primaryCategory, and primaryCategory.parent
-    })
-    if (result.docs.length === 0) return null
-    return result.docs[0]
-  } catch {
-    return null
-  }
-}
-
+// Types for related products from PostgreSQL
 interface RelatedProductData {
   name: string
   slug: string
@@ -227,165 +193,169 @@ interface RelatedProductData {
   source: 'manual' | 'same-brand' | 'same-category'
 }
 
-function mapProductToRelated(prod: Record<string, unknown>, source: RelatedProductData['source']): RelatedProductData {
-  const pricing = prod.pricing as Record<string, unknown> | undefined
-  const catObj = prod.primaryCategory && typeof prod.primaryCategory === 'object'
-    ? prod.primaryCategory as Record<string, unknown>
-    : null
-  const primaryImageObj = prod.primaryImage && typeof prod.primaryImage === 'object'
-    ? prod.primaryImage as Record<string, unknown>
-    : null
-  return {
-    name: prod.name as string,
-    slug: prod.slug as string,
-    categorySlug: (catObj?.slug as string) || 'products',
-    sku: prod.sku as string,
-    imageUrl: (primaryImageObj?.url as string) || (prod.externalImageUrl as string) || undefined,
-    price: pricing?.basePrice as number | undefined,
-    currency: (pricing?.currency as string) || 'USD',
-    source,
-  }
-}
-
-async function getRelatedProducts(
+// Get related products using PostgreSQL
+async function getRelatedProductsFromDB(
   productId: string,
-  categoryId: string,
-  brandId: string | null,
+  categoryId: string | null,
   basePrice: number | undefined
-) {
+): Promise<RelatedProductData[]> {
   const MAX_PRODUCTS = 8
   const results: RelatedProductData[] = []
   const seenIds = new Set<string>([productId])
+  const pool = await createPool()
 
   try {
-    const payload = await getPayload({ config })
-
-    // 1. Manual related products (highest priority)
-    const currentProduct = await payload.findByID({
-      collection: 'products',
-      id: productId,
-      depth: 2,
-    })
-    const manualRelated = currentProduct?.relatedProducts as unknown[] | undefined
-    if (manualRelated && Array.isArray(manualRelated)) {
-      for (const rel of manualRelated) {
-        if (results.length >= MAX_PRODUCTS) break
-        const prod = typeof rel === 'object' ? rel as Record<string, unknown> : null
-        if (prod && prod.id && prod.status === 'published' && !seenIds.has(prod.id as string)) {
-          seenIds.add(prod.id as string)
-          results.push(mapProductToRelated(prod, 'manual'))
-        }
-      }
-    }
-
-    // 2. Same brand products (medium priority)
-    if (brandId && results.length < MAX_PRODUCTS) {
-      const sameBrand = await payload.find({
-        collection: 'products',
-        where: {
-          brand: { equals: brandId },
-          status: { equals: 'published' },
-          id: { not_in: [...seenIds] },
-        },
-        limit: MAX_PRODUCTS - results.length,
-        depth: 1,
-      })
-      for (const p of sameBrand.docs) {
-        if (results.length >= MAX_PRODUCTS) break
-        const prod = p as unknown as Record<string, unknown>
-        if (!seenIds.has(prod.id as string)) {
-          seenIds.add(prod.id as string)
-          results.push(mapProductToRelated(prod, 'same-brand'))
-        }
-      }
-    }
-
-    // 3. Same category products (fill remaining slots)
+    // 1. Same category products (primary source)
     if (categoryId && results.length < MAX_PRODUCTS) {
-      // Build where clause with optional price range
-      const whereClause = {
-        primaryCategory: { equals: categoryId },
-        status: { equals: 'published' },
-        id: { not_in: [...seenIds] },
-        ...(basePrice && basePrice > 0 ? {
-          'pricing.basePrice': {
-            greater_than_equal: basePrice * 0.5,
-            less_than_equal: basePrice * 2,
-          }
-        } : {}),
-      }
-
-      const sameCategory = await payload.find({
-        collection: 'products',
-        where: whereClause as any,
-        limit: MAX_PRODUCTS - results.length,
-        depth: 1,
-        sort: '-createdAt',
-      })
-
-      for (const p of sameCategory.docs) {
+      const sameCategory = await pool.query(
+        `SELECT p.id, p.name, p.slug, p.sku, p.pricing, p.images, p.external_image_url,
+                c.slug as category_slug
+         FROM products p
+         LEFT JOIN categories c ON p.primary_category_id = c.id
+         WHERE p.primary_category_id = $1 AND p.status = 'published' AND p.id != $2
+         ORDER BY p.created_at DESC
+         LIMIT $3`,
+        [categoryId, productId, MAX_PRODUCTS]
+      )
+      
+      for (const row of sameCategory.rows) {
         if (results.length >= MAX_PRODUCTS) break
-        const prod = p as unknown as Record<string, unknown>
-        if (!seenIds.has(prod.id as string)) {
-          seenIds.add(prod.id as string)
-          results.push(mapProductToRelated(prod, 'same-category'))
-        }
-      }
-
-      // If still not enough, get any from same category (ignore price filter)
-      if (results.length < MAX_PRODUCTS) {
-        const moreFromCategory = await payload.find({
-          collection: 'products',
-          where: {
-            primaryCategory: { equals: categoryId },
-            status: { equals: 'published' },
-            id: { not_in: [...seenIds] },
-          },
-          limit: MAX_PRODUCTS - results.length,
-          depth: 1,
-          sort: '-createdAt',
+        const pricing = row.pricing as { basePrice?: number; currency?: string } | null
+        const images = row.images as { url: string }[] | null
+        const imageUrl = images?.[0]?.url || row.external_image_url || undefined
+        results.push({
+          name: row.name,
+          slug: row.slug,
+          categorySlug: row.category_slug || 'products',
+          sku: row.sku || '',
+          imageUrl,
+          price: pricing?.basePrice,
+          currency: pricing?.currency || 'USD',
+          source: 'same-category',
         })
-        for (const p of moreFromCategory.docs) {
-          if (results.length >= MAX_PRODUCTS) break
-          const prod = p as unknown as Record<string, unknown>
-          if (!seenIds.has(prod.id as string)) {
-            seenIds.add(prod.id as string)
-            results.push(mapProductToRelated(prod, 'same-category'))
-          }
-        }
+        seenIds.add(row.id)
+      }
+    }
+
+    // 2. Get more products if needed (fallback to any products)
+    if (results.length < MAX_PRODUCTS) {
+      const moreProducts = await pool.query(
+        `SELECT p.id, p.name, p.slug, p.sku, p.pricing, p.images, p.external_image_url,
+                c.slug as category_slug
+         FROM products p
+         LEFT JOIN categories c ON p.primary_category_id = c.id
+         WHERE p.status = 'published' AND p.id != $1
+         ORDER BY p.created_at DESC
+         LIMIT $2`,
+        [productId, MAX_PRODUCTS - results.length]
+      )
+      
+      for (const row of moreProducts.rows) {
+        if (results.length >= MAX_PRODUCTS) break
+        if (seenIds.has(row.id)) continue
+        const pricing = row.pricing as { basePrice?: number; currency?: string } | null
+        const images = row.images as { url: string }[] | null
+        const imageUrl = images?.[0]?.url || row.external_image_url || undefined
+        results.push({
+          name: row.name,
+          slug: row.slug,
+          categorySlug: row.category_slug || 'products',
+          sku: row.sku || '',
+          imageUrl,
+          price: pricing?.basePrice,
+          currency: pricing?.currency || 'USD',
+          source: 'same-category',
+        })
+        seenIds.add(row.id)
       }
     }
 
     return results
-  } catch {
+  } catch (err) {
+    console.error('Error fetching related products:', err)
     return []
+  } finally {
+    await pool.end()
   }
+}
+
+// Generate product FAQs
+function generateProductFAQs(product: {
+  name: string
+  brand_name: string | null
+  category_name: string | null
+  specifications: unknown | null
+  min_order_quantity: number | null
+  pricing: unknown | null
+  availability: string | null
+  lead_time: string | null
+  purchase_mode?: string
+}) {
+  const faqs: { question: string; answer: string }[] = []
+  const { name, brand_name, category_name, specifications, min_order_quantity, pricing, availability, lead_time } = product
+  
+  // 1. Specification / Selection question
+  const specs = (specifications as { label: string; value: string }[] | null) || []
+  const specSummary = specs.slice(0, 3).map(s => `${s.label}: ${s.value}`).join(', ')
+  faqs.push({
+    question: `What are the key specifications of ${name}?`,
+    answer: specSummary
+      ? `Key specifications for ${name}: ${specSummary}. See the full specification table on this page for complete details.`
+      : `Full specifications for ${name} are listed in the specification table on this page.${category_name ? ` This product is in the ${category_name} category.` : ''}`,
+  })
+
+  // 2. Pricing / MOQ question
+  const moq = min_order_quantity || 1
+  const tiered = (pricing as { tieredPricing?: { minQty: number; unitPrice: number }[] })?.tieredPricing
+  const basePrice = (pricing as { basePrice?: number })?.basePrice
+  faqs.push({
+    question: `What is the minimum order quantity and bulk pricing for ${name}?`,
+    answer: `The minimum order quantity is ${moq} unit(s).${basePrice ? ` Unit price starts at $${basePrice}.` : ''}${tiered && tiered.length > 1 ? ' Volume discounts are available — see the tiered pricing table on this page for exact breakpoints.' : ''}`,
+  })
+
+  // 3. Lead time / Availability
+  const availabilityText = availability === 'in-stock'
+    ? 'This product is currently in stock and ships within 1-2 business days.'
+    : availability === 'made-to-order'
+    ? 'This product is made to order.'
+    : 'Contact us for current availability.'
+  faqs.push({
+    question: `What is the lead time and availability for ${name}?`,
+    answer: `${availabilityText}${lead_time ? ` Estimated lead time: ${lead_time}.` : ''}`,
+  })
+
+  // 4. Brand / Compatibility question - brands not in DB, skip
+  // if (brand_name && brand_name !== 'Unbranded') {
+  //   faqs.push({
+  //     question: `Is this a genuine ${brand_name} product?`,
+  //     answer: `Yes, this is a genuine ${brand_name} product. Browse our brand page for the full selection.`,
+  //   })
+  // }
+
+  return faqs
 }
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params
-  const product = await getProductBySlug(slug)
+  const { product } = await getProductBySlug(slug)
+  
   if (!product) return { title: 'Product Not Found' }
 
-  const brandName = product.brand && typeof product.brand === 'object'
-    ? (product.brand as unknown as Record<string, unknown>).name as string
-    : ''
-  const catObj = product.primaryCategory && typeof product.primaryCategory === 'object'
-    ? product.primaryCategory as unknown as Record<string, unknown>
-    : null
-  const catSlug = catObj?.slug as string || 'products'
-
   const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'https://machrio.com'
-  const p = product as unknown as Record<string, unknown>
-  const externalImageUrl = p.externalImageUrl as string | undefined
-  const primaryImageObj = p.primaryImage && typeof p.primaryImage === 'object'
-    ? p.primaryImage as Record<string, unknown>
-    : null
-  const imageUrl = primaryImageObj?.url as string || externalImageUrl || ''
+  const catSlug = product.category_slug || 'products'
+  
+  // Get image URL from pricing or images field
+  let imageUrl = ''
+  try {
+    const images = product.images as { url?: string }[] | null
+    imageUrl = images?.[0]?.url || product.external_image_url || ''
+  } catch {
+    imageUrl = product.external_image_url || ''
+  }
+  
   const fullImageUrl = imageUrl ? (imageUrl.startsWith('http') ? imageUrl : `${serverUrl}${imageUrl}`) : ''
-
-  const title = `${product.name}${brandName ? ` - ${brandName}` : ''} | Machrio`
-  const description = product.shortDescription || `Shop ${product.name} from Machrio. Industrial-grade products with transparent pricing.`
+  const title = `${product.name} | Machrio`
+  const description = product.short_description || `Shop ${product.name} from Machrio. Industrial-grade products with transparent pricing.`
 
   return {
     title,
@@ -396,7 +366,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
       description,
       url: `${serverUrl}/product/${catSlug}/${slug}/`,
       ...(fullImageUrl && {
-        images: [{ url: fullImageUrl, width: 800, height: 800, alt: product.name as string }],
+        images: [{ url: fullImageUrl, width: 800, height: 800, alt: product.name }],
       }),
     },
     twitter: {
@@ -410,154 +380,111 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   }
 }
 
-function generateProductFAQs(product: Record<string, unknown>) {
-  const faqs: { question: string; answer: string }[] = []
-  const name = product.name as string
-  const brandObj = product.brand && typeof product.brand === 'object' ? product.brand as Record<string, unknown> : null
-  const brandName = brandObj?.name as string || ''
-
-  // 1. Specification / Selection question — helps buyer confirm fit
-  const catObj = product.primaryCategory && typeof product.primaryCategory === 'object'
-    ? product.primaryCategory as Record<string, unknown>
-    : null
-  const catName = catObj?.name as string || ''
-  const specifications = (product.specifications as Record<string, unknown>[] | undefined) || []
-  const specSummary = specifications.slice(0, 3).map(s => `${s.label}: ${s.value}`).join(', ')
-  faqs.push({
-    question: `What are the key specifications of ${name}?`,
-    answer: specSummary
-      ? `Key specifications for ${name}: ${specSummary}. See the full specification table on this page for complete details. If you need help confirming whether this product fits your application, use our AI Sourcing Assistant or submit an RFQ with your requirements.`
-      : `Full specifications for ${name} are listed in the specification table on this page.${catName ? ` This product is in the ${catName} category.` : ''} If you need help confirming fit for your application, use our AI Sourcing Assistant or submit an RFQ with your requirements.`,
-  })
-
-  // 2. Pricing / MOQ question — core procurement concern
-  const moq = product.minOrderQuantity as number || 1
-  const pricing = product.pricing as Record<string, unknown> | undefined
-  const tiered = pricing?.tieredPricing as Record<string, unknown>[] | undefined
-  const basePrice = pricing?.basePrice as number | undefined
-  faqs.push({
-    question: `What is the minimum order quantity and bulk pricing for ${name}?`,
-    answer: `The minimum order quantity is ${moq} unit(s).${basePrice ? ` Unit price starts at $${basePrice}.` : ''}${tiered && tiered.length > 1 ? ' Volume discounts are available — see the tiered pricing table on this page for exact breakpoints.' : ''} For quantities beyond what is listed, or for custom pricing on recurring orders, submit an RFQ and our team will respond within 24 hours.`,
-  })
-
-  // 3. Lead time / Availability — the #1 operational concern
-  const availability = product.availability as string || 'contact'
-  const leadTime = product.leadTime as string || ''
-  const availabilityText = availability === 'in-stock'
-    ? 'This product is currently in stock and ships within 1-2 business days.'
-    : availability === 'made-to-order'
-    ? 'This product is made to order.'
-    : 'Contact us for current availability.'
-  faqs.push({
-    question: `What is the lead time and availability for ${name}?`,
-    answer: `${availabilityText}${leadTime ? ` Estimated lead time: ${leadTime}.` : ''} For bulk orders, lead times may vary based on quantity — request a quote for a confirmed delivery date. We can also arrange scheduled recurring shipments to prevent stockouts.`,
-  })
-
-  // 4. Brand / Compatibility question — if brand is known
-  if (brandName && brandName !== 'Unbranded') {
-    faqs.push({
-      question: `Is this a genuine ${brandName} product? Do you carry other ${brandName} items?`,
-      answer: `Yes, this is a genuine ${brandName} product sourced through authorized supply channels. We carry a range of ${brandName} products across our catalog — browse our ${brandName} brand page for the full selection. If you need a specific ${brandName} part number that is not listed, submit an RFQ and our sourcing team will locate it for you.`,
-    })
-  }
-
-  // 5. RFQ / Custom quote question — for both purchase modes
-  const purchaseMode = product.purchaseMode as string
-  if (purchaseMode === 'both' || purchaseMode === 'rfq-only') {
-    faqs.push({
-      question: `How do I get a custom quote for ${name}?`,
-      answer: `Click the "Request a Quote" button on this page or visit our RFQ form. Include your required quantity, delivery location, and any special requirements (specific certifications, custom packaging, recurring delivery schedule). Our sourcing team typically responds within 24 hours with pricing, confirmed lead time, and shipping options.`,
-    })
-  }
-
-  return faqs
-}
-
 export default async function ProductPage({ params }: ProductPageProps) {
   const { slug } = await params
-  const product = await getProductBySlug(slug)
+  const { product } = await getProductBySlug(slug)
+  
   if (!product) notFound()
 
-  const p = product as unknown as Record<string, unknown>
   const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'https://machrio.com'
 
   // Resolve brand
-  const brandObj = p.brand && typeof p.brand === 'object' ? p.brand as Record<string, unknown> : null
-  const brandName = brandObj?.name as string || 'Unbranded'
-  const brandSlug = brandObj?.slug as string || ''
+  const brandName = 'Industrial' // Brands not in database yet
 
   // Resolve category hierarchy
-  const catObj = p.primaryCategory && typeof p.primaryCategory === 'object'
-    ? p.primaryCategory as Record<string, unknown>
-    : null
-  const catName = catObj?.name as string || ''
-  const catSlug = catObj?.slug as string || ''
-  const parentCatObj = catObj?.parent && typeof catObj.parent === 'object'
-    ? catObj.parent as Record<string, unknown>
-    : null
-  const parentCatName = parentCatObj?.name as string || ''
-  const parentCatSlug = parentCatObj?.slug as string || ''
+  const catSlug = product.category_slug || ''
+  const catName = product.category_name || ''
+  const parentCatSlug = product.parent_category_slug || ''
+  const parentCatName = product.parent_category_name || ''
 
   // Image
-  const externalImageUrl = p.externalImageUrl as string | undefined
-  const primaryImageObj = p.primaryImage && typeof p.primaryImage === 'object'
-    ? p.primaryImage as Record<string, unknown>
-    : null
-  const imageUrl = primaryImageObj?.url as string || externalImageUrl || ''
+  let imageUrl = ''
+  try {
+    const images = product.images as { url?: string }[] | null
+    imageUrl = images?.[0]?.url || product.external_image_url || ''
+  } catch {
+    imageUrl = product.external_image_url || ''
+  }
 
   // Pricing
-  const pricing = p.pricing as Record<string, unknown> | undefined
-  const basePrice = pricing?.basePrice as number | undefined
-  const priceUnit = pricing?.priceUnit as string | undefined
-  const currency = (pricing?.currency as string) || 'USD'
-  const packageQty = p.packageQty as number | undefined
-  const unitPrice = packageQty && packageQty > 1 && basePrice ? (basePrice / packageQty) : null
-  const tieredPricing = pricing?.tieredPricing as Record<string, unknown>[] | undefined
-  const compareAtPrice = pricing?.compareAtPrice as number | undefined
+  const pricing = product.pricing as {
+    basePrice?: number
+    priceUnit?: string
+    currency?: string
+    compareAtPrice?: number
+    tieredPricing?: { minQty: number; maxQty?: number; unitPrice: number }[]
+  } | null
+  const basePrice = pricing?.basePrice
+  const priceUnit = pricing?.priceUnit
+  const currency = pricing?.currency || 'USD'
+  const compareAtPrice = pricing?.compareAtPrice
+
+  // 自动生成阶梯定价（如果没有数据）
+  // 1-10件: 原价, 11-50件: 95折, 51+件: 9折
+  const tieredPricing = pricing?.tieredPricing || (basePrice ? [
+    { minQty: 1, maxQty: 10, unitPrice: basePrice },
+    { minQty: 11, maxQty: 50, unitPrice: Math.round(basePrice * 0.95 * 100) / 100 },
+    { minQty: 51, unitPrice: Math.round(basePrice * 0.9 * 100) / 100 },
+  ] : null)
 
   // Specs
-  const specifications = (p.specifications as Record<string, unknown>[] | undefined) || []
-
-  // Shipping & Facets (for enhanced schema)
-  const shippingInfo = p.shippingInfo as Record<string, unknown> | undefined
-  const weightKg = shippingInfo?.weight as number | undefined
-  const facets = p.facets as Record<string, unknown> | undefined
-  const materials = facets?.material as string[] | undefined
+  const specifications = (product.specifications as { label: string; value: string; unit?: string }[] | null) || []
 
   // Description
-  const descriptionHtml = lexicalToHtml(p.fullDescription)
-  const shortDescription = (p.shortDescription as string) || ''
+  const descriptionHtml = lexicalToHtml(product.full_description)
+  const shortDescription = product.short_description || ''
 
-  const purchaseMode = (p.purchaseMode as string) || 'both'
-  const availability = (p.availability as string) || 'contact'
-  const leadTime = (p.leadTime as string) || ''
-  const moq = (p.minOrderQuantity as number) || 1
+  const purchaseMode = (product as unknown as { purchaseMode?: string }).purchaseMode || 'both'
+  const availability = product.availability || 'contact'
+  const leadTime = product.lead_time || ''
+  const moq = product.min_order_quantity || 1
 
   const canBuyOnline = (purchaseMode === 'both' || purchaseMode === 'buy-online') && basePrice
   const canRFQ = purchaseMode === 'both' || purchaseMode === 'rfq-only'
 
-  // FAQs
-  const productFAQs = generateProductFAQs(p)
+  // Extract package quantity from product name (e.g., "Pkg Qty 2")
+  const packageQtyFromName = (() => {
+    const match = product.name.match(/pkg\s*qty\.?\s*(\d+)/i)
+    return match ? parseInt(match[1], 10) : null
+  })()
+  
+  // Get package quantity from database field, fallback to name extraction
+  const packageQty = product.package_qty || packageQtyFromName
+  
+  // Calculate per-item price if there's a package quantity
+  const perItemPrice = packageQty && basePrice ? (basePrice / packageQty) : null
 
-  // Related products: manual > same brand > same category
-  const categoryId = catObj?.id as string || ''
-  const brandId = brandObj?.id as string || null
-  const relatedProducts = await getRelatedProducts(p.id as string, categoryId, brandId, basePrice)
+  // FAQs
+  const productFAQs = generateProductFAQs({
+    name: product.name,
+    brand_name: null,
+    category_name: catName,
+    specifications: product.specifications,
+    min_order_quantity: product.min_order_quantity,
+    pricing: product.pricing,
+    availability: product.availability,
+    lead_time: product.lead_time,
+    purchase_mode: purchaseMode,
+  })
+
+  // Related products: same category
+  const relatedProducts = await getRelatedProductsFromDB(
+    product.id,
+    product.category_id,
+    basePrice
+  )
 
   // Schema.org - Enhanced Product Schema with complete offers
-  // Note: aggregateRating and review are intentionally omitted until real review system is launched (P3)
   const productSchema = {
     '@context': 'https://schema.org',
     '@type': 'Product',
-    name: p.name,
+    name: product.name,
     description: shortDescription,
-    sku: p.sku,
-    mpn: p.sku,
-    ...(p.gtin13 ? { gtin13: p.gtin13 as string } : {}),
+    sku: product.sku,
+    mpn: product.sku,
     brand: {
       '@type': 'Brand',
-      name: brandName,
-      ...(brandSlug && { url: `${serverUrl}/brand/${brandSlug}` }),
+      name: 'Industrial',
     },
     ...(catName && { category: catName }),
     ...(imageUrl && { image: imageUrl }),
@@ -566,7 +493,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
           '@type': 'Offer',
           price: basePrice,
           priceCurrency: currency,
-          // Extended to 90 days for SEO stability
           priceValidUntil: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
           availability: availability === 'in-stock'
             ? 'https://schema.org/InStock'
@@ -575,10 +501,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
             : availability === 'out-of-stock'
             ? 'https://schema.org/OutOfStock'
             : 'https://schema.org/LimitedAvailability',
-          url: `${serverUrl}/product/${catSlug || 'products'}/${p.slug}/`,
+          url: `${serverUrl}/product/${catSlug || 'products'}/${product.slug}/`,
           seller: { '@type': 'Organization', name: 'Machrio', url: serverUrl },
           itemCondition: 'https://schema.org/NewCondition',
-          // Shipping details for Rich Results
           shippingDetails: {
             '@type': 'OfferShippingDetails',
             shippingRate: {
@@ -606,7 +531,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
               },
             },
           },
-          // Return policy for trust signals
           hasMerchantReturnPolicy: {
             '@type': 'MerchantReturnPolicy',
             applicableCountry: 'US',
@@ -619,7 +543,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
       : {
           '@type': 'Offer',
           availability: 'https://schema.org/InStock',
-          url: `${serverUrl}/product/${catSlug || 'products'}/${p.slug}/`,
+          url: `${serverUrl}/product/${catSlug || 'products'}/${product.slug}/`,
           seller: { '@type': 'Organization', name: 'Machrio', url: serverUrl },
           itemCondition: 'https://schema.org/NewCondition',
           hasMerchantReturnPolicy: {
@@ -630,21 +554,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
             returnMethod: 'https://schema.org/ReturnByMail',
           },
         },
-    ...(weightKg && {
-      weight: {
-        '@type': 'QuantitativeValue',
-        value: weightKg,
-        unitCode: 'KGM',
-      },
-    }),
-    ...(materials && materials.length > 0 && {
-      material: materials.join(', '),
-    }),
     ...(specifications.length > 0 && {
       additionalProperty: specifications.map((spec) => ({
         '@type': 'PropertyValue',
-        name: spec.label as string,
-        value: `${spec.value as string}${spec.unit ? ` ${spec.unit}` : ''}`,
+        name: spec.label,
+        value: `${spec.value}${spec.unit ? ` ${spec.unit}` : ''}`,
       })),
     }),
   }
@@ -658,7 +572,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
     ...(catSlug
       ? [{ label: catName, href: `/category/${catSlug}` }]
       : []),
-    { label: p.name as string },
+    { label: product.name },
   ]
 
   return (
@@ -672,7 +586,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
         {/* Image */}
         <div className="rounded-lg border border-secondary-200 bg-secondary-50">
           {imageUrl ? (
-            <ImageZoom src={imageUrl} alt={p.name as string} />
+            <ImageZoom src={imageUrl} alt={product.name} />
           ) : (
             <div className="flex aspect-square items-center justify-center text-secondary-300">
               <svg className="h-32 w-32" fill="currentColor" viewBox="0 0 20 20">
@@ -685,14 +599,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
         {/* Product info */}
         <div>
           <p className="text-sm text-secondary-500">
-            {brandSlug ? (
-              <Link href={`/brand/${brandSlug}`} className="hover:text-primary-700">{brandName}</Link>
-            ) : (
-              <span>{brandName}</span>
-            )}
-            {' '}&middot; SKU: {p.sku as string}
+            <span>{brandName}</span>
+            {' '}&middot; SKU: {product.sku || 'N/A'}
           </p>
-          <h1 className="mt-1 text-2xl font-bold text-secondary-900">{p.name as string}</h1>
+          <h1 className="mt-1 text-2xl font-bold text-secondary-900">{product.name}</h1>
           {shortDescription && (
             <p className="mt-3 text-sm leading-relaxed text-secondary-600">{shortDescription}</p>
           )}
@@ -712,14 +622,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
           <div className="mt-6 rounded-lg border border-secondary-200 bg-secondary-50 p-4">
             {canBuyOnline ? (
               <>
-                <div className="flex items-baseline gap-2">
+                <div className="flex items-baseline gap-2 flex-wrap">
                   <span className="text-2xl font-bold text-secondary-900">
-                    ${basePrice.toFixed(2)}
+                    ${basePrice!.toFixed(2)}
                   </span>
-                  {unitPrice && (
-                    <span className="text-sm text-secondary-500">(${unitPrice.toFixed(2)}/each)</span>
-                  )}
-                  {!unitPrice && priceUnit && (
+                  {priceUnit && (
                     <span className="text-sm text-secondary-500">/ {priceUnit}</span>
                   )}
                   {compareAtPrice && (
@@ -728,10 +635,23 @@ export default async function ProductPage({ params }: ProductPageProps) {
                     </span>
                   )}
                 </div>
+                {/* Per item price */}
+                {perItemPrice && packageQty && packageQty > 1 && (
+                  <div className="mt-2 text-sm font-medium text-secondary-600">
+                    ${perItemPrice.toFixed(2)}/each
+                    <span className="text-secondary-400 ml-2">({packageQty} pcs/pkg)</span>
+                  </div>
+                )}
               </>
             ) : (
               <div>
                 <span className="text-lg font-semibold text-amber-600">Contact for Price</span>
+                {/* Show per-item price even for RFQ products */}
+                {perItemPrice && packageQty && packageQty > 1 && (
+                  <div className="mt-2 text-sm text-secondary-600">
+                    ${basePrice!.toFixed(2)} total = ${perItemPrice.toFixed(2)}/each ({packageQty} pcs/pkg)
+                  </div>
+                )}
                 <p className="mt-1 text-xs text-secondary-500">
                   This product requires a custom quote. Submit an RFQ for best pricing.
                 </p>
@@ -743,9 +663,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
           {canBuyOnline && tieredPricing && tieredPricing.length > 1 && (
             <TieredPricingTable
               tiers={tieredPricing.map(t => ({
-                minQty: t.minQty as number,
-                maxQty: t.maxQty as number | undefined,
-                unitPrice: t.unitPrice as number,
+                minQty: t.minQty,
+                maxQty: t.maxQty,
+                unitPrice: t.unitPrice,
               }))}
               basePrice={basePrice}
               currency={currency}
@@ -758,10 +678,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
             {canBuyOnline && (
               <AddToCartButton
                 product={{
-                  productId: p.id as string,
-                  sku: p.sku as string,
-                  name: p.name as string,
-                  slug: p.slug as string,
+                  productId: product.id,
+                  sku: product.sku || '',
+                  name: product.name,
+                  slug: product.slug,
                   categorySlug: catSlug || 'products',
                   image: imageUrl || undefined,
                   price: basePrice,
@@ -773,12 +693,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
             {canRFQ && (
               <div className="flex gap-2">
                 <AddToQuoteButton
-                  sku={p.sku as string}
-                  productName={p.name as string}
+                  sku={product.sku || ''}
+                  productName={product.name}
                   quantity={moq}
                   className="flex-1"
                 />
-                <Link href={`/rfq?product=${p.sku}`} className="btn-accent flex-1 text-center">
+                <Link href={`/rfq?product=${product.sku}`} className="btn-accent flex-1 text-center">
                   Request Quote
                 </Link>
               </div>
@@ -798,12 +718,12 @@ export default async function ProductPage({ params }: ProductPageProps) {
             <table className="w-full">
               <tbody>
                 {specifications.map((spec, i) => (
-                  <tr key={spec.label as string} className={i % 2 === 0 ? 'bg-secondary-50' : 'bg-white'}>
+                  <tr key={spec.label} className={i % 2 === 0 ? 'bg-secondary-50' : 'bg-white'}>
                     <td className="px-4 py-2.5 text-sm font-medium text-secondary-700 w-1/3">
-                      {spec.label as string}
+                      {spec.label}
                     </td>
                     <td className="px-4 py-2.5 text-sm text-secondary-600">
-                      {spec.value as string}{spec.unit ? ` ${spec.unit}` : ''}
+                      {spec.value}{spec.unit ? ` ${spec.unit}` : ''}
                     </td>
                   </tr>
                 ))}
@@ -831,25 +751,25 @@ export default async function ProductPage({ params }: ProductPageProps) {
       <RelatedProducts products={relatedProducts} />
 
       {/* Frequently Bought Together (order co-occurrence) */}
-      <BoughtTogether productId={p.id as string} />
+      <BoughtTogether productId={product.id} />
 
       {/* Also Viewed (collaborative filtering) */}
-      <AlsoViewed productId={p.id as string} />
+      <AlsoViewed productId={product.id} />
 
       {/* Track view for server-side analytics */}
-      <TrackProductViewServer productId={p.id as string} />
+      <TrackProductViewServer productId={product.id} />
 
       {/* Recently Viewed (client-side) */}
       <TrackProductView product={{
-        name: p.name as string,
-        slug: p.slug as string,
+        name: product.name,
+        slug: product.slug,
         categorySlug: catSlug || 'products',
-        sku: p.sku as string,
+        sku: product.sku || '',
         imageUrl: imageUrl || undefined,
         price: basePrice,
         currency,
       }} />
-      <RecentlyViewed excludeSlug={p.slug as string} />
+      <RecentlyViewed excludeSlug={product.slug} />
 
       {/* FAQ Section */}
       <FAQSection faqs={productFAQs} />

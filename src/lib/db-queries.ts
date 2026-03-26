@@ -8,7 +8,7 @@ import pg from 'pg'
 const { Pool } = pg
 
 // 创建连接池 - 带超时配置
-function createPool() {
+export function createPool() {
   const connectionString = process.env.DATABASE_URI
   if (!connectionString) {
     throw new Error('DATABASE_URI environment variable is not set')
@@ -242,6 +242,91 @@ export async function getL1CategoriesWithCounts(): Promise<Array<{
     }
     
     return result
+  } finally {
+    await pool.end()
+  }
+}
+
+/**
+ * 根据 slug 获取单个产品信息
+ */
+export async function getProductBySlug(slug: string): Promise<{
+  product: {
+    id: string
+    name: string
+    slug: string
+    sku: string | null
+    short_description: string | null
+    full_description: unknown | null
+    pricing: unknown | null
+    images: unknown | null
+    specifications: unknown | null
+    status: string
+    availability: string | null
+    lead_time: string | null
+    min_order_quantity: number | null
+    package_qty: number | null
+    package_unit: string | null
+    external_image_url: string | null
+    category_id: string | null
+    category_slug: string | null
+    category_name: string | null
+    parent_category_slug: string | null
+    parent_category_name: string | null
+    grandparent_category_slug: string | null
+  } | null
+}> {
+  const pool = await createPool()
+
+  try {
+    // 查询产品及其分类信息
+    const result = await pool.query<{
+      id: string
+      name: string
+      slug: string
+      sku: string | null
+      short_description: string | null
+      full_description: unknown | null
+      pricing: unknown | null
+      images: unknown | null
+      specifications: unknown | null
+      status: string
+      availability: string | null
+      lead_time: string | null
+      min_order_quantity: number | null
+      package_qty: number | null
+      package_unit: string | null
+      external_image_url: string | null
+      category_id: string | null
+      category_slug: string | null
+      category_name: string | null
+      parent_category_slug: string | null
+      parent_category_name: string | null
+      grandparent_category_slug: string | null
+      brand_name: string | null
+    }>(
+      `SELECT
+        p.id, p.name, p.slug, p.sku, p.short_description, p.full_description,
+        p.pricing, p.images, p.specifications, p.status,
+        p.availability, p.lead_time, p.min_order_quantity,
+        p.package_qty, p.package_unit, p.external_image_url,
+        c.id as category_id, c.slug as category_slug, c.name as category_name,
+        pc.slug as parent_category_slug, pc.name as parent_category_name,
+        gc.slug as grandparent_category_slug
+       FROM products p
+       LEFT JOIN categories c ON p.primary_category_id = c.id
+       LEFT JOIN categories pc ON c.parent_id = pc.id
+       LEFT JOIN categories gc ON pc.parent_id = gc.id
+       WHERE p.slug = $1 AND p.status = 'published'
+       LIMIT 1`,
+      [slug]
+    )
+
+    if (result.rows.length === 0) {
+      return { product: null }
+    }
+
+    return { product: result.rows[0] }
   } finally {
     await pool.end()
   }

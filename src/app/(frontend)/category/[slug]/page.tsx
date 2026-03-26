@@ -149,7 +149,7 @@ async function getCategoryData(slug: string) {
 }
 
 // 获取分类产品
-async function getCategoryProducts(categoryId: string) {
+async function getCategoryProducts(categoryId: string, categorySlug: string) {
   const pool = getPool()
   const PRODUCTS_PER_PAGE = 24
 
@@ -172,11 +172,11 @@ async function getCategoryProducts(categoryId: string) {
     )
 
     const docs = productsResult.rows.map((p) => {
-      let imageUrl: string | null = null
+      let imageUrl: string | undefined = undefined
       if (p.images && Array.isArray(p.images) && p.images.length > 0) {
-        imageUrl = (p.images[0] as { url?: string })?.url || null
+        imageUrl = (p.images[0] as { url?: string })?.url || undefined
       }
-      let basePrice: number | null = null
+      let basePrice: number | undefined = undefined
       if (p.pricing && typeof p.pricing === 'object' && 'basePrice' in p.pricing) {
         basePrice = (p.pricing as { basePrice: number }).basePrice
       }
@@ -184,8 +184,8 @@ async function getCategoryProducts(categoryId: string) {
         id: p.id,
         name: p.name,
         slug: p.slug,
-        categorySlug: '',
-        sku: p.sku,
+        categorySlug: categorySlug,
+        sku: p.sku ?? '',
         brand: 'Industrial',
         primaryImage: imageUrl,
         shortDescription: p.short_description || '',
@@ -241,10 +241,9 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
   const isLeafCategory = children.length === 0
 
   // 只在叶子分类或 L3 分类显示产品
-  let productsResult = { docs: [], totalDocs: 0 }
-  if (isL3 || isLeafCategory) {
-    productsResult = await getCategoryProducts(category.id)
-  }
+  const productsResult = isL3 || isLeafCategory
+    ? await getCategoryProducts(category.id, slug)
+    : { docs: [], totalDocs: 0 }
 
   const breadcrumbs = [
     { label: 'Home', href: '/' },

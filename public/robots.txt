@@ -4,34 +4,11 @@
 User-agent: *
 Allow: /
 
-# Block internal search results
-Disallow: /search
-
-# Block admin and API
-Disallow: /admin/
+# Block internal API endpoints
 Disallow: /api/
 
-# Allow AI crawlers explicitly (GPTBot, Claude, etc.)
-User-agent: GPTBot
-Allow: /
-
-User-agent: ChatGPT-User
-Allow: /
-
-User-agent: Claude-Web
-Allow: /
-
-User-agent: Anthropic-AI
-Allow: /
-
-User-agent: PerplexityBot
-Allow: /
-
-User-agent: Google-Extended
-Allow: /
-
 # Sitemap location
-Sitemap: https://www.machrio.com/sitemap.xml
+Sitemap: https://machrio.com/api/sitemap
 
 # LLM-friendly site description (llmstxt.org standard)
 # https://www.machrio.com/llms.txt
