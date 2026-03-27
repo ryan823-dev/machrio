@@ -2,6 +2,7 @@ import type { MetadataRoute } from 'next'
 import { Pool } from 'pg'
 
 export const dynamic = 'force-static'
+export const revalidate = 3600 // 每小时重新生成
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'https://machrio.com'
@@ -33,38 +34,57 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${baseUrl}/industry/warehouse`, lastModified: new Date(), changeFrequency: 'monthly', priority: 0.6 },
   ]
 
-  // 直接使用 PostgreSQL 连接获取数据
+  // 如果没有数据库连接，只返回静态页面
+  if (!process.env.DATABASE_URI) {
+    console.warn('DATABASE_URI not configured, returning static pages only')
+    return staticPages
+  }
+
+  // 使用 PostgreSQL 连接获取数据
   const pool = new Pool({
     connectionString: process.env.DATABASE_URI,
     max: 2,
-    idleTimeoutMillis: 5000,
+    idleTimeoutMillis: 3000,
+    connectionTimeoutMillis: 3000,
   })
 
   try {
-    // 获取分类
-    const categoriesResult = await pool.query('SELECT slug, updated_at FROM categories ORDER BY display_order')
+    // 获取分类（带超时）
+    const categoriesResult = await Promise.race([
+      pool.query('SELECT slug, updated_at FROM categories ORDER BY display_order'),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Categories query timeout')), 5000)
+      ) as Promise<any>
+    ])
+    
     const categoryPages: MetadataRoute.Sitemap = categoriesResult.rows.map(cat => ({
       url: `${baseUrl}/category/${cat.slug}`,
       lastModified: cat.updated_at ? new Date(cat.updated_at) : new Date(),
-      changeFrequency: 'weekly',
+      changeFrequency: 'weekly' as const,
       priority: 0.7,
     }))
     staticPages.push(...categoryPages)
 
-    // 获取所有产品
-    const productsResult = await pool.query('SELECT slug, updated_at FROM products ORDER BY created_at DESC')
-    const productPages: MetadataRoute.Sitemap = productsResult.rows.map(product => {
-      // 获取产品的主分类
-      return {
-        url: `${baseUrl}/product/products/${product.slug}`,
-        lastModified: product.updated_at ? new Date(product.updated_at) : new Date(),
-        changeFrequency: 'weekly',
-        priority: 0.6,
-      }
-    })
+    // 获取所有产品（带超时）
+    const productsResult = await Promise.race([
+      pool.query('SELECT slug, updated_at FROM products ORDER BY created_at DESC'),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Products query timeout')), 10000)
+      ) as Promise<any>
+    ])
+    
+    const productPages: MetadataRoute.Sitemap = productsResult.rows.map(product => ({
+      url: `${baseUrl}/product/products/${product.slug}`,
+      lastModified: product.updated_at ? new Date(product.updated_at) : new Date(),
+      changeFrequency: 'weekly' as const,
+      priority: 0.6,
+    }))
     staticPages.push(...productPages)
+    
+    console.log(`Sitemap generated: ${staticPages.length} URLs`)
   } catch (error) {
-    console.error('获取数据失败:', error)
+    console.error('Sitemap database query failed, returning static pages only:', error)
+    // 即使失败也返回静态页面，而不是空数组
   } finally {
     await pool.end()
   }
