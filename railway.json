@@ -1,0 +1,18 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS"
+  },
+  "deploy": {
+    "startCommand": "node server.js",
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
+  },
+  "crons": [
+    {
+      "name": "remind-unpaid-orders",
+      "schedule": "0 9 * * *",
+      "command": "curl -H \"Authorization: Bearer $CRON_SECRET\" https://machrio.com/api/cron/remind-unpaid"
+    }
+  ]
+}

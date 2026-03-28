@@ -2,37 +2,49 @@
 
 从 Supabase 迁移到 Railway 后，您可以通过以下几种方式执行 SQL 命令。
 
-## 方法 1：Railway Dashboard SQL 编辑器（推荐）
+## 方法 1：使用 DBeaver（推荐，最简单）
 
-Railway 提供了内置的 SQL 编辑器，可以直接在浏览器中执行 SQL。
+DBeaver 是免费的数据库管理工具，支持 PostgreSQL，界面友好。
 
 ### 步骤：
 
-1. **打开 Railway Dashboard**
+1. **下载安装 DBeaver**
+   - 官网：https://dbeaver.io/download/
+   - 选择对应系统版本下载安装
+
+2. **获取 Railway 数据库连接信息**
    - 访问：https://railway.app/dashboard
-   - 选择您的项目（machrio）
-
-2. **进入数据库服务**
+   - 选择 machrio 项目
    - 点击 PostgreSQL 数据库服务
-   - 在左侧菜单选择 **"SQL"** 或 **"Data"** 标签
+   - 点击 **"Variables"** 标签
+   - 复制 `DATABASE_URL` 环境变量
 
-3. **执行 SQL 查询**
-   ```sql
-   -- 示例：查看所有银行帐户
-   SELECT * FROM bank_accounts;
-   
-   -- 示例：查看未付款订单
-   SELECT order_number, customer_email, total, currency, created_at 
-   FROM orders 
-   WHERE payment_status = 'unpaid' 
-   ORDER BY created_at DESC;
-   ```
+3. **在 DBeaver 中创建连接**
+   - 打开 DBeaver
+   - 点击菜单 **Database** → **New Database Connection**
+   - 选择 **PostgreSQL**
+   - 选择 **Connection by URL**
+   - 粘贴 Railway 的 `DATABASE_URL`
+   - 点击 **Test Connection** 验证
+   - 点击 **Finish** 完成
 
-4. **导出查询结果**
-   - 查询结果可以导出为 CSV 或 JSON 格式
-   - 点击 **"Export"** 按钮
+4. **执行 SQL 查询**
+   - 右键点击新创建的连接
+   - 选择 **SQL Editor** → **Open SQL Editor**
+   - 编写 SQL 并执行（Ctrl+Enter）
 
-## 方法 2：使用 psql 命令行
+```sql
+-- 示例：查看所有银行帐户
+SELECT * FROM bank_accounts;
+
+-- 示例：查看未付款订单
+SELECT order_number, customer_email, total, currency, created_at 
+FROM orders 
+WHERE payment_status = 'unpaid' 
+ORDER BY created_at DESC;
+```
+
+## 方法 2：使用 psql 命令行（适合快速查询）
 
 ### 获取数据库连接字符串
 
@@ -48,13 +60,18 @@ postgresql://postgres:[PASSWORD]@[HOST]:[PORT]/[DATABASE]
 ### 连接到数据库
 
 ```bash
-# 基本连接
-psql "postgresql://postgres:your_password@railway-host.railway.internal:5432/your_database"
+# 基本连接（Windows/Mac/Linux）
+psql "postgresql://postgres:your_password@host:port/database"
 
 # 或者设置环境变量后连接
 export DATABASE_URL="postgresql://postgres:your_password@host:port/database"
 psql $DATABASE_URL
 ```
+
+**Windows 用户如果没有 psql：**
+- 安装 PostgreSQL for Windows 会自带 psql
+- 或者使用 Git Bash 中的 psql
+- 推荐直接使用 DBeaver（方法 1）
 
 ### 常用 SQL 操作
 
