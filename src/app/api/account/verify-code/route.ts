@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@payload-config'
+import { getPool } from '@/lib/db'
 import crypto from 'crypto'
 
 export async function POST(request: Request) {
@@ -12,61 +11,52 @@ export async function POST(request: Request) {
     }
 
     const normalizedEmail = email.toLowerCase().trim()
-    const payload = await getPayload({ config })
+    const pool = getPool()
 
     // Find latest unexpired, unverified code for this email
-    const result = await payload.find({
-      collection: 'verification-codes' as any as any,
-      where: {
-        email: { equals: normalizedEmail },
-        verified: { equals: false },
-        expiresAt: { greater_than: new Date().toISOString() },
-      },
-      sort: '-createdAt',
-      limit: 1,
-    })
+    const result = await pool.query(
+      `SELECT * FROM verification_codes
+       WHERE email = $1 AND verified = false AND expires_at > NOW()
+       ORDER BY created_at DESC LIMIT 1`,
+      [normalizedEmail]
+    )
 
-    if (result.docs.length === 0) {
+    if (result.rows.length === 0) {
       return NextResponse.json({ error: 'Invalid or expired code. Please request a new one.' }, { status: 400 })
     }
 
-    const verificationDoc = result.docs[0] as any
+    const verification = result.rows[0]
 
     // Check max attempts
-    if ((verificationDoc.attempts || 0) >= 3) {
+    if ((verification.attempts || 0) >= 3) {
       return NextResponse.json({ error: 'Too many failed attempts. Please request a new code.' }, { status: 400 })
     }
 
     // Check code match
-    if (verificationDoc.code !== code) {
-      await payload.update({
-        collection: 'verification-codes' as any as any,
-        id: verificationDoc.id,
-        data: { attempts: (verificationDoc.attempts || 0) + 1 },
-      })
+    if (verification.code !== code) {
+      await pool.query(
+        `UPDATE verification_codes SET attempts = attempts + 1 WHERE id = $1`,
+        [verification.id]
+      )
       return NextResponse.json({ error: 'Invalid code. Please try again.' }, { status: 400 })
     }
 
     // Code matches - mark as verified
-    await payload.update({
-      collection: 'verification-codes' as any as any,
-      id: verificationDoc.id,
-      data: { verified: true },
-    })
+    await pool.query(
+      `UPDATE verification_codes SET verified = true WHERE id = $1`,
+      [verification.id]
+    )
 
     // Generate session token
     const token = crypto.randomBytes(32).toString('hex')
     const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
 
     // Create session
-    await payload.create({
-      collection: 'account-sessions' as any as any,
-      data: {
-        email: normalizedEmail,
-        token,
-        expiresAt,
-      },
-    })
+    await pool.query(
+      `INSERT INTO account_sessions (id, email, token, expires_at, created_at)
+       VALUES (gen_random_uuid(), $1, $2, $3, NOW())`,
+      [normalizedEmail, token, expiresAt]
+    )
 
     return NextResponse.json({ success: true, token, expiresAt })
   } catch (err) {

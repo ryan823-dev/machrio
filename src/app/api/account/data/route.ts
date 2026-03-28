@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@payload-config'
+import { getPool } from '@/lib/db'
 
 export async function GET(request: Request) {
   try {
@@ -14,82 +13,75 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
     }
 
-    const payload = await getPayload({ config })
+    const pool = getPool()
 
     // Validate session
-    const sessions = await payload.find({
-      collection: 'account-sessions' as any as any,
-      where: {
-        token: { equals: token },
-        expiresAt: { greater_than: new Date().toISOString() },
-      },
-      limit: 1,
-    })
+    const sessionResult = await pool.query(
+      `SELECT email FROM account_sessions
+       WHERE token = $1 AND expires_at > NOW()`,
+      [token]
+    )
 
-    if (sessions.docs.length === 0) {
+    if (sessionResult.rows.length === 0) {
       return NextResponse.json({ error: 'Session expired. Please sign in again.' }, { status: 401 })
     }
 
-    const email = (sessions.docs[0] as any).email
+    const email = sessionResult.rows[0].email
 
     // Fetch orders
-    const orders = await payload.find({
-      collection: 'orders',
-      where: { 'customer.email': { equals: email } },
-      sort: '-createdAt',
-      limit: 50,
-    })
+    const ordersResult = await pool.query(
+      `SELECT * FROM orders WHERE customer_email = $1 ORDER BY created_at DESC LIMIT 50`,
+      [email]
+    )
 
     // Fetch RFQs
-    const rfqs = await payload.find({
-      collection: 'rfq-submissions',
-      where: { 'customer.email': { equals: email } },
-      sort: '-createdAt',
-      limit: 50,
-    })
+    const rfqsResult = await pool.query(
+      `SELECT * FROM rfq_submissions WHERE customer_email = $1 ORDER BY submitted_at DESC NULLS LAST, created_at DESC LIMIT 50`,
+      [email]
+    )
 
     // Build profile from most recent order or RFQ
     let profile = { name: '', company: '', phone: '', email }
-    if (orders.docs.length > 0) {
-      const latestOrder = orders.docs[0] as any
+    if (ordersResult.rows.length > 0) {
+      const latestOrder = ordersResult.rows[0]
       profile = {
-        name: latestOrder.customer?.name || '',
-        company: latestOrder.customer?.company || '',
-        phone: latestOrder.customer?.phone || '',
+        name: latestOrder.customer_name || '',
+        company: latestOrder.customer_company || '',
+        phone: latestOrder.customer_phone || '',
         email,
       }
-    } else if (rfqs.docs.length > 0) {
-      const latestRfq = rfqs.docs[0] as any
+    } else if (rfqsResult.rows.length > 0) {
+      const latestRfq = rfqsResult.rows[0]
       profile = {
-        name: latestRfq.customer?.name || '',
-        company: latestRfq.customer?.company || '',
-        phone: latestRfq.customer?.phone || '',
+        name: latestRfq.customer_name || '',
+        company: latestRfq.customer_company || '',
+        phone: latestRfq.customer_phone || '',
         email,
       }
     }
 
     // Format orders for response
-    const formattedOrders = orders.docs.map((order: any) => ({
+    const formattedOrders = ordersResult.rows.map((order) => ({
       id: order.id,
-      orderNumber: order.orderNumber,
+      orderNumber: order.order_number,
       status: order.status,
-      paymentStatus: order.paymentStatus,
+      paymentStatus: order.payment_status,
       total: order.total,
-      currency: order.currency || 'USD',
+      currency: 'USD',
       itemCount: order.items?.length || 0,
-      createdAt: order.createdAt,
+      createdAt: order.created_at,
     }))
 
     // Format RFQs for response
-    const formattedRfqs = rfqs.docs.map((rfq: any) => ({
+    const formattedRfqs = rfqsResult.rows.map((rfq) => ({
       id: rfq.id,
       status: rfq.status || 'new',
-      message: rfq.inquiry?.message
-        ? rfq.inquiry.message.length > 120
-          ? rfq.inquiry.message.slice(0, 120) + '...'
-          : rfq.inquiry.message
+      message: rfq.message
+        ? rfq.message.length > 120
+          ? rfq.message.slice(0, 120) + '...'
+          : rfq.message
         : '',
-      submittedAt: rfq.submittedAt || rfq.createdAt,
+      submittedAt: rfq.submitted_at || rfq.created_at,
     }))
 
     return NextResponse.json({

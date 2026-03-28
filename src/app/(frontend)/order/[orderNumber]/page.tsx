@@ -1,7 +1,6 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { getPayload } from 'payload'
-import config from '@payload-config'
+import { getOrderByNumber } from '@/lib/db'
 import { PayPalCaptureHandler } from '@/components/payment/PayPalCaptureHandler'
 
 export const dynamic = 'force-dynamic'
@@ -11,35 +10,23 @@ interface OrderPageProps {
   searchParams: Promise<{ payment?: string }>
 }
 
-async function getOrder(orderNumber: string) {
-  try {
-    const payload = await getPayload({ config })
-    const result = await payload.find({
-      collection: 'orders',
-      where: { orderNumber: { equals: orderNumber } },
-      limit: 1,
-      depth: 0,
-    })
-    if (result.docs.length === 0) return null
-    return result.docs[0]
-  } catch {
-    return null
-  }
-}
-
 export default async function OrderConfirmationPage({ params, searchParams }: OrderPageProps) {
   const { orderNumber } = await params
   const { payment } = await searchParams
-  const order = await getOrder(orderNumber)
+  const order = await getOrderByNumber(orderNumber)
   if (!order) notFound()
 
-  const o = order as unknown as Record<string, unknown>
-  const customer = o.customer as Record<string, unknown>
-  const shipping = o.shipping as Record<string, unknown>
-  const paymentInfo = o.payment as Record<string, unknown>
-  const items = o.items as Record<string, unknown>[]
-  const isBankTransfer = paymentInfo?.method === 'bank-transfer'
-  const isPaid = o.paymentStatus === 'paid'
+  const customer = {
+    name: order.customer_name,
+    email: order.customer_email,
+    phone: order.customer_phone || '',
+    company: order.customer_company,
+  }
+  const shipping = order.shipping_address as Record<string, unknown> || {}
+  const paymentInfo = (order as any).payment_info || {}
+  const items = (order.items as Record<string, unknown>[]) || []
+  const isBankTransfer = paymentInfo.method === 'bank-transfer'
+  const isPaid = order.payment_status === 'paid'
   const paymentSuccess = payment === 'success'
 
   return (
@@ -48,7 +35,7 @@ export default async function OrderConfirmationPage({ params, searchParams }: Or
       <PayPalCaptureHandler orderNumber={orderNumber} />
       
       {/* Status banner */}
-      {paymentSuccess && paymentInfo?.method !== 'paypal' && (
+      {paymentSuccess && paymentInfo.method !== 'paypal' && (
         <div className="mb-6 rounded-lg bg-green-50 border border-green-200 p-4">
           <div className="flex items-center gap-2">
             <svg className="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -81,12 +68,12 @@ export default async function OrderConfirmationPage({ params, searchParams }: Or
         </div>
         <div className="flex gap-2">
           <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${
-            o.status === 'confirmed' || o.status === 'processing' ? 'bg-blue-100 text-blue-800' :
-            o.status === 'shipped' || o.status === 'delivered' ? 'bg-green-100 text-green-800' :
-            o.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+            order.status === 'confirmed' || order.status === 'processing' ? 'bg-blue-100 text-blue-800' :
+            order.status === 'shipped' || order.status === 'delivered' ? 'bg-green-100 text-green-800' :
+            order.status === 'cancelled' ? 'bg-red-100 text-red-800' :
             'bg-secondary-100 text-secondary-800'
           }`}>
-            {(o.status as string).charAt(0).toUpperCase() + (o.status as string).slice(1)}
+            {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
           </span>
           <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${
             isPaid ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
@@ -116,15 +103,15 @@ export default async function OrderConfirmationPage({ params, searchParams }: Or
             <div className="mt-4 border-t border-secondary-200 pt-4 space-y-1 text-sm">
               <div className="flex justify-between text-secondary-600">
                 <span>Subtotal</span>
-                <span>${(o.subtotal as number).toFixed(2)}</span>
+                <span>${order.subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-secondary-600">
                 <span>Shipping</span>
-                <span>{(o.shippingCost as number) === 0 ? 'FREE' : `$${(o.shippingCost as number).toFixed(2)}`}</span>
+                <span>{order.shipping_cost === 0 ? 'FREE' : `$${order.shipping_cost.toFixed(2)}`}</span>
               </div>
               <div className="flex justify-between font-bold text-secondary-900 pt-1 border-t border-secondary-100">
                 <span>Total</span>
-                <span>${(o.total as number).toFixed(2)} {o.currency as string}</span>
+                <span>${order.total.toFixed(2)} USD</span>
               </div>
             </div>
           </section>
@@ -133,8 +120,8 @@ export default async function OrderConfirmationPage({ params, searchParams }: Or
           <section className="rounded-lg border border-secondary-200 bg-white p-6">
             <h2 className="text-lg font-bold text-secondary-900">Shipping Address</h2>
             <div className="mt-3 text-sm text-secondary-600">
-              <p>{customer.name as string}</p>
-              <p>{customer.company as string}</p>
+              <p>{customer.name}</p>
+              <p>{customer.company}</p>
               <p>{shipping.address as string}</p>
               <p>{shipping.city as string}, {shipping.state as string} {shipping.postalCode as string}</p>
               <p>{shipping.country as string}</p>

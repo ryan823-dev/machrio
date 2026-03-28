@@ -1,22 +1,19 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { getPayload } from 'payload'
-import config from '@payload-config'
+import { getGlossaryTerms } from '@/lib/db'
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 import { StructuredData } from '@/components/shared/StructuredData'
 
-// SSR: Supabase is fast enough, no need for ISR
+// SSR: 直接查询 PostgreSQL
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
   title: 'Industrial Glossary — MRO & Supply Chain Terms | Machrio',
-  description:
-    'Definitions of key industrial terms, acronyms, and concepts used in MRO procurement, workplace safety, maintenance operations, and supply chain management.',
+  description: 'Definitions of key industrial terms, acronyms, and concepts used in MRO procurement, workplace safety, maintenance operations, and supply chain management.',
   alternates: { canonical: '/glossary/' },
   openGraph: {
     title: 'Industrial Glossary — MRO & Supply Chain Terms | Machrio',
-    description:
-      'Definitions of key industrial terms, acronyms, and concepts used in MRO procurement, workplace safety, maintenance operations, and supply chain management.',
+    description: 'Definitions of key industrial terms, acronyms, and concepts used in MRO procurement, workplace safety, maintenance operations, and supply chain management.',
   },
 }
 
@@ -38,30 +35,14 @@ const categoryColors: Record<string, string> = {
   standards: 'bg-teal-50 text-teal-700 border-teal-200',
 }
 
-async function getAllTerms() {
-  try {
-    const payload = await getPayload({ config })
-    const result = await payload.find({
-      collection: 'glossary-terms',
-      where: { status: { equals: 'published' } },
-      limit: 500,
-      sort: 'term',
-      depth: 0,
-    })
-    return result.docs
-  } catch {
-    return []
-  }
-}
-
 export default async function GlossaryPage() {
-  const terms = await getAllTerms()
+  const terms = await getGlossaryTerms(500)
   const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'https://machrio.com'
 
   // Group terms by first letter
   const grouped = new Map<string, typeof terms>()
   for (const term of terms) {
-    const letter = ((term.term as string)[0] || '#').toUpperCase()
+    const letter = (term.term?.[0] || '#').toUpperCase()
     if (!grouped.has(letter)) grouped.set(letter, [])
     grouped.get(letter)!.push(term)
   }
@@ -72,8 +53,7 @@ export default async function GlossaryPage() {
     '@context': 'https://schema.org',
     '@type': 'DefinedTermSet',
     name: 'Machrio Industrial Glossary',
-    description:
-      'Definitions of key industrial terms, acronyms, and concepts used in MRO procurement, workplace safety, and supply chain management.',
+    description: 'Definitions of key industrial terms, acronyms, and concepts used in MRO procurement, workplace safety, and supply chain management.',
     url: `${serverUrl}/glossary/`,
     hasDefinedTerm: terms.map((t) => ({
       '@type': 'DefinedTerm',
@@ -122,16 +102,16 @@ export default async function GlossaryPage() {
             </h2>
             <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {grouped.get(letter)!.map((term) => {
-                const cat = term.category as string
+                const cat = term.category || 'standards'
                 return (
                   <Link
-                    key={term.slug as string}
+                    key={term.slug}
                     href={`/glossary/${term.slug}`}
                     className="group rounded-lg border border-secondary-200 p-4 transition-shadow hover:shadow-md"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <h3 className="font-semibold text-secondary-900 group-hover:text-primary-700">
-                        {term.term as string}
+                        {term.term}
                       </h3>
                       <span
                         className={`flex-shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium ${categoryColors[cat] || 'bg-secondary-50 text-secondary-600 border-secondary-200'}`}
@@ -139,13 +119,13 @@ export default async function GlossaryPage() {
                         {categoryLabels[cat] || cat}
                       </span>
                     </div>
-                    {term.fullName && (
+                    {term.full_name && (
                       <p className="mt-1 text-xs text-secondary-500">
-                        {term.fullName as string}
+                        {term.full_name}
                       </p>
                     )}
                     <p className="mt-2 line-clamp-2 text-sm text-secondary-600">
-                      {term.definition as string}
+                      {term.definition}
                     </p>
                   </Link>
                 )

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { getPayload } from 'payload'
-import config from '@payload-config'
+import { getPool } from '@/lib/db'
 
 function getStripe() {
   const key = process.env.STRIPE_SECRET_KEY
@@ -40,21 +39,29 @@ export async function POST(req: NextRequest) {
 
     if (orderId) {
       try {
-        const payload = await getPayload({ config })
+        const pool = getPool()
 
-        await payload.update({
-          collection: 'orders',
-          id: orderId,
-          data: {
-            status: 'confirmed',
-            paymentStatus: 'paid',
-            payment: {
+        // Update order status
+        await pool.query(
+          `UPDATE orders
+           SET status = 'confirmed',
+               payment_status = 'paid',
+               payment_info = jsonb_set(
+                 COALESCE(payment_info, '{}'),
+                 '{stripe}',
+                 $1
+               ),
+               updated_at = NOW()
+           WHERE id::text = $2`,
+          [
+            JSON.stringify({
               method: 'stripe',
               stripeSessionId: session.id,
               stripePaymentIntentId: (session.payment_intent as string) || '',
-            },
-          },
-        })
+            }),
+            orderId
+          ]
+        )
 
         console.log(`Order ${orderNumber} marked as paid via Stripe`)
       } catch (err) {

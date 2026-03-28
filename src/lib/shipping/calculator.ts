@@ -1,5 +1,10 @@
-import { getPayload } from 'payload'
-import config from '@payload-config'
+import {
+  getPool,
+  getShippingMethods,
+  getShippingRates,
+  getFreeShippingRules,
+  getProductShippingInfo
+} from '@/lib/db'
 
 export interface ShippingItem {
   productId: string
@@ -54,8 +59,6 @@ export async function calculateShipping(
   const warnings: string[] = []
 
   try {
-    const payload = await getPayload({ config })
-
     // 1. Fetch product weights and processing times
     let totalWeight = 0
     let maxProcessingTime = 3 // default
@@ -63,24 +66,19 @@ export async function calculateShipping(
 
     for (const item of items) {
       try {
-        const product = await payload.findByID({
-          collection: 'products',
-          id: item.productId,
-          depth: 0,
-        })
+        const shippingInfo = await getProductShippingInfo(item.productId)
 
-        const p = product as unknown as Record<string, unknown>
-        const shippingInfo = p.shippingInfo as Record<string, unknown> | undefined
+        if (shippingInfo) {
+          const weight = shippingInfo.weight || 0
+          const processingTime = shippingInfo.processingTime ?? 3
 
-        const weight = (shippingInfo?.weight as number) || 0
-        const processingTime = (shippingInfo?.processingTime as number) ?? 3
+          if (weight === 0) {
+            missingWeightCount++
+          }
 
-        if (weight === 0) {
-          missingWeightCount++
+          totalWeight += weight * item.quantity
+          maxProcessingTime = Math.max(maxProcessingTime, processingTime)
         }
-
-        totalWeight += weight * item.quantity
-        maxProcessingTime = Math.max(maxProcessingTime, processingTime)
       } catch {
         warnings.push(`Could not fetch product ${item.productId}`)
       }
@@ -95,15 +93,9 @@ export async function calculateShipping(
     const shipDate = addDays(now, maxProcessingTime)
 
     // 3. Fetch active shipping methods
-    const methodsResult = await payload.find({
-      collection: 'shipping-methods',
-      where: { isActive: { equals: true } },
-      sort: 'sortOrder',
-      limit: 10,
-      depth: 0,
-    })
+    const methods = await getShippingMethods()
 
-    if (methodsResult.docs.length === 0) {
+    if (methods.length === 0) {
       return {
         success: false,
         country,
@@ -116,28 +108,24 @@ export async function calculateShipping(
       }
     }
 
-    // 4. Fetch free shipping rules
-    const freeShippingResult = await payload.find({
-      collection: 'free-shipping-rules',
-      where: { isActive: { equals: true } },
-      limit: 50,
-      depth: 1,
-    })
+    // 4. Fetch all rates and free shipping rules
+    const [allRates, freeShippingRules] = await Promise.all([
+      getShippingRates(),
+      getFreeShippingRules(),
+    ])
 
     // 5. Calculate cost for each method
     const methodQuotes: ShippingMethodQuote[] = []
 
-    for (const method of methodsResult.docs) {
-      const m = method as unknown as Record<string, unknown>
-      const methodId = m.id as string
-      const methodCode = m.code as string
-      const methodName = m.name as string
-      const transitDays = m.transitDays as number
-
+    for (const method of methods) {
       // Look up rate: first try exact country, then fallback to OTHER
-      let rate = await findRate(payload, methodId, country)
+      let rate = allRates.find(r =>
+        r.shipping_method_id === method.id && r.country_code === country
+      )
       if (!rate) {
-        rate = await findRate(payload, methodId, 'OTHER')
+        rate = allRates.find(r =>
+          r.shipping_method_id === method.id && r.country_code === 'OTHER'
+        )
       }
 
       if (!rate) {
@@ -145,10 +133,10 @@ export async function calculateShipping(
         continue
       }
 
-      const baseWeight = (rate.baseWeight as number) || 0
-      const baseRate = (rate.baseRate as number) || 0
-      const additionalRate = (rate.additionalRate as number) || 0
-      const handlingFee = (rate.handlingFee as number) || 0
+      const baseWeight = rate.base_weight || 0
+      const baseRate = rate.base_rate || 0
+      const additionalRate = rate.additional_rate || 0
+      const handlingFee = rate.handling_fee || 0
 
       const overageWeight = Math.max(0, totalWeight - baseWeight)
       const overageCost = overageWeight * additionalRate
@@ -162,9 +150,13 @@ export async function calculateShipping(
       let freeShippingThreshold: number | undefined
       let gapToFreeShipping: number | undefined
 
-      const matchingRule = findFreeShippingRule(freeShippingResult.docs, methodId, country)
+      const matchingRule = freeShippingRules.find(rule =>
+        rule.shipping_method_id === method.id &&
+        (rule.country_code === country || !rule.country_code)
+      )
+
       if (matchingRule) {
-        const threshold = (matchingRule as unknown as Record<string, unknown>).minimumAmount as number
+        const threshold = matchingRule.minimum_amount
         freeShippingThreshold = threshold
         if (subtotal >= threshold) {
           isFreeShipping = true
@@ -174,12 +166,12 @@ export async function calculateShipping(
         }
       }
 
-      const deliveryDate = addDays(shipDate, transitDays)
+      const deliveryDate = addDays(shipDate, method.transit_days)
 
       methodQuotes.push({
-        code: methodCode,
-        name: methodName,
-        transitDays,
+        code: method.code,
+        name: method.name,
+        transitDays: method.transit_days,
         estimatedDeliveryDate: formatDate(deliveryDate),
         cost,
         breakdown: {
@@ -220,42 +212,4 @@ export async function calculateShipping(
       error: err instanceof Error ? err.message : 'Shipping calculation failed',
     }
   }
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-async function findRate(payload: any, methodId: string, countryCode: string) {
-  const result = await payload.find({
-    collection: 'shipping-rates',
-    where: {
-      and: [
-        { shippingMethod: { equals: methodId } },
-        { countryCode: { equals: countryCode } },
-        { isActive: { equals: true } },
-      ],
-    },
-    limit: 1,
-    depth: 0,
-  })
-  return result.docs.length > 0 ? (result.docs[0] as unknown as Record<string, unknown>) : null
-}
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function findFreeShippingRule(rules: any[], methodId: string, country: string) {
-  // First try country-specific rule
-  const countryRule = rules.find((r) => {
-    const rule = r as unknown as Record<string, unknown>
-    const ruleMethod = rule.shippingMethod as Record<string, unknown> | string
-    const ruleMethodId = typeof ruleMethod === 'string' ? ruleMethod : (ruleMethod?.id as string)
-    return ruleMethodId === methodId && (rule.countryCode as string) === country
-  })
-  if (countryRule) return countryRule
-
-  // Fallback to global rule (no countryCode or empty)
-  const globalRule = rules.find((r) => {
-    const rule = r as unknown as Record<string, unknown>
-    const ruleMethod = rule.shippingMethod as Record<string, unknown> | string
-    const ruleMethodId = typeof ruleMethod === 'string' ? ruleMethod : (ruleMethod?.id as string)
-    return ruleMethodId === methodId && !rule.countryCode
-  })
-  return globalRule || null
 }

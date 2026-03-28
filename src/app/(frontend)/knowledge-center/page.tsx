@@ -1,9 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { getPayload } from 'payload'
-import config from '@payload-config'
+import { getArticles } from '@/lib/db/articles'
 
-// SSR: Supabase is fast enough, no need for ISR
+// SSR: 直接查询 PostgreSQL
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
@@ -81,27 +80,6 @@ function getCoverTheme(title: string) {
   return { gradient: 'from-primary-500 to-primary-400', icon: '📋' }
 }
 
-async function getArticles(category?: string, page = 1, limit = 12) {
-  try {
-    const payload = await getPayload({ config })
-    const where: any = { status: { equals: 'published' } }
-    if (category) {
-      where.category = { equals: category }
-    }
-    const result = await payload.find({
-      collection: 'articles',
-      where,
-      limit,
-      page,
-      sort: '-publishedAt',
-      depth: 1,
-    })
-    return result
-  } catch {
-    return { docs: [], totalDocs: 0, totalPages: 0, page: 1, hasNextPage: false, hasPrevPage: false }
-  }
-}
-
 // ---------------------------------------------------------------------------
 // Page Component
 // ---------------------------------------------------------------------------
@@ -114,7 +92,10 @@ export default async function KnowledgeCenterPage({
   const sp = await searchParams
   const selectedCategory = sp.category || undefined
   const currentPage = parseInt(sp.page || '1', 10)
-  const articlesResult = await getArticles(selectedCategory, currentPage)
+  const articlesResult = await getArticles({
+    category: selectedCategory,
+    page: currentPage,
+  })
   const articles = articlesResult.docs
   const hasArticles = articles.length > 0
 
@@ -187,17 +168,16 @@ export default async function KnowledgeCenterPage({
         {hasArticles ? (
           <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {articles.map((article) => {
-              const featuredImage = article.featuredImage as Record<string, unknown> | null
-              const imageUrl = featuredImage?.url as string | undefined
-              const publishedAt = article.publishedAt as string | undefined
-              const cat = article.category as string
-              const readingTime = article.readingTime as number || 3
-              const title = article.title as string
+              const imageUrl = article.featured_image || article.hero_image_id
+              const publishedAt = article.published_at
+              const cat = article.category || 'buying-guide'
+              const readingTime = article.reading_time || 3
+              const title = article.title
               const coverTheme = getCoverTheme(title)
 
               return (
                 <Link
-                  key={article.slug as string}
+                  key={article.slug}
                   href={`/knowledge-center/${article.slug}`}
                   className="group flex flex-col overflow-hidden rounded-lg border border-secondary-200 bg-white transition-shadow hover:shadow-md"
                 >
@@ -224,10 +204,10 @@ export default async function KnowledgeCenterPage({
                       <span className="text-xs text-secondary-400">{readingTime} min</span>
                     </div>
                     <h3 className="mt-2 line-clamp-2 text-sm font-semibold text-secondary-800 group-hover:text-primary-700">
-                      {article.title as string}
+                      {article.title}
                     </h3>
                     <p className="mt-1 line-clamp-2 text-xs text-secondary-500">
-                      {article.excerpt as string}
+                      {article.excerpt || article.description}
                     </p>
                     {publishedAt && (
                       <time className="mt-auto pt-3 text-xs text-secondary-400" dateTime={publishedAt}>

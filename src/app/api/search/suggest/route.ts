@@ -1,25 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@payload-config'
-
-function getSearchVariants(query: string): string[] {
-  const variants = [query]
-  const lower = query.toLowerCase()
-
-  if (lower.endsWith('ies') && query.length > 4) {
-    variants.push(query.slice(0, -3) + 'y')
-  } else if (lower.endsWith('es') && query.length > 3) {
-    variants.push(query.slice(0, -2))
-  }
-  if (lower.endsWith('s') && query.length > 2) {
-    variants.push(query.slice(0, -1))
-  }
-  if (!lower.endsWith('s')) {
-    variants.push(query + 's')
-  }
-
-  return [...new Set(variants)]
-}
+import { getPool, getProductSuggestions, getCategories } from '@/lib/db'
 
 export async function GET(request: NextRequest) {
   const query = request.nextUrl.searchParams.get('q')?.trim()
@@ -29,110 +9,49 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const payload = await getPayload({ config })
-    const searchTerms = getSearchVariants(query)
+    const pool = getPool()
+    const searchTerm = `%${query.toLowerCase()}%`
 
-    // Build product search conditions
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const productConditions: any[] = []
-    for (const term of searchTerms) {
-      productConditions.push({ name: { contains: term } })
-      productConditions.push({ sku: { contains: term } })
-      productConditions.push({ shortDescription: { contains: term } })
-    }
-
-    // Run all three queries in parallel
-    const [productResults, categoryResults, brandResults] = await Promise.all([
+    // Run all queries in parallel
+    const [productResults, categoryResults] = await Promise.all([
       // Products: top 4
-      payload.find({
-        collection: 'products',
-        where: {
-          and: [
-            { status: { equals: 'published' } },
-            { or: productConditions },
-          ],
-        },
-        limit: 4,
-        sort: '-createdAt',
-        depth: 1,
-      }),
+      pool.query(
+        `SELECT name, slug, sku, external_image_url, short_description
+         FROM products
+         WHERE status = 'published'
+         AND (LOWER(name) LIKE $1 OR LOWER(sku) LIKE $1 OR LOWER(short_description) LIKE $1)
+         ORDER BY created_at DESC LIMIT 4`,
+        [searchTerm]
+      ),
       // Categories: top 3 matching by name
-      payload.find({
-        collection: 'categories',
-        where: {
-          or: searchTerms.map(term => ({ name: { contains: term } })),
-        },
-        limit: 3,
-        sort: 'displayOrder',
-      }),
-      // Brands: top 2 matching by name
-      payload.find({
-        collection: 'brands',
-        where: {
-          or: searchTerms.map(term => ({ name: { contains: term } })),
-        },
-        limit: 2,
-      }),
+      pool.query(
+        `SELECT name, slug FROM categories
+         WHERE LOWER(name) LIKE $1
+         ORDER BY display_order, name LIMIT 3`,
+        [searchTerm]
+      ),
     ])
 
     // Map products
-    const products = productResults.docs.map((doc) => {
-      const p = doc as unknown as Record<string, unknown>
-      const category = p.primaryCategory as Record<string, unknown> | null
-      const pricing = p.pricing as Record<string, unknown> | null
-      const brand = p.brand as Record<string, unknown> | null
-      return {
-        name: p.name as string,
-        slug: p.slug as string,
-        categorySlug: (category?.slug as string) || 'products',
-        sku: p.sku as string,
-        imageUrl: (p.externalImageUrl as string) || null,
-        price: (pricing?.basePrice as number) || null,
-        currency: (pricing?.currency as string) || 'USD',
-        brand: brand ? (brand.name as string) : null,
-      }
-    })
+    const products = productResults.rows.map((p) => ({
+      name: p.name,
+      slug: p.slug,
+      categorySlug: 'products',
+      sku: p.sku,
+      imageUrl: p.external_image_url || null,
+      price: null,
+      currency: 'USD',
+      brand: null,
+    }))
 
-    // Map categories with product counts
-    const categories = await Promise.all(
-      categoryResults.docs.map(async (doc) => {
-        const cat = doc as unknown as Record<string, unknown>
-        let productCount = 0
-        try {
-          // Count products in this category and its children
-          const children = await payload.find({
-            collection: 'categories',
-            where: { parent: { equals: cat.id } },
-            limit: 100,
-          })
-          const allIds = [cat.id as string, ...children.docs.map(c => c.id)]
-          const count = await payload.count({
-            collection: 'products',
-            where: {
-              primaryCategory: { in: allIds },
-              status: { equals: 'published' },
-            },
-          })
-          productCount = count.totalDocs
-        } catch { /* ignore */ }
-        return {
-          name: cat.name as string,
-          slug: cat.slug as string,
-          productCount,
-        }
-      })
-    )
+    // Map categories
+    const categories = categoryResults.rows.map((c) => ({
+      name: c.name,
+      slug: c.slug,
+      productCount: 0, // Skip count for performance
+    }))
 
-    // Map brands
-    const brands = brandResults.docs.map((doc) => {
-      const b = doc as unknown as Record<string, unknown>
-      return {
-        name: b.name as string,
-        slug: b.slug as string,
-      }
-    })
-
-    return NextResponse.json({ products, categories, brands })
+    return NextResponse.json({ products, categories, brands: [] })
   } catch (error) {
     console.error('Suggest error:', error)
     return NextResponse.json({ products: [], categories: [], brands: [] })

@@ -1,16 +1,15 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { getPayload } from 'payload'
-import config from '@payload-config'
+import { getGlossaryTermBySlug } from '@/lib/db'
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 import { StructuredData } from '@/components/shared/StructuredData'
 
-// SSR: Supabase is fast enough, no need for ISR
+// SSR: 直接查询 PostgreSQL
 export const dynamic = 'force-dynamic'
 
 // ---------------------------------------------------------------------------
-// Lexical richText → HTML (same pattern as knowledge-center)
+// Lexical richText → HTML
 // ---------------------------------------------------------------------------
 
 function extractChildren(children: unknown[]): string {
@@ -86,28 +85,6 @@ const categoryColors: Record<string, string> = {
 }
 
 // ---------------------------------------------------------------------------
-// Data fetching
-// ---------------------------------------------------------------------------
-
-async function getTermBySlug(slug: string) {
-  try {
-    const payload = await getPayload({ config })
-    const result = await payload.find({
-      collection: 'glossary-terms',
-      where: {
-        slug: { equals: slug },
-        status: { equals: 'published' },
-      },
-      limit: 1,
-      depth: 1,
-    })
-    return result.docs[0] || null
-  } catch {
-    return null
-  }
-}
-
-// ---------------------------------------------------------------------------
 // Metadata
 // ---------------------------------------------------------------------------
 
@@ -117,13 +94,12 @@ export async function generateMetadata({
   params: Promise<{ term: string }>
 }): Promise<Metadata> {
   const { term: slug } = await params
-  const term = await getTermBySlug(slug)
+  const term = await getGlossaryTermBySlug(slug)
 
   if (!term) return { title: 'Term Not Found | Machrio' }
 
-  const seo = term.seo as Record<string, unknown> | undefined
-  const title = (seo?.metaTitle as string) || `What is ${term.term}? — Industrial Glossary | Machrio`
-  const description = (seo?.metaDescription as string) || (term.definition as string) || ''
+  const title = `What is ${term.term}? — Industrial Glossary | Machrio`
+  const description = term.definition || ''
 
   return {
     title,
@@ -144,15 +120,13 @@ export default async function GlossaryTermPage({
   params: Promise<{ term: string }>
 }) {
   const { term: slug } = await params
-  const term = await getTermBySlug(slug)
+  const term = await getGlossaryTermBySlug(slug)
 
   if (!term) notFound()
 
   const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'https://machrio.com'
-  const category = term.category as string
+  const category = term.category || 'standards'
   const contentHtml = lexicalToHtml(term.content)
-  const relatedTerms = (term.relatedTerms as Record<string, unknown>[] | null) || []
-  const relatedCategories = (term.relatedCategories as Record<string, unknown>[] | null) || []
 
   // DefinedTerm Schema
   const definedTermSchema = {
@@ -160,7 +134,7 @@ export default async function GlossaryTermPage({
     '@type': 'DefinedTerm',
     name: term.term,
     description: term.definition,
-    ...(term.fullName && { alternateName: term.fullName }),
+    ...(term.full_name && { alternateName: term.full_name }),
     url: `${serverUrl}/glossary/${slug}/`,
     inDefinedTermSet: {
       '@type': 'DefinedTermSet',
@@ -169,27 +143,27 @@ export default async function GlossaryTermPage({
     },
   }
 
-  // FAQPage Schema — "What is X?" pattern
+  // FAQPage Schema
   const faqSchema = {
     '@context': 'https://schema.org',
     '@type': 'FAQPage',
     mainEntity: [
       {
         '@type': 'Question',
-        name: `What is ${term.term}${term.fullName ? ` (${term.fullName})` : ''}?`,
+        name: `What is ${term.term}${term.full_name ? ` (${term.full_name})` : ''}?`,
         acceptedAnswer: {
           '@type': 'Answer',
-          text: term.definition as string,
+          text: term.definition,
         },
       },
-      ...(term.fullName
+      ...(term.full_name
         ? [
             {
               '@type': 'Question',
               name: `What does ${term.term} stand for?`,
               acceptedAnswer: {
                 '@type': 'Answer',
-                text: `${term.term} stands for ${term.fullName}.`,
+                text: `${term.term} stands for ${term.full_name}.`,
               },
             },
           ]
@@ -200,7 +174,7 @@ export default async function GlossaryTermPage({
   const breadcrumbs = [
     { label: 'Home', href: '/' },
     { label: 'Glossary', href: '/glossary' },
-    { label: term.term as string },
+    { label: term.term },
   ]
 
   return (
@@ -215,11 +189,11 @@ export default async function GlossaryTermPage({
           {categoryLabels[category] || category}
         </span>
         <h1 className="mt-3 text-3xl font-bold text-secondary-900">
-          What is {term.term as string}?
+          What is {term.term}?
         </h1>
-        {term.fullName && (
+        {term.full_name && (
           <p className="mt-1 text-lg text-secondary-500">
-            {term.term as string} — {term.fullName as string}
+            {term.term} — {term.full_name}
           </p>
         )}
       </header>
@@ -228,7 +202,7 @@ export default async function GlossaryTermPage({
       <div className="mt-6 rounded-lg border border-primary-200 bg-primary-50/50 p-5">
         <h2 className="text-sm font-semibold uppercase tracking-wider text-primary-700">Definition</h2>
         <p data-speakable="definition" className="mt-2 text-base leading-relaxed text-secondary-800">
-          {term.definition as string}
+          {term.definition}
         </p>
       </div>
 
@@ -238,53 +212,6 @@ export default async function GlossaryTermPage({
           className="prose prose-secondary mt-8 max-w-none prose-headings:scroll-mt-20 prose-h2:text-xl prose-h2:font-bold prose-h3:text-lg prose-h3:font-semibold prose-p:leading-relaxed prose-a:text-primary-600 prose-a:no-underline hover:prose-a:underline prose-li:text-secondary-700"
           dangerouslySetInnerHTML={{ __html: contentHtml }}
         />
-      )}
-
-      {/* Related Terms */}
-      {relatedTerms.length > 0 && (
-        <section className="mt-10">
-          <h2 className="text-lg font-semibold text-secondary-800">Related Terms</h2>
-          <div className="mt-3 flex flex-wrap gap-2">
-            {relatedTerms.map((rt) => {
-              const r = rt as Record<string, unknown>
-              if (!r.slug) return null
-              return (
-                <Link
-                  key={r.slug as string}
-                  href={`/glossary/${r.slug}`}
-                  className="rounded-lg border border-secondary-200 px-4 py-2 text-sm font-medium text-secondary-700 transition-colors hover:border-primary-400 hover:bg-primary-50 hover:text-primary-700"
-                >
-                  {r.term as string}
-                </Link>
-              )
-            })}
-          </div>
-        </section>
-      )}
-
-      {/* Related Product Categories */}
-      {relatedCategories.length > 0 && (
-        <section className="mt-8">
-          <h2 className="text-lg font-semibold text-secondary-800">Shop Related Categories</h2>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {relatedCategories.map((rc) => {
-              const c = rc as Record<string, unknown>
-              if (!c.slug) return null
-              return (
-                <Link
-                  key={c.slug as string}
-                  href={`/category/${c.slug}`}
-                  className="flex items-center gap-3 rounded-lg border border-secondary-200 p-4 transition-shadow hover:shadow-sm"
-                >
-                  <svg className="h-5 w-5 flex-shrink-0 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                  </svg>
-                  <span className="text-sm font-medium text-secondary-800">{c.name as string}</span>
-                </Link>
-              )
-            })}
-          </div>
-        </section>
       )}
 
       {/* Back to glossary + CTA */}

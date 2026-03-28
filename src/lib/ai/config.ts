@@ -222,20 +222,10 @@ async function getCategorySlugsForAI(): Promise<string[]> {
   }
 
   try {
-    const { getPayload } = await import('payload')
-    const payloadConfig = (await import('@payload-config')).default
-    const payload = await getPayload({ config: payloadConfig })
-    const result = await payload.find({
-      collection: 'categories',
-      where: {
-        or: [
-          { parent: { exists: false } },
-          { parent: { equals: null } },
-        ],
-      },
-      limit: 50,
-    })
-    cachedCategorySlugs = result.docs.map(c => c.slug).filter(Boolean) as string[]
+    // Use direct PostgreSQL query instead of Payload CMS
+    const { getCategories } = await import('@/lib/db')
+    const categories = await getCategories({ parentId: null, limit: 50 })
+    cachedCategorySlugs = categories.map(c => c.slug).filter(Boolean)
     cacheTimestamp = now
     return cachedCategorySlugs
   } catch {

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@payload-config'
+import { getPool } from '@/lib/db'
 import { sendVerificationCodeEmail } from '@/lib/email'
 
 export async function POST(request: Request) {
@@ -12,38 +11,30 @@ export async function POST(request: Request) {
     }
 
     const normalizedEmail = email.toLowerCase().trim()
-    const payload = await getPayload({ config })
+    const pool = getPool()
 
     // Rate limit: max 3 codes per email per 15 min
     const fifteenMinAgo = new Date(Date.now() - 15 * 60 * 1000).toISOString()
-    const recentCodes = await payload.find({
-      collection: 'verification-codes' as any,
-      where: {
-        email: { equals: normalizedEmail },
-        createdAt: { greater_than: fifteenMinAgo },
-      },
-      limit: 0,
-    })
+    const recentResult = await pool.query(
+      `SELECT COUNT(*) as count FROM verification_codes
+       WHERE email = $1 AND created_at > $2`,
+      [normalizedEmail, fifteenMinAgo]
+    )
 
-    if (recentCodes.totalDocs >= 3) {
-      // Still return success to prevent email enumeration
+    if (parseInt(recentResult.rows[0]?.count || '0', 10) >= 3) {
       return NextResponse.json({ success: true, message: 'Verification code sent to your email' })
     }
 
     // Generate 6-digit code
     const code = String(Math.floor(100000 + Math.random() * 900000))
+    const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString()
 
     // Store in database
-    await payload.create({
-      collection: 'verification-codes' as any,
-      data: {
-        email: normalizedEmail,
-        code,
-        expiresAt: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
-        attempts: 0,
-        verified: false,
-      },
-    })
+    await pool.query(
+      `INSERT INTO verification_codes (id, email, code, expires_at, created_at)
+       VALUES (gen_random_uuid(), $1, $2, $3, NOW())`,
+      [normalizedEmail, code, expiresAt]
+    )
 
     // Send email
     await sendVerificationCodeEmail(normalizedEmail, code)

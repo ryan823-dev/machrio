@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@payload-config'
+import { createRFQSubmission } from '@/lib/db'
 import { sendRFQConfirmationEmail, sendRFQNotificationEmail } from '@/lib/email'
 
 export async function POST(request: Request) {
@@ -36,28 +35,15 @@ export async function POST(request: Request) {
     if (data.timeline) parts.push(`Timeline: ${data.timeline}`)
     const fullMessage = parts.join('\n\n')
 
-    // Store in Payload CMS
+    // Store in database
     try {
-      const payload = await getPayload({ config })
-      await payload.create({
-        collection: 'rfq-submissions',
-        draft: false,
-        data: {
-          customer: {
-            name: data.name,
-            email: data.email,
-            phone: data.phone || '',
-            company: data.company,
-          },
-          inquiry: {
-            message: fullMessage,
-          },
-          source: {
-            page: data.sourcePage || '/rfq',
-          },
-          status: 'new' as const,
-          submittedAt: new Date().toISOString(),
-        },
+      await createRFQSubmission({
+        customerName: data.name,
+        customerEmail: data.email,
+        customerPhone: data.phone,
+        customerCompany: data.company,
+        message: fullMessage,
+        sourcePage: data.sourcePage,
       })
     } catch (dbError) {
       console.error('Failed to store RFQ submission:', dbError)

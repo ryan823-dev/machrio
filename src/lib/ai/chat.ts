@@ -1,8 +1,6 @@
 // AI Chat Service - handles communication with LLM providers
 import { getProviderConfig, SYSTEM_PROMPT, getToolDefinitions } from './config'
-import { getPayload } from 'payload'
-import config from '@payload-config'
-import type { Where } from 'payload'
+import { searchProducts, getPool } from '@/lib/db'
 
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant' | 'tool'
@@ -26,7 +24,7 @@ export interface ChatCompletionResponse {
   finish_reason: string
 }
 
-// Fallback product data (used when Payload returns no results)
+// Fallback product data (used when database returns no results)
 const fallbackProducts = [
   // Safety
   { id: '1', name: 'Nitrile Exam Gloves, Powder-Free, Blue', sku: 'MRO-SF-001', price: '$12.99', priceUnit: 'per box of 100', inStock: true, availability: 'in-stock' },
@@ -56,64 +54,30 @@ const fallbackProducts = [
   { id: '17', name: 'PTFE Thread Seal Tape, 1/2" x 520" (10 pack)', sku: 'MRO-PP-002', price: '$9.99', priceUnit: 'per 10-pack', inStock: true, availability: 'in-stock' },
 ]
 
-// Search products from Payload CMS with fallback
-async function searchProductsFromPayload(query: string, category?: string, limit: number = 5) {
+// Search products from database with fallback
+async function searchProductsFromDB(query: string, _category?: string, limit: number = 5) {
   try {
-    const payload = await getPayload({ config })
-    
-    // Build where clause for search
-    let whereClause: Where = {
-      status: { equals: 'published' },
+    const result = await searchProducts(query, { limit })
+
+    if (result.docs.length > 0) {
+      return result.docs.map(p => ({
+        id: p.id,
+        name: p.name,
+        sku: p.sku,
+        slug: p.slug || '',
+        categorySlug: 'products',
+        imageUrl: p.external_image_url || undefined,
+        price: 'Contact for pricing',
+        rawPrice: 0,
+        priceUnit: 'each',
+        currency: 'USD',
+        inStock: p.availability === 'in-stock',
+        availability: p.availability || 'contact',
+      }))
     }
-    
-    // If we have a query, search by name using 'like' for case-insensitive partial matching
-    if (query && query.trim()) {
-      const words = query.split(/\s+/).filter(w => w.length > 2)
-      const searchWord = words[0] || query
-      
-      whereClause = {
-        and: [
-          { status: { equals: 'published' } },
-          { name: { like: searchWord } },
-        ],
-      }
-    }
-    
-    const results = await payload.find({
-      collection: 'products',
-      where: whereClause,
-      limit,
-      depth: 1,
-    })
-    
-    // If Payload returns results, use them
-    if (results.docs.length > 0) {
-      return results.docs.map(p => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const prod = p as any
-        const catObj = prod.primaryCategory && typeof prod.primaryCategory === 'object'
-          ? prod.primaryCategory : null
-        const imgObj = prod.primaryImage && typeof prod.primaryImage === 'object'
-          ? prod.primaryImage : null
-        return {
-          id: p.id,
-          name: p.name,
-          sku: p.sku,
-          slug: prod.slug || '',
-          categorySlug: catObj?.slug || 'products',
-          imageUrl: imgObj?.url || prod.externalImageUrl || undefined,
-          price: p.pricing?.basePrice ? `$${p.pricing.basePrice.toFixed(2)}` : 'Contact for pricing',
-          rawPrice: p.pricing?.basePrice || 0,
-          priceUnit: p.pricing?.priceUnit || 'each',
-          currency: p.pricing?.currency || 'USD',
-          inStock: p.availability === 'in-stock',
-          availability: p.availability,
-        }
-      })
-    }
-    
-    // Fallback to mock data if Payload returns no results (e.g., server needs restart after seeding)
-    console.log('[AI Search] Using fallback data - restart server if database was recently seeded')
+
+    // Fallback to mock data if database returns no results
+    console.log('[AI Search] Using fallback data')
     return searchFallbackProducts(query, limit)
   } catch (error) {
     console.error('[AI Search] Error, using fallback:', error)
@@ -125,60 +89,25 @@ async function searchProductsFromPayload(query: string, category?: string, limit
 function searchFallbackProducts(query: string, limit: number = 5) {
   const q = query.toLowerCase()
   const words = q.split(/\s+/).filter(w => w.length > 1)
-  
+
   // Expand common MRO search terms to match product names
   const expandedTerms: Record<string, string[]> = {
-    // Safety
     'ppe': ['gloves', 'safety', 'hat', 'glasses'],
     'safety': ['gloves', 'safety', 'hat', 'glasses'],
     'protection': ['gloves', 'safety', 'hat', 'glasses'],
-    'hearing': ['ear'],
-    'eye': ['glasses'],
-    'head': ['hat'],
-    // Adhesives
     'adhesive': ['glue', 'sealant', 'tape'],
-    'adhesives': ['glue', 'sealant', 'tape'],
-    'bond': ['glue'],
-    'seal': ['sealant', 'tape', 'ptfe'],
     'tape': ['tape', 'packing'],
-    // Material Handling
     'handling': ['cart', 'pallet', 'jack'],
-    'warehouse': ['cart', 'pallet'],
-    'move': ['cart', 'pallet', 'jack'],
-    'dolly': ['cart'],
-    // Packaging
     'packaging': ['box', 'tape', 'shipping'],
     'shipping': ['box', 'tape', 'shipping'],
-    'box': ['box', 'corrugated'],
-    'pack': ['box', 'tape'],
-    // Cleaning
     'cleaning': ['degreaser', 'mop', 'clean'],
-    'janitorial': ['degreaser', 'mop', 'clean'],
-    'clean': ['degreaser', 'mop'],
-    'grease': ['degreaser'],
-    'floor': ['mop'],
-    // Lighting
     'lighting': ['led', 'light', 'bay'],
-    'light': ['led', 'light', 'bay'],
-    'led': ['led', 'light'],
-    // Power Transmission
     'bearing': ['bearing', 'groove'],
-    'belt': ['belt'],
-    'transmission': ['bearing', 'belt'],
-    'motor': ['bearing'],
-    // Tool Storage
     'workbench': ['workbench', 'steel'],
-    'bench': ['workbench'],
-    'storage': ['workbench', 'cabinet'],
-    'cabinet': ['workbench', 'cabinet'],
-    // Plumbing
     'plumbing': ['pump', 'sump', 'ptfe', 'tape'],
     'pump': ['pump', 'sump'],
-    'pipe': ['ptfe', 'tape', 'thread'],
-    'valve': ['pump'],
-    'water': ['pump', 'sump'],
   }
-  
+
   // Collect all search terms
   const searchTerms = [...words]
   for (const term of words) {
@@ -189,44 +118,54 @@ function searchFallbackProducts(query: string, limit: number = 5) {
   if (expandedTerms[q]) {
     searchTerms.push(...expandedTerms[q])
   }
-  
+
   const results = fallbackProducts.filter(p => {
     const nameLower = p.name.toLowerCase()
     return searchTerms.some(word => nameLower.includes(word)) || nameLower.includes(q)
   })
-  
+
   return results.slice(0, limit)
 }
 
 // Find product by ID or SKU
 async function findProductById(productId: string) {
   try {
-    const payload = await getPayload({ config })
-    
+    const pool = getPool()
+
     // Try to find by SKU first
-    const bySkuResult = await payload.find({
-      collection: 'products',
-      where: {
-        sku: { equals: productId },
-      },
-      limit: 1,
-    })
-    
-    if (bySkuResult.docs.length > 0) {
-      return bySkuResult.docs[0]
+    const skuResult = await pool.query(
+      `SELECT * FROM products WHERE sku = $1 LIMIT 1`,
+      [productId]
+    )
+
+    if (skuResult.rows.length > 0) {
+      const p = skuResult.rows[0]
+      return {
+        id: p.id,
+        name: p.name,
+        sku: p.sku,
+        price: 'Contact for pricing',
+      }
     }
-    
+
     // Try to find by ID
-    try {
-      const byIdResult = await payload.findByID({
-        collection: 'products',
-        id: productId,
-      })
-      return byIdResult
-    } catch {
-      // Fallback to mock data
-      return fallbackProducts.find(p => p.id === productId || p.sku === productId)
+    const idResult = await pool.query(
+      `SELECT * FROM products WHERE id::text = $1 LIMIT 1`,
+      [productId]
+    )
+
+    if (idResult.rows.length > 0) {
+      const p = idResult.rows[0]
+      return {
+        id: p.id,
+        name: p.name,
+        sku: p.sku,
+        price: 'Contact for pricing',
+      }
     }
+
+    // Fallback to mock data
+    return fallbackProducts.find(p => p.id === productId || p.sku === productId)
   } catch (error) {
     console.error('[AI Search] Error finding product:', error)
     return fallbackProducts.find(p => p.id === productId || p.sku === productId)
@@ -240,34 +179,30 @@ export async function executeToolCall(name: string, args: Record<string, unknown
       const query = (args.query as string || '').toLowerCase()
       const category = args.category as string | undefined
       const limit = (args.limit as number) || 5
-      
-      const results = await searchProductsFromPayload(query, category, limit)
-      
+
+      const results = await searchProductsFromDB(query, category, limit)
+
       if (results.length === 0) {
         return JSON.stringify({ success: true, products: [], message: 'No products found matching your search.' })
       }
-      
+
       return JSON.stringify({
         success: true,
         products: results,
       })
     }
-    
+
     case 'add_to_cart': {
       const productId = args.product_id as string
       const quantity = args.quantity as number || 1
       const product = await findProductById(productId)
-      
+
       if (!product) {
         return JSON.stringify({ success: false, error: 'Product not found' })
       }
-      
-      // Handle both Payload product and fallback product shapes
-      const productAny = product as Record<string, unknown>
-      const unitPrice = 'pricing' in product && product.pricing
-        ? ((product.pricing as Record<string, unknown>)?.basePrice as number || 0) 
-        : parseFloat(String(productAny.price || '0').replace('$', ''))
-      
+
+      const unitPrice = parseFloat(String((product as any).price || '0').replace('$', ''))
+
       return JSON.stringify({
         success: true,
         message: `Added ${quantity}x ${product.name} to cart`,
@@ -281,12 +216,12 @@ export async function executeToolCall(name: string, args: Record<string, unknown
         },
       })
     }
-    
+
     case 'create_rfq_item': {
       const productName = args.product_name as string
       const quantity = args.quantity as number
       const notes = args.notes as string || ''
-      
+
       return JSON.stringify({
         success: true,
         message: `Added to RFQ list: ${quantity}x ${productName}`,
@@ -297,7 +232,7 @@ export async function executeToolCall(name: string, args: Record<string, unknown
         },
       })
     }
-    
+
     case 'get_shipping_info': {
       return JSON.stringify({
         success: true,
@@ -310,7 +245,7 @@ export async function executeToolCall(name: string, args: Record<string, unknown
         },
       })
     }
-    
+
     case 'get_return_policy': {
       return JSON.stringify({
         success: true,
@@ -322,7 +257,7 @@ export async function executeToolCall(name: string, args: Record<string, unknown
         },
       })
     }
-    
+
     default:
       return JSON.stringify({ success: false, error: `Unknown function: ${name}` })
   }
@@ -334,11 +269,11 @@ export async function createChatCompletion(
   useTools: boolean = true
 ): Promise<ChatCompletionResponse> {
   const config = getProviderConfig()
-  
+
   if (!config.apiKey) {
     throw new Error('AI API key not configured')
   }
-  
+
   const requestBody: Record<string, unknown> = {
     model: config.model,
     messages: [
@@ -348,13 +283,13 @@ export async function createChatCompletion(
     temperature: 0.7,
     max_tokens: 1024,
   }
-  
+
   if (useTools) {
     const toolDefs = await getToolDefinitions()
     requestBody.tools = toolDefs
     requestBody.tool_choice = 'auto'
   }
-  
+
   const response = await fetch(`${config.baseURL}/chat/completions`, {
     method: 'POST',
     headers: {
@@ -364,20 +299,20 @@ export async function createChatCompletion(
     },
     body: JSON.stringify(requestBody),
   })
-  
+
   if (!response.ok) {
     const error = await response.text()
     console.error('AI API error:', error)
     throw new Error(`AI API error: ${response.status}`)
   }
-  
+
   const data = await response.json()
   const choice = data.choices?.[0]
-  
+
   if (!choice) {
     throw new Error('No response from AI')
   }
-  
+
   return {
     content: choice.message?.content || '',
     tool_calls: choice.message?.tool_calls,
@@ -394,11 +329,11 @@ export async function processConversation(
     ...conversationHistory,
     { role: 'user', content: userMessage },
   ]
-  
+
   // Get initial response
   let completion = await createChatCompletion(messages)
   const toolResults: Record<string, unknown>[] = []
-  
+
   // Handle tool calls if any
   if (completion.tool_calls && completion.tool_calls.length > 0) {
     // Add assistant message with tool calls
@@ -407,18 +342,18 @@ export async function processConversation(
       content: completion.content || '',
       tool_calls: completion.tool_calls,
     })
-    
-    // Execute each tool call (now async)
+
+    // Execute each tool call
     for (const toolCall of completion.tool_calls) {
       const args = JSON.parse(toolCall.function.arguments)
       const result = await executeToolCall(toolCall.function.name, args)
-      
+
       toolResults.push({
         tool: toolCall.function.name,
         args,
         result: JSON.parse(result),
       })
-      
+
       // Add tool result to messages
       messages.push({
         role: 'tool',
@@ -426,11 +361,11 @@ export async function processConversation(
         tool_call_id: toolCall.id,
       })
     }
-    
+
     // Get final response after tool execution
     completion = await createChatCompletion(messages, false)
   }
-  
+
   return {
     response: completion.content,
     toolResults: toolResults.length > 0 ? toolResults : undefined,

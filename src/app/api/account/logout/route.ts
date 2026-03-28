@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@payload-config'
+import { getPool } from '@/lib/db'
 
 export async function POST(request: Request) {
   try {
@@ -10,21 +9,13 @@ export async function POST(request: Request) {
     }
 
     const token = authHeader.slice(7)
-    const payload = await getPayload({ config })
+    const pool = getPool()
 
-    // Find and delete the session
-    const sessions = await payload.find({
-      collection: 'account-sessions' as any as any,
-      where: { token: { equals: token } },
-      limit: 1,
-    })
-
-    if (sessions.docs.length > 0) {
-      await payload.delete({
-        collection: 'account-sessions' as any as any,
-        id: sessions.docs[0].id,
-      })
-    }
+    // Delete the session
+    await pool.query(
+      `DELETE FROM account_sessions WHERE token = $1`,
+      [token]
+    )
 
     return NextResponse.json({ success: true })
   } catch (err) {

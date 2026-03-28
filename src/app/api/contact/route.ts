@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@payload-config'
+import { createContactSubmission } from '@/lib/db'
 import { sendContactConfirmationEmail, sendContactNotificationEmail } from '@/lib/email'
 
 export async function POST(request: Request) {
@@ -28,22 +27,15 @@ export async function POST(request: Request) {
       )
     }
 
-    // Store in Payload CMS
+    // Store in database
     try {
-      const payload = await getPayload({ config })
-      await payload.create({
-        collection: 'contact-submissions',
-        draft: false,
-        data: {
-          name: data.name,
-          email: data.email,
-          phone: data.phone || '',
-          company: data.company || '',
-          subject: data.subject,
-          message: data.message,
-          status: 'new' as const,
-          submittedAt: new Date().toISOString(),
-        },
+      await createContactSubmission({
+        name: data.name,
+        email: data.email,
+        phone: data.phone,
+        company: data.company,
+        subject: data.subject,
+        message: data.message,
       })
     } catch (dbError) {
       console.error('Failed to store contact submission:', dbError)

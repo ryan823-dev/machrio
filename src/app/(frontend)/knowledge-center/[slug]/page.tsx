@@ -1,17 +1,25 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { getPayload } from 'payload'
-import config from '@payload-config'
+import { Pool } from 'pg'
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 import { StructuredData } from '@/components/shared/StructuredData'
 import { FAQSchema, FAQSection } from '@/components/shared/FAQSchema'
 
-// SSR: Supabase is fast enough, no need for ISR
+// SSR: 直接查询 PostgreSQL
 export const dynamic = 'force-dynamic'
 
+// PostgreSQL 连接池
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URI,
+  max: 1,
+  min: 0,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 10000,
+})
+
 // ---------------------------------------------------------------------------
-// Lexical richText helpers (shared pattern from product page)
+// Lexical richText helpers
 // ---------------------------------------------------------------------------
 
 function extractChildren(children: unknown[]): string {
@@ -88,7 +96,6 @@ function extractChildrenPlain(children: unknown[]): string {
     .join('')
 }
 
-// Extract H2/H3 headings for table of contents
 function extractHeadings(richText: unknown): { id: string; text: string; level: number }[] {
   if (!richText || typeof richText !== 'object') return []
   const root = (richText as Record<string, unknown>).root as Record<string, unknown> | undefined
@@ -107,58 +114,56 @@ function extractHeadings(richText: unknown): { id: string; text: string; level: 
 }
 
 // ---------------------------------------------------------------------------
-// Data fetching
+// Data fetching (直接查询 PostgreSQL)
 // ---------------------------------------------------------------------------
 
-async function getArticleBySlug(slug: string) {
+interface ArticleRow {
+  id: string
+  title: string
+  slug: string
+  description: string | null
+  excerpt: string | null
+  content: any | null
+  category: string | null
+  tags: string[] | null
+  featured_image: string | null
+  hero_image_id: string | null
+  author: string | null
+  status: string
+  published_at: string | null
+  meta_title: string | null
+  meta_description: string | null
+  created_at: string
+  updated_at: string
+}
+
+async function getArticleBySlug(slug: string): Promise<ArticleRow | null> {
   try {
-    const payload = await getPayload({ config })
-    const result = await payload.find({
-      collection: 'articles',
-      where: {
-        slug: { equals: slug },
-        status: { equals: 'published' },
-      },
-      limit: 1,
-      depth: 2,
-    })
-    if (result.docs.length === 0) return null
-    return result.docs[0]
+    const result = await pool.query(
+      `SELECT * FROM articles WHERE slug = $1 AND status = 'published'`,
+      [slug]
+    )
+    return result.rows[0] || null
   } catch {
     return null
   }
 }
 
-async function getAdjacentArticles(publishedAt: string) {
+async function getAdjacentArticles(publishedAt: string): Promise<{ prev: ArticleRow | null; next: ArticleRow | null }> {
   try {
-    const payload = await getPayload({ config })
-
     const [prevResult, nextResult] = await Promise.all([
-      payload.find({
-        collection: 'articles',
-        where: {
-          status: { equals: 'published' },
-          publishedAt: { less_than: publishedAt },
-        },
-        limit: 1,
-        sort: '-publishedAt',
-        depth: 0,
-      }),
-      payload.find({
-        collection: 'articles',
-        where: {
-          status: { equals: 'published' },
-          publishedAt: { greater_than: publishedAt },
-        },
-        limit: 1,
-        sort: 'publishedAt',
-        depth: 0,
-      }),
+      pool.query(
+        `SELECT id, title, slug FROM articles WHERE status = 'published' AND published_at < $1 ORDER BY published_at DESC LIMIT 1`,
+        [publishedAt]
+      ),
+      pool.query(
+        `SELECT id, title, slug FROM articles WHERE status = 'published' AND published_at > $1 ORDER BY published_at ASC LIMIT 1`,
+        [publishedAt]
+      ),
     ])
-
     return {
-      prev: prevResult.docs[0] || null,
-      next: nextResult.docs[0] || null,
+      prev: prevResult.rows[0] || null,
+      next: nextResult.rows[0] || null,
     }
   } catch {
     return { prev: null, next: null }
@@ -184,7 +189,7 @@ const categoryColors: Record<string, string> = {
 }
 
 // ---------------------------------------------------------------------------
-// Metadata & Static Params
+// Metadata
 // ---------------------------------------------------------------------------
 
 export async function generateMetadata({
@@ -199,12 +204,9 @@ export async function generateMetadata({
     return { title: 'Article Not Found | Machrio' }
   }
 
-  const seo = article.seo as Record<string, unknown> | undefined
-  const title = (seo?.metaTitle as string) || `${article.title} | Machrio`
-  const description = (seo?.metaDescription as string) || (article.excerpt as string) || ''
-
-  const featuredImage = article.featuredImage as Record<string, unknown> | null
-  const imageUrl = featuredImage?.url as string | undefined
+  const title = article.meta_title || `${article.title} | Machrio`
+  const description = article.meta_description || article.description || article.excerpt || ''
+  const imageUrl = article.featured_image || article.hero_image_id
 
   return {
     title,
@@ -214,8 +216,8 @@ export async function generateMetadata({
       title,
       description,
       type: 'article',
-      publishedTime: article.publishedAt as string | undefined,
-      authors: [article.author as string || 'Machrio Team'],
+      publishedTime: article.published_at,
+      authors: [article.author || 'Machrio Team'],
       ...(imageUrl && { images: [{ url: imageUrl }] }),
     },
     twitter: {
@@ -243,36 +245,30 @@ export default async function ArticlePage({
   }
 
   const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'https://machrio.com'
-  const publishedAt = article.publishedAt as string || article.createdAt as string
-  const author = (article.author as string) || 'Machrio Team'
-  const category = article.category as string
+  const publishedAt = article.published_at || article.created_at
+  const author = article.author || 'Machrio Team'
+  const category = article.category || 'buying-guide'
   const contentHtml = lexicalToHtml(article.content)
   const headings = extractHeadings(article.content)
-  const readingTime = article.readingTime as number || Math.ceil(extractPlainText(article.content).split(/\s+/).length / 200)
+  const plainText = extractPlainText(article.content)
+  const readingTime = Math.ceil(plainText.split(/\s+/).filter(Boolean).length / 200) || 3
 
-  const featuredImage = article.featuredImage as Record<string, unknown> | null
-  const imageUrl = featuredImage?.url as string | undefined
+  const imageUrl = article.featured_image || article.hero_image_id
 
-  // AEO fields
-  const quickAnswer = (article.quickAnswer as string) || ''
-  const faqItems = (article.faq as { question: string; answer: string }[] | undefined) || []
-
-  // Related products
-  const relatedProducts = (article.relatedProducts as Record<string, unknown>[] | null) || []
+  // Tags
+  const tags = article.tags || []
 
   // Adjacent articles for navigation
   const { prev, next } = await getAdjacentArticles(publishedAt)
 
-  // --- BlogPosting Schema (enhanced for E-E-A-T + AEO) ---
-  const plainText = extractPlainText(article.content)
+  // --- BlogPosting Schema ---
   const wordCount = plainText.split(/\s+/).filter(Boolean).length
-  const tags = (article.tags as string[] | undefined) || []
 
   const blogPostingSchema = {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
     headline: article.title,
-    description: article.excerpt,
+    description: article.description || article.excerpt,
     articleSection: categoryLabels[category] || category,
     inLanguage: 'en',
     wordCount,
@@ -289,7 +285,7 @@ export default async function ArticlePage({
       },
     },
     datePublished: publishedAt,
-    dateModified: article.updatedAt as string,
+    dateModified: article.updated_at,
     ...(imageUrl && { image: imageUrl }),
     publisher: {
       '@type': 'Organization',
@@ -304,25 +300,12 @@ export default async function ArticlePage({
       '@type': 'WebPage',
       '@id': `${serverUrl}/knowledge-center/${slug}/`,
     },
-    isPartOf: {
-      '@type': 'WebSite',
-      name: 'Machrio',
-      url: serverUrl,
-    },
-    speakable: {
-      '@type': 'SpeakableSpecification',
-      cssSelector: [
-        '[data-speakable="headline"]',
-        '[data-speakable="summary"]',
-        ...(quickAnswer ? ['[data-speakable="quick-answer"]'] : []),
-      ],
-    },
   }
 
   const breadcrumbs = [
     { label: 'Home', href: '/' },
     { label: 'Knowledge Center', href: '/knowledge-center' },
-    { label: article.title as string },
+    { label: article.title },
   ]
 
   return (
@@ -341,10 +324,10 @@ export default async function ArticlePage({
           </span>
         </div>
         <h1 data-speakable="headline" className="mt-3 text-3xl font-bold leading-tight text-secondary-900">
-          {article.title as string}
+          {article.title}
         </h1>
         <p data-speakable="summary" className="mt-3 text-lg text-secondary-600">
-          {article.excerpt as string}
+          {article.description || article.excerpt}
         </p>
         <div className="mt-4 flex items-center gap-4 text-sm text-secondary-500">
           <span>By {author}</span>
@@ -364,17 +347,9 @@ export default async function ArticlePage({
         <div className="mt-6 overflow-hidden rounded-lg">
           <img
             src={imageUrl}
-            alt={article.title as string}
+            alt={article.title}
             className="h-auto w-full object-cover"
           />
-        </div>
-      )}
-
-      {/* ── Quick Answer (AEO) ── */}
-      {quickAnswer && (
-        <div data-speakable="quick-answer" className="mt-6 rounded-lg border border-primary-200 bg-primary-50 px-5 py-4">
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-primary-700">Quick Answer</h2>
-          <p className="mt-1.5 text-sm leading-relaxed text-secondary-800">{quickAnswer}</p>
         </div>
       )}
 
@@ -409,18 +384,10 @@ export default async function ArticlePage({
         />
       </div>
 
-      {/* ── FAQ Section (AEO) ── */}
-      {faqItems.length > 0 && (
-        <>
-          <FAQSection faqs={faqItems} />
-          <FAQSchema faqs={faqItems} />
-        </>
-      )}
-
       {/* ── Tags ── */}
-      {article.tags && (article.tags as string[]).length > 0 && (
+      {tags.length > 0 && (
         <div className="mt-8 flex flex-wrap gap-2">
-          {(article.tags as string[]).map((tag) => (
+          {tags.map((tag) => (
             <span
               key={tag}
               className="rounded-full border border-secondary-200 bg-secondary-50 px-3 py-1 text-xs text-secondary-600"
@@ -429,50 +396,6 @@ export default async function ArticlePage({
             </span>
           ))}
         </div>
-      )}
-
-      {/* ── Related Products ── */}
-      {relatedProducts.length > 0 && (
-        <section className="mt-12">
-          <h2 className="text-xl font-semibold text-secondary-800">Shop Products Featured in This Guide</h2>
-          <div className="mt-4 grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-            {relatedProducts.slice(0, 8).map((product) => {
-              const p = product as Record<string, unknown>
-              if (!p.name || !p.slug) return null
-              const pricing = p.pricing as Record<string, unknown> | undefined
-              const primaryCat = p.primaryCategory as Record<string, unknown> | null
-              const catSlug = primaryCat?.slug as string || 'products'
-              const imgObj = p.primaryImage && typeof p.primaryImage === 'object'
-                ? p.primaryImage as Record<string, unknown>
-                : null
-              const imgUrl = (imgObj?.url as string) || (p.externalImageUrl as string) || undefined
-
-              return (
-                <Link
-                  key={p.slug as string}
-                  href={`/product/${catSlug}/${p.slug}`}
-                  className="card flex flex-col p-4"
-                >
-                  <div className="mb-3 flex h-32 items-center justify-center rounded bg-secondary-50">
-                    {imgUrl ? (
-                      <img src={imgUrl} alt={p.name as string} className="h-full w-full object-contain" />
-                    ) : (
-                      <svg className="h-12 w-12 text-secondary-200" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-                      </svg>
-                    )}
-                  </div>
-                  <h3 className="line-clamp-2 text-sm font-medium text-secondary-800">{p.name as string}</h3>
-                  {pricing?.basePrice ? (
-                    <p className="mt-auto pt-2 text-sm font-semibold text-secondary-900">
-                      ${(pricing.basePrice as number).toFixed(2)}
-                    </p>
-                  ) : null}
-                </Link>
-              )
-            })}
-          </div>
-        </section>
       )}
 
       {/* ── Previous / Next Navigation ── */}
@@ -484,7 +407,7 @@ export default async function ArticlePage({
           >
             <span className="text-xs text-secondary-500">Previous</span>
             <span className="mt-1 text-sm font-medium text-secondary-800 group-hover:text-primary-700">
-              {prev.title as string}
+              {prev.title}
             </span>
           </Link>
         ) : <div />}
@@ -495,7 +418,7 @@ export default async function ArticlePage({
           >
             <span className="text-xs text-secondary-500">Next</span>
             <span className="mt-1 text-sm font-medium text-secondary-800 group-hover:text-primary-700">
-              {next.title as string}
+              {next.title}
             </span>
           </Link>
         ) : <div />}

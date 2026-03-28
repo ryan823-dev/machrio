@@ -1,14 +1,13 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { getPayload } from 'payload'
-import config from '@payload-config'
+import { searchProducts } from '@/lib/db'
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 import { StructuredData } from '@/components/shared/StructuredData'
 import { FAQSchema, FAQSection } from '@/components/shared/FAQSchema'
 import { ProductGrid } from '@/components/category/ProductGrid'
 
-// SSR: Supabase is fast enough, no need for ISR
+// SSR: 直接查询 PostgreSQL
 export const dynamic = 'force-dynamic'
 
 // ---------------------------------------------------------------------------
@@ -360,18 +359,25 @@ function mapProductToCard(product: Record<string, unknown>): ProductCardData {
 
 async function getIndustryProducts(industrySlug: string, limit = 8): Promise<ProductCardData[]> {
   try {
-    const payload = await getPayload({ config })
-    const result = await payload.find({
-      collection: 'products',
-      where: {
-        status: { equals: 'published' },
-        industries: { contains: industrySlug },
-      } as any,
-      limit,
-      depth: 1,
-      sort: '-createdAt',
-    })
-    return result.docs.map((doc) => mapProductToCard(doc as unknown as Record<string, unknown>))
+    // 使用行业名称搜索相关产品
+    const industry = industryData[industrySlug]
+    if (!industry) return []
+
+    const searchTerms = industry.name.toLowerCase().split(' ')
+    const result = await searchProducts(searchTerms[0], { limit })
+
+    return result.docs.map((p) => ({
+      name: p.name,
+      slug: p.slug,
+      categorySlug: 'products',
+      sku: p.sku,
+      brand: 'Unbranded',
+      primaryImage: p.external_image_url || undefined,
+      shortDescription: p.short_description || '',
+      pricing: { basePrice: undefined, currency: 'USD', priceUnit: undefined },
+      purchaseMode: (p.purchase_mode as 'both' | 'buy-online' | 'rfq-only') || 'both',
+      availability: p.availability || 'contact',
+    }))
   } catch {
     return []
   }

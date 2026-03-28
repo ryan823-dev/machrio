@@ -1,11 +1,10 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { getPayload } from 'payload'
-import config from '@payload-config'
+import { getProducts } from '@/lib/db'
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 import { ProductGrid } from '@/components/category/ProductGrid'
 
-// SSR: Supabase is fast enough, no need for ISR
+// SSR: 直接查询 PostgreSQL
 export const dynamic = 'force-dynamic'
 
 export const metadata: Metadata = {
@@ -18,66 +17,38 @@ export const metadata: Metadata = {
   },
 }
 
-async function getNewestProducts(limit: number = 100) {
-  try {
-    const payload = await getPayload({ config })
-    const result = await payload.find({
-      collection: 'products',
-      where: {
-        status: { equals: 'published' },
-      },
-      limit,
-      sort: '-createdAt',
-      depth: 2,
-    })
-    return result.docs
-  } catch {
-    return []
-  }
-}
-
-function mapProductToCard(product: Record<string, unknown>) {
-  const pricing = product.pricing as Record<string, unknown> | undefined
-  const brand = product.brand as Record<string, unknown> | null
-  const primaryCategory = product.primaryCategory as Record<string, unknown> | string | null
-
-  let categorySlug = 'products'
-  if (primaryCategory && typeof primaryCategory === 'object') {
-    const parent = (primaryCategory as Record<string, unknown>).parent as Record<string, unknown> | string | null
-    if (parent && typeof parent === 'object') {
-      categorySlug = (parent as Record<string, unknown>).slug as string || 'products'
-    } else {
-      categorySlug = (primaryCategory as Record<string, unknown>).slug as string || 'products'
-    }
-  }
-
-  const primaryImageObj = product.primaryImage && typeof product.primaryImage === 'object'
-    ? product.primaryImage as Record<string, unknown>
-    : null
-  const primaryImage = (primaryImageObj?.url as string) || (product.externalImageUrl as string) || undefined
-
+function mapProductToCard(product: {
+  name: string
+  slug: string
+  sku: string
+  short_description: string | null
+  external_image_url: string | null
+  package_qty: number | null
+  availability: string | null
+  purchase_mode: string | null
+}) {
   return {
-    name: product.name as string,
-    slug: product.slug as string,
-    categorySlug,
-    sku: product.sku as string,
-    brand: brand ? (brand.name as string || 'Unbranded') : 'Unbranded',
-    primaryImage,
-    shortDescription: (product.shortDescription as string) || '',
+    name: product.name,
+    slug: product.slug,
+    categorySlug: 'products',
+    sku: product.sku,
+    brand: 'Unbranded',
+    primaryImage: product.external_image_url || undefined,
+    shortDescription: product.short_description || '',
     pricing: {
-      basePrice: pricing?.basePrice as number | undefined,
-      currency: (pricing?.currency as string) || 'USD',
-      priceUnit: pricing?.priceUnit as string | undefined,
+      basePrice: undefined,
+      currency: 'USD',
+      priceUnit: undefined,
     },
-    packageQty: (product.packageQty as number) || undefined,
-    purchaseMode: (product.purchaseMode as 'both' | 'buy-online' | 'rfq-only') || 'both',
-    availability: (product.availability as string) || 'contact',
+    packageQty: product.package_qty || undefined,
+    purchaseMode: (product.purchase_mode as 'both' | 'buy-online' | 'rfq-only') || 'both',
+    availability: product.availability || 'contact',
   }
 }
 
 export default async function NewArrivalsPage() {
-  const products = await getNewestProducts(100)
-  const gridProducts = products.map(p => mapProductToCard(p as unknown as Record<string, unknown>))
+  const result = await getProducts({ limit: 100, sort: '-created_at' })
+  const gridProducts = result.docs.map(mapProductToCard)
 
   const breadcrumbs = [
     { label: 'Home', href: '/' },

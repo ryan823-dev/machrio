@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@payload-config'
+import { getPool, getOrderByNumber } from '@/lib/db'
 import { capturePayPalOrder } from '@/lib/paypal'
 import { sendOrderConfirmationEmail } from '@/lib/email'
 
@@ -26,51 +25,48 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Update the order in Payload
-    const payload = await getPayload({ config })
+    // Find the order
+    const order = await getOrderByNumber(orderNumber)
 
-    // Find the order by orderNumber
-    const orders = await payload.find({
-      collection: 'orders',
-      where: {
-        orderNumber: { equals: orderNumber },
-      },
-      limit: 1,
-    })
-
-    if (orders.docs.length === 0) {
+    if (!order) {
       return NextResponse.json(
         { error: 'Order not found' },
         { status: 404 }
       )
     }
 
-    const order = orders.docs[0]
-
-    // Update order status
-    await payload.update({
-      collection: 'orders',
-      id: order.id,
-      data: {
-        status: 'processing',
-        paymentStatus: 'paid',
-        payment: {
+    // Update order status in database
+    const pool = getPool()
+    await pool.query(
+      `UPDATE orders
+       SET status = 'processing',
+           payment_status = 'paid',
+           payment_info = jsonb_set(
+             COALESCE(payment_info, '{}'),
+             '{paypal}',
+             $1
+           ),
+           updated_at = NOW()
+       WHERE order_number = $2`,
+      [
+        JSON.stringify({
           method: 'paypal',
           paypalOrderId: paypalOrderId,
           paypalCaptureId: captureResult.purchase_units[0]?.payments?.captures?.[0]?.id,
-        },
-      },
-    })
+        }),
+        orderNumber
+      ]
+    )
 
     // Send payment confirmation email
-    if (order.customer?.email) {
+    if (order.customer_email) {
       sendOrderConfirmationEmail({
         orderNumber,
-        customerName: order.customer.name || 'Customer',
-        customerEmail: order.customer.email,
-        company: order.customer.company || '',
+        customerName: order.customer_name || 'Customer',
+        customerEmail: order.customer_email,
+        company: order.customer_company || '',
         total: order.total || 0,
-        currency: order.currency || 'USD',
+        currency: 'USD',
         paymentMethod: 'paypal',
         itemCount: (order.items as any[])?.length || 0,
         paid: true,

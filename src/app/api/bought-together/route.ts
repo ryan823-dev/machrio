@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@payload-config'
+import {
+  getOrdersContainingProduct,
+  getProductById,
+  getCategoryById,
+} from '@/lib/db'
 
 /**
  * GET /api/bought-together?productId=xxx&limit=4
@@ -18,42 +21,44 @@ export async function GET(req: NextRequest) {
       )
     }
 
-    const payload = await getPayload({ config })
+    // Find orders that contain this product
+    const ordersWithProduct = await getOrdersContainingProduct(productId, 200)
 
-    // Find orders that contain this product (exclude cancelled/refunded)
-    const ordersWithProduct = await payload.find({
-      collection: 'orders',
-      where: {
-        'items.product': { equals: productId },
-        status: { not_in: ['cancelled', 'refunded'] },
-      },
-      limit: 200,
-      depth: 2,
-    })
-
-    if (ordersWithProduct.docs.length === 0) {
+    if (ordersWithProduct.length === 0) {
       return NextResponse.json({ products: [], orderCount: 0 })
     }
 
     // Count co-occurrence of other products in these orders
-    const productCounts: Map<string, { count: number; product: any }> = new Map()
+    const productCounts: Map<string, { count: number; productData: any }> = new Map()
 
-    for (const order of ordersWithProduct.docs) {
-      const items = (order as any).items as any[] || []
-      
+    for (const order of ordersWithProduct) {
+      const items = order.items as any[] || []
+
       for (const item of items) {
-        const prod = item.product
-        if (!prod || typeof prod !== 'object') continue
-        
-        const id = prod.id as string
-        if (id === productId) continue
-        if (prod.status !== 'published') continue
+        // Get product ID from item
+        const prodId = typeof item.product === 'object'
+          ? item.product?.id
+          : item.product
 
-        const existing = productCounts.get(id)
+        if (!prodId) continue
+        if (String(prodId) === productId) continue
+
+        const idStr = String(prodId)
+
+        // Store basic product info from order item snapshot
+        const existing = productCounts.get(idStr)
         if (existing) {
           existing.count++
         } else {
-          productCounts.set(id, { count: 1, product: prod })
+          productCounts.set(idStr, {
+            count: 1,
+            productData: {
+              id: idStr,
+              name: item.productName,
+              sku: item.sku,
+              unitPrice: item.unitPrice,
+            }
+          })
         }
       }
     }
@@ -63,31 +68,38 @@ export async function GET(req: NextRequest) {
       .sort((a, b) => b.count - a.count)
       .slice(0, limit)
 
-    const products = sorted.map(({ count, product: prod }) => {
-      const pricing = prod.pricing as Record<string, unknown> | undefined
-      const catObj = prod.primaryCategory && typeof prod.primaryCategory === 'object'
-        ? prod.primaryCategory as Record<string, unknown>
-        : null
-      const primaryImageObj = prod.primaryImage && typeof prod.primaryImage === 'object'
-        ? prod.primaryImage as Record<string, unknown>
-        : null
+    // Enhance with current product data from database
+    const products = await Promise.all(sorted.map(async ({ count, productData }) => {
+      // Try to get full product data
+      const fullProduct = await getProductById(productData.id)
+
+      const pricing = fullProduct?.pricing as Record<string, unknown> | undefined || {}
+      let categorySlug = 'products'
+
+      if (fullProduct?.primary_category_id) {
+        const cat = await getCategoryById(fullProduct.primary_category_id)
+        categorySlug = cat?.slug || 'products'
+      }
 
       return {
-        id: prod.id,
-        name: prod.name,
-        slug: prod.slug,
-        categorySlug: (catObj?.slug as string) || 'products',
-        sku: prod.sku,
-        imageUrl: (primaryImageObj?.url as string) || (prod.externalImageUrl as string) || undefined,
-        price: pricing?.basePrice as number | undefined,
-        currency: (pricing?.currency as string) || 'USD',
+        id: fullProduct?.id || productData.id,
+        name: fullProduct?.name || productData.name,
+        slug: fullProduct?.slug || productData.sku?.toLowerCase(),
+        categorySlug,
+        sku: fullProduct?.sku || productData.sku,
+        imageUrl: fullProduct?.external_image_url || undefined,
+        price: pricing.basePrice as number | undefined || productData.unitPrice,
+        currency: (pricing.currency as string) || 'USD',
         coOccurrence: count,
       }
-    })
+    }))
+
+    // Filter out products that couldn't be found
+    const validProducts = products.filter(p => p.id && p.name)
 
     return NextResponse.json({
-      products,
-      orderCount: ordersWithProduct.docs.length,
+      products: validProducts,
+      orderCount: ordersWithProduct.length,
     })
   } catch (error) {
     console.error('Error fetching bought-together:', error)

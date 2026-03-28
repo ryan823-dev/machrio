@@ -1,6 +1,5 @@
 import { notFound } from 'next/navigation'
-import { getPayload } from 'payload'
-import config from '@payload-config'
+import { getOrderByNumber, getBankAccounts } from '@/lib/db'
 import { PrintButton } from '@/components/shared/PrintButton'
 
 export const dynamic = 'force-dynamic'
@@ -9,57 +8,28 @@ interface InvoicePageProps {
   params: Promise<{ orderNumber: string }>
 }
 
-async function getOrder(orderNumber: string) {
-  try {
-    const payload = await getPayload({ config })
-    const result = await payload.find({
-      collection: 'orders',
-      where: { orderNumber: { equals: orderNumber } },
-      limit: 1,
-      depth: 0,
-    })
-    if (result.docs.length === 0) return null
-    return result.docs[0]
-  } catch {
-    return null
-  }
-}
-
-async function getBankAccounts() {
-  try {
-    const payload = await getPayload({ config })
-    const result = await payload.find({
-      collection: 'bank-accounts',
-      where: { isActive: { equals: true } },
-      sort: 'sortOrder',
-      limit: 20,
-    })
-    return result.docs
-  } catch {
-    return []
-  }
-}
-
 export default async function InvoicePage({ params }: InvoicePageProps) {
   const { orderNumber } = await params
   const [order, bankAccounts] = await Promise.all([
-    getOrder(orderNumber),
+    getOrderByNumber(orderNumber),
     getBankAccounts(),
   ])
   if (!order) notFound()
 
-  const o = order as unknown as Record<string, unknown>
-  const customer = o.customer as Record<string, unknown>
-  const shipping = o.shipping as Record<string, unknown>
-  const items = o.items as Record<string, unknown>[]
-  const createdAt = new Date(o.createdAt as string)
+  const customer = {
+    name: order.customer_name,
+    email: order.customer_email,
+    phone: order.customer_phone || '',
+    company: order.customer_company,
+  }
+  const shipping = order.shipping_address as Record<string, unknown> || {}
+  const items = (order.items as Record<string, unknown>[]) || []
+  const createdAt = new Date(order.created_at)
   const dueDate = new Date(createdAt.getTime() + 14 * 24 * 60 * 60 * 1000) // 14 days
 
   // Match bank accounts by currency, or show all if none match
-  const currency = o.currency as string
-  const matchedAccounts = bankAccounts.filter(
-    (a) => (a as unknown as Record<string, unknown>).currency === currency
-  )
+  const currency = 'USD'
+  const matchedAccounts = bankAccounts.filter(a => a.currency === currency)
   const displayAccounts = matchedAccounts.length > 0 ? matchedAccounts : bankAccounts
 
   return (
@@ -78,7 +48,7 @@ export default async function InvoicePage({ params }: InvoicePageProps) {
         <div className="flex justify-between items-start border-b border-secondary-300 pb-6">
           <div>
             <h1 className="text-3xl font-bold text-primary-800">
-              MRO<span className="text-amber-500">works</span>
+              Machrio
             </h1>
             <p className="mt-1 text-xs text-secondary-500">Industrial MRO Supplies</p>
           </div>
@@ -95,10 +65,10 @@ export default async function InvoicePage({ params }: InvoicePageProps) {
           <div>
             <h3 className="text-xs font-bold uppercase text-secondary-500 tracking-wider">Bill To</h3>
             <div className="mt-2 text-sm text-secondary-700">
-              <p className="font-semibold">{customer.company as string}</p>
-              <p>{customer.name as string}</p>
-              <p>{customer.email as string}</p>
-              {String(customer.phone || '') && <p>{String(customer.phone)}</p>}
+              <p className="font-semibold">{customer.company}</p>
+              <p>{customer.name}</p>
+              <p>{customer.email}</p>
+              {customer.phone && <p>{customer.phone}</p>}
             </div>
           </div>
           <div>
@@ -142,15 +112,15 @@ export default async function InvoicePage({ params }: InvoicePageProps) {
           <div className="w-64 space-y-1 text-sm">
             <div className="flex justify-between text-secondary-600">
               <span>Subtotal</span>
-              <span>${(o.subtotal as number).toFixed(2)}</span>
+              <span>${order.subtotal.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-secondary-600">
               <span>Shipping</span>
-              <span>{(o.shippingCost as number) === 0 ? 'FREE' : `$${(o.shippingCost as number).toFixed(2)}`}</span>
+              <span>{order.shipping_cost === 0 ? 'FREE' : `$${order.shipping_cost.toFixed(2)}`}</span>
             </div>
             <div className="flex justify-between border-t-2 border-secondary-300 pt-2 font-bold text-secondary-900 text-base">
               <span>Total Due</span>
-              <span>${(o.total as number).toFixed(2)} {currency}</span>
+              <span>${order.total.toFixed(2)} {currency}</span>
             </div>
           </div>
         </div>
@@ -163,33 +133,25 @@ export default async function InvoicePage({ params }: InvoicePageProps) {
               Please transfer the total amount to the following account and include the invoice number ({orderNumber}) as payment reference.
             </p>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
-              {displayAccounts.map((account) => {
-                const a = account as unknown as Record<string, unknown>
-                return (
-                  <div key={a.id as string} className="rounded-lg border border-secondary-200 bg-secondary-50 p-4 text-xs">
-                    <p className="font-bold text-secondary-800">
-                      {a.flag ? `${a.flag} ` : ''}{a.accountName as string}
-                    </p>
-                    <div className="mt-2 space-y-1 text-secondary-600">
-                      <p><span className="font-medium text-secondary-700">Bank:</span> {a.bankName as string}</p>
-                      <p><span className="font-medium text-secondary-700">Beneficiary:</span> {a.beneficiaryName as string}</p>
-                      <p><span className="font-medium text-secondary-700">Account:</span> {a.accountNumber as string}</p>
-                      {a.localBankCode && a.localBankCodeLabel ? (
-                        <p><span className="font-medium text-secondary-700">{String(a.localBankCodeLabel)}:</span> {String(a.localBankCode)}</p>
-                      ) : null}
-                      {a.swiftCode ? <p><span className="font-medium text-secondary-700">SWIFT/BIC:</span> {String(a.swiftCode)}</p> : null}
-                      {a.bankAddress ? <p><span className="font-medium text-secondary-700">Bank Address:</span> {String(a.bankAddress)}</p> : null}
-                      {a.additionalInfo ? <p className="mt-1 italic text-secondary-500">{String(a.additionalInfo)}</p> : null}
-                    </div>
+              {displayAccounts.map((account) => (
+                <div key={account.id} className="rounded-lg border border-secondary-200 bg-secondary-50 p-4 text-xs">
+                  <p className="font-bold text-secondary-800">
+                    {account.flag ? `${account.flag} ` : ''}{account.account_name}
+                  </p>
+                  <div className="mt-2 space-y-1 text-secondary-600">
+                    <p><span className="font-medium text-secondary-700">Bank:</span> {account.bank_name}</p>
+                    <p><span className="font-medium text-secondary-700">Beneficiary:</span> {account.beneficiary_name}</p>
+                    <p><span className="font-medium text-secondary-700">Account:</span> {account.account_number}</p>
+                    {account.local_bank_code && account.local_bank_code_label ? (
+                      <p><span className="font-medium text-secondary-700">{account.local_bank_code_label}:</span> {account.local_bank_code}</p>
+                    ) : null}
+                    {account.swift_code ? <p><span className="font-medium text-secondary-700">SWIFT/BIC:</span> {account.swift_code}</p> : null}
+                    {account.bank_address ? <p><span className="font-medium text-secondary-700">Bank Address:</span> {account.bank_address}</p> : null}
+                    {account.additional_info ? <p className="mt-1 italic text-secondary-500">{account.additional_info}</p> : null}
                   </div>
-                )
-              })}
+                </div>
+              ))}
             </div>
-            {matchedAccounts.length > 0 && bankAccounts.length > matchedAccounts.length && (
-              <p className="mt-3 text-xs text-secondary-400">
-                Can&apos;t pay in {currency}? Contact <strong>sales@machrio.com</strong> for alternative bank accounts in other currencies.
-              </p>
-            )}
           </div>
         )}
 
