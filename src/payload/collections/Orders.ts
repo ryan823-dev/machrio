@@ -266,7 +266,30 @@ export const Orders: CollectionConfig = {
           admin: { description: 'PayPal Capture ID', readOnly: true },
         },
         { name: 'transactionId', type: 'text' },
+        // Bank Transfer specific fields
+        {
+          name: 'receiptUploaded',
+          type: 'checkbox',
+          defaultValue: false,
+          admin: { description: 'Payment receipt has been uploaded', position: 'sidebar' },
+        },
+        {
+          name: 'receiptUploadDate',
+          type: 'datetime',
+          admin: { description: 'When the receipt was uploaded', position: 'sidebar' },
+        },
       ],
+    },
+
+    // Payment Receipt Upload (for Bank Transfer)
+    {
+      name: 'paymentReceipt',
+      type: 'upload',
+      relationTo: 'payment-receipts',
+      admin: {
+        description: 'Bank transfer payment receipt/proof',
+        position: 'sidebar',
+      },
     },
 
     // Customer notes

@@ -44,6 +44,64 @@ PAYPAL_CLIENT_SECRET=your-paypal-secret
 NEXT_PUBLIC_SUPABASE_URL=https://[PROJECT-REF].supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
+
+# Cron Jobs (for automated tasks)
+CRON_SECRET=your-secret-key-for-cron-authentication
+```
+
+## 配置定时任务（Cron Jobs）
+
+### 银行转账逾期提醒
+
+自动发送付款提醒邮件给未付款的客户（订单创建后 7-14 天）。
+
+#### 在 Railway Dashboard 中配置：
+
+1. **进入项目设置**
+   - 访问：https://railway.app/dashboard
+   - 选择 machrio 项目
+   - 点击 **"Settings"** 标签
+
+2. **添加 Cron Job**
+   - 滚动到 **"Cron Jobs"** 部分
+   - 点击 **"Add Cron Job"**
+   - 填写：
+     - **Name**: `remind-unpaid-orders`
+     - **Schedule**: `0 9 * * *` (每天 UTC 9 AM)
+     - **Command**: `curl -H "Authorization: Bearer $CRON_SECRET" https://machrio.com/api/cron/remind-unpaid`
+
+3. **设置 CRON_SECRET 环境变量**
+   - 在 Railway Dashboard → Variables 中添加
+   - 生成一个随机密钥：`openssl rand -hex 32`
+   - 值：`CRON_SECRET=your-generated-secret`
+
+#### 测试定时任务：
+
+```bash
+# 手动运行测试
+curl -H "Authorization: Bearer your-cron-secret" \
+     https://machrio.com/api/cron/remind-unpaid
+
+# 查看返回结果
+{
+  "success": true,
+  "message": "Sent 3 reminders",
+  "results": {
+    "total": 3,
+    "reminded": 3,
+    "errors": []
+  }
+}
+```
+
+#### 其他定时任务建议：
+
+```bash
+# 每天检查 30 天以上未付款订单（准备取消）
+0 10 * * * curl -H "Authorization: Bearer $CRON_SECRET" https://machrio.com/api/cron/cancel-old-orders
+
+# 每周一生成上周销售报告
+0 8 * * 1 curl -H "Authorization: Bearer $CRON_SECRET" https://machrio.com/api/cron/weekly-report
 ```
 
 ## 部署步骤
@@ -183,3 +241,7 @@ Sitemap: https://machrio.com/sitemap.xml
 - [ ] robots.txt 正确指向 sitemap
 - [ ] 在谷歌站长工具中提交 sitemap
 - [ ] 监控 Railway 日志无错误
+- [ ] Cron Jobs 已配置（逾期提醒）
+- [ ] CRON_SECRET 已设置
+- [ ] 测试付款凭证上传功能
+- [ ] 测试财务确认收款 API

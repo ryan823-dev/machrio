@@ -88,9 +88,12 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData) {
   const invoiceUrl = `${orderUrl}/invoice`
 
   const paymentSection = data.paymentMethod === 'bank-transfer'
-    ? `<p style="margin:0 0 8px"><strong>Payment Method:</strong> Bank Transfer</p>
-       <p style="margin:0 0 8px">Please view your <a href="${invoiceUrl}" style="color:#2563eb">Proforma Invoice</a> for bank transfer details.</p>
-       <p style="margin:0 0 8px">Payment is due within 14 days.</p>`
+    ? `<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;padding:16px;margin:16px 0">
+         <p style="margin:0 0 8px"><strong>Payment Method:</strong> Bank Transfer / Wire</p>
+         <p style="margin:0 0 8px">A Proforma Invoice with bank details has been generated for your order.</p>
+         <a href="${invoiceUrl}" style="display:inline-block;background:#f59e0b;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;margin-top:8px">View Proforma Invoice</a>
+         <p style="margin:12px 0 0;font-size:13px;color:#92400e">Payment is due within 14 days. Please include order number <strong>${data.orderNumber}</strong> as payment reference.</p>
+       </div>`
     : data.paymentMethod === 'paypal'
     ? `<p style="margin:0 0 8px"><strong>Payment Method:</strong> PayPal</p>
        <p style="margin:0 0 8px">Your payment ${data.paid ? 'has been processed successfully' : 'is being processed'}.</p>`

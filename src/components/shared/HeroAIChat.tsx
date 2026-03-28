@@ -4,6 +4,10 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useCart } from '@/contexts/CartContext'
 import { useAIAssistantVisibility } from '@/contexts/AIAssistantVisibilityContext'
+import { 
+  generateSessionId, 
+  ConversationTracker 
+} from '@/lib/conversation-tracker'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -100,8 +104,25 @@ export function HeroAIChat() {
   const [showReqSheet, setShowReqSheet] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const heroContainerRef = useRef<HTMLDivElement>(null)
+  const conversationTrackerRef = useRef<ConversationTracker | null>(null)
   const { setShouldHideFloatingButton } = useAIAssistantVisibility()
   const { addItem } = useCart()
+
+  // Initialize conversation tracker
+  useEffect(() => {
+    const sessionId = generateSessionId()
+    conversationTrackerRef.current = new ConversationTracker(sessionId)
+    
+    // Enable auto-save with 10 second debounce
+    conversationTrackerRef.current.enableAutoSave(10000)
+    
+    return () => {
+      // Save any remaining messages on unmount
+      if (conversationTrackerRef.current) {
+        conversationTrackerRef.current.save()
+      }
+    }
+  }, [])
 
   // Track hero visibility to control floating AI button
   useEffect(() => {
@@ -201,6 +222,14 @@ export function HeroAIChat() {
     setMessages(prev => [...prev, { role: 'user', content: userMessage }])
     setIsLoading(true)
     
+    // Track user message
+    if (conversationTrackerRef.current) {
+      conversationTrackerRef.current.addMessage({
+        role: 'user',
+        content: userMessage,
+      })
+    }
+    
     // Build conversation history for multi-turn context
     const historyForApi: ConversationMessage[] = [
       ...conversationHistory,
@@ -232,18 +261,43 @@ export function HeroAIChat() {
         { role: 'assistant' as const, content: reply },
       ])
       
-      setMessages(prev => [...prev, { 
+      const assistantMsg: Message = { 
         role: 'assistant', 
         content: reply,
         actions: actions.length > 0 ? actions : undefined,
         products: products.length > 0 ? products : undefined,
-      }])
+      }
+      
+      setMessages(prev => [...prev, assistantMsg])
+
+      // Track assistant message
+      if (conversationTrackerRef.current) {
+        conversationTrackerRef.current.addMessage({
+          role: 'assistant',
+          content: reply,
+          products: products.length > 0 ? products.map(p => ({
+            id: p.id,
+            name: p.name,
+            sku: p.sku,
+            price: p.price,
+          })) : undefined,
+        })
+      }
     } catch (error) {
       console.error('AI chat error:', error)
-      setMessages(prev => [...prev, { 
+      const errorMsg: Message = { 
         role: 'assistant', 
         content: "I'm having trouble connecting. Please try again or email us at sales@machrio.com."
-      }])
+      }
+      setMessages(prev => [...prev, errorMsg])
+
+      // Track error message
+      if (conversationTrackerRef.current) {
+        conversationTrackerRef.current.addMessage({
+          role: 'assistant',
+          content: "I'm having trouble connecting. Please try again or email us at sales@machrio.com.",
+        })
+      }
     } finally {
       setIsLoading(false)
     }

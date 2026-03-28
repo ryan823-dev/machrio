@@ -4,6 +4,12 @@ import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { useCart } from '@/contexts/CartContext'
 import { useAIAssistantVisibility } from '@/contexts/AIAssistantVisibilityContext'
+import { 
+  generateSessionId, 
+  saveConversation, 
+  ConversationTracker,
+  ConversationMessage 
+} from '@/lib/conversation-tracker'
 
 interface ProductCard {
   id: string
@@ -94,11 +100,28 @@ export function AIAssistant() {
   const [isLoading, setIsLoading] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
+  const conversationTrackerRef = useRef<ConversationTracker | null>(null)
   const { addItem } = useCart()
   const { shouldHideFloatingButton } = useAIAssistantVisibility()
 
   // Hide both button and panel when hero chat is visible (unless panel is already open)
   const isHidden = shouldHideFloatingButton && !isOpen
+
+  // Initialize conversation tracker
+  useEffect(() => {
+    const sessionId = generateSessionId()
+    conversationTrackerRef.current = new ConversationTracker(sessionId)
+    
+    // Enable auto-save with 10 second debounce
+    conversationTrackerRef.current.enableAutoSave(10000)
+    
+    return () => {
+      // Save any remaining messages on unmount
+      if (conversationTrackerRef.current) {
+        conversationTrackerRef.current.save()
+      }
+    }
+  }, [])
 
   useEffect(() => {
     // Scroll within the chat container only, not the entire viewport
@@ -130,6 +153,14 @@ export function AIAssistant() {
     setInput('')
     setIsLoading(true)
 
+    // Track user message
+    if (conversationTrackerRef.current) {
+      conversationTrackerRef.current.addMessage({
+        role: 'user',
+        content: trimmed,
+      })
+    }
+
     try {
       const res = await fetch('/api/ai-assistant', {
         method: 'POST',
@@ -142,20 +173,43 @@ export function AIAssistant() {
 
       const products = extractProducts(data.toolResults)
 
-      setMessages((prev) => [
-        ...prev,
-        {
-          id: (Date.now() + 1).toString(),
+      const assistantMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'assistant',
+        content: data.reply || 'Sorry, something went wrong.',
+        products: products.length > 0 ? products : undefined,
+      }
+      
+      setMessages((prev) => [...prev, assistantMsg])
+
+      // Track assistant message
+      if (conversationTrackerRef.current) {
+        conversationTrackerRef.current.addMessage({
           role: 'assistant',
           content: data.reply || 'Sorry, something went wrong.',
-          products: products.length > 0 ? products : undefined,
-        },
-      ])
+          products: products.length > 0 ? products.map(p => ({
+            id: p.id,
+            name: p.name,
+            sku: p.sku,
+            price: p.price,
+          })) : undefined,
+        })
+      }
     } catch {
-      setMessages((prev) => [
-        ...prev,
-        { id: (Date.now() + 1).toString(), role: 'assistant', content: 'Connection error. Please try again.' },
-      ])
+      const errorMsg: Message = { 
+        id: (Date.now() + 1).toString(), 
+        role: 'assistant', 
+        content: 'Connection error. Please try again.' 
+      }
+      setMessages((prev) => [...prev, errorMsg])
+
+      // Track error message
+      if (conversationTrackerRef.current) {
+        conversationTrackerRef.current.addMessage({
+          role: 'assistant',
+          content: 'Connection error. Please try again.',
+        })
+      }
     } finally {
       setIsLoading(false)
     }

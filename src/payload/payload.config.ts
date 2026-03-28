@@ -12,6 +12,7 @@ import { Brands } from './collections/Brands'
 import { Media } from './collections/Media'
 import { Orders } from './collections/Orders'
 import { BankAccounts } from './collections/BankAccounts'
+import { PaymentReceipts } from './collections/PaymentReceipts'
 import { RFQSubmissions } from './collections/RFQSubmissions'
 import { ContactSubmissions } from './collections/ContactSubmissions'
 import { ShippingMethods } from './collections/ShippingMethods'
@@ -81,6 +82,7 @@ export default buildConfig({
     Customers,
     Quotes,
     BankAccounts,
+    PaymentReceipts,
     RFQSubmissions,
     ContactSubmissions,
     ShippingMethods,

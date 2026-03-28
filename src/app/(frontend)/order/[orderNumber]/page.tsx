@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { getOrderByNumber } from '@/lib/db'
 import { PayPalCaptureHandler } from '@/components/payment/PayPalCaptureHandler'
+import { PaymentReceiptUpload } from '@/components/order/PaymentReceiptUpload'
 
 export const dynamic = 'force-dynamic'
 
@@ -147,16 +148,25 @@ export default async function OrderConfirmationPage({ params, searchParams }: Or
           {/* Actions */}
           <section className="rounded-lg border border-secondary-200 bg-white p-6 space-y-3">
             {isBankTransfer && !isPaid && (
-              <Link
-                href={`/order/${orderNumber}/invoice`}
-                className="btn-accent w-full text-center block"
-              >
-                View Proforma Invoice
+              <>
+                <Link
+                  href={`/order/${orderNumber}/invoice`}
+                  className="btn-accent w-full text-center block"
+                >
+                  View Proforma Invoice
+                </Link>
+                
+                {/* Payment Receipt Upload */}
+                <div className="pt-3 border-t border-secondary-200">
+                  <PaymentReceiptUpload orderNumber={orderNumber} />
+                </div>
+              </>
+            )}
+            {!isBankTransfer && (
+              <Link href="/category" className="btn-secondary w-full text-center block">
+                Continue Shopping
               </Link>
             )}
-            <Link href="/category" className="btn-secondary w-full text-center block">
-              Continue Shopping
-            </Link>
           </section>
 
           {/* Contact */}
