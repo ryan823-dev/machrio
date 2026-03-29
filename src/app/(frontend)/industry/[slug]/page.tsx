@@ -170,7 +170,7 @@ const industryData: Record<string, IndustryInfo> = {
     intro: 'Maintain safe and hygienic healthcare environments with our selection of MRO supplies. PPE that meets medical-grade standards, cleaning products for infection control, and packaging supplies for safe specimen and material transport. We serve hospitals, clinics, laboratories, and long-term care facilities.',
     categories: [
       { name: 'Safety & PPE', slug: 'safety' },
-      { name: 'Cleaning & Janitorial', slug: 'cleaning-janitorial' },
+      { name: 'Cleaning and Janitorial', slug: 'cleaning-and-janitorial' },
       { name: 'Packaging & Shipping', slug: 'packaging-shipping' },
     ],
     scenarios: [
@@ -178,13 +178,13 @@ const industryData: Record<string, IndustryInfo> = {
         title: 'Infection Control',
         description: 'Exam gloves, face masks, gowns, and surface disinfectants. Products that help healthcare facilities maintain hygiene protocols and reduce healthcare-associated infections.',
         icon: '🏥',
-        categories: ['safety', 'cleaning-janitorial'],
+        categories: ['safety', 'cleaning-and-janitorial'],
       },
       {
         title: 'Facility Housekeeping',
         description: 'Hospital-grade cleaners, floor care supplies, and waste handling products. Maintain clean, safe environments in patient rooms, operating theaters, and common areas.',
         icon: '🧹',
-        categories: ['cleaning-janitorial'],
+        categories: ['cleaning-and-janitorial'],
       },
       {
         title: 'Lab & Specimen Packaging',
@@ -211,7 +211,7 @@ const industryData: Record<string, IndustryInfo> = {
     intro: 'Meet food safety standards with MRO supplies designed for food and beverage operations. Food-grade gloves, sanitation chemicals, packaging materials, and stainless-steel material handling equipment that comply with FDA and USDA requirements. We serve food processors, beverage manufacturers, commercial kitchens, and cold storage facilities.',
     categories: [
       { name: 'Safety & PPE', slug: 'safety' },
-      { name: 'Cleaning & Janitorial', slug: 'cleaning-janitorial' },
+      { name: 'Cleaning and Janitorial', slug: 'cleaning-and-janitorial' },
       { name: 'Packaging & Shipping', slug: 'packaging-shipping' },
       { name: 'Material Handling', slug: 'material-handling' },
     ],
@@ -226,7 +226,7 @@ const industryData: Record<string, IndustryInfo> = {
         title: 'Sanitation & CIP',
         description: 'Food-safe sanitizers, degreasers, and cleaning chemicals for clean-in-place (CIP) systems, production surfaces, and processing equipment.',
         icon: '✨',
-        categories: ['cleaning-janitorial'],
+        categories: ['cleaning-and-janitorial'],
       },
       {
         title: 'Product Packaging',
