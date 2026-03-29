@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { getProductBySlug, createPool } from '@/lib/db-queries'
+import { getProductBySlug } from '@/lib/db-queries'
+import { getPool } from '@/lib/db'
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 import { StructuredData } from '@/components/shared/StructuredData'
 import { FAQSchema, FAQSection } from '@/components/shared/FAQSchema'
@@ -202,7 +203,7 @@ async function getRelatedProductsFromDB(
   const MAX_PRODUCTS = 8
   const results: RelatedProductData[] = []
   const seenIds = new Set<string>([productId])
-  const pool = await createPool()
+  const pool = getPool()
 
   try {
     // 1. Same category products (primary source)
