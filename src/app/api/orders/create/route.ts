@@ -101,45 +101,53 @@ export async function POST(req: NextRequest) {
     const orderNumber = `MCH-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`
 
     // Create order in database
-    const order = await createOrder({
-      orderNumber,
-      customerEmail: body.customer.email,
-      customerName: body.customer.name,
-      customerPhone: body.customer.phone,
-      customerCompany: body.customer.company,
-      status: 'pending',
-      paymentStatus: 'unpaid',
-      paymentMethod: body.paymentMethod,
-      subtotal,
-      shippingCost,
-      tax: 0,
-      total,
-      shippingAddress: {
-        address: body.shipping.address,
-        city: body.shipping.city,
-        state: body.shipping.state,
-        postalCode: body.shipping.postalCode,
-        country: body.shipping.country || 'US',
-        shippingMethodCode,
-        shippingMethodName,
-        estimatedShipDate,
-        estimatedDeliveryDate,
-        totalWeight,
-      },
-      billingAddress: {},
-      items: body.items.map(item => ({
-        productId: item.product,
-        productName: item.productName,
-        sku: item.sku,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        lineTotal: item.unitPrice * item.quantity,
-      })),
-      notes: body.customerNotes,
-    })
+    let order
+    try {
+      order = await createOrder({
+        orderNumber,
+        customerEmail: body.customer.email,
+        customerName: body.customer.name,
+        customerPhone: body.customer.phone,
+        customerCompany: body.customer.company,
+        status: 'pending',
+        paymentStatus: 'unpaid',
+        paymentMethod: body.paymentMethod,
+        subtotal,
+        shippingCost,
+        tax: 0,
+        total,
+        shippingAddress: {
+          address: body.shipping.address,
+          city: body.shipping.city,
+          state: body.shipping.state,
+          postalCode: body.shipping.postalCode,
+          country: body.shipping.country || 'US',
+          shippingMethodCode,
+          shippingMethodName,
+          estimatedShipDate,
+          estimatedDeliveryDate,
+          totalWeight,
+        },
+        billingAddress: {},
+        items: body.items.map(item => ({
+          productId: item.product,
+          productName: item.productName,
+          sku: item.sku,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          lineTotal: item.unitPrice * item.quantity,
+        })),
+        notes: body.customerNotes,
+      })
+    } catch (dbError) {
+      console.error('Database error creating order:', dbError)
+      const errorMessage = dbError instanceof Error ? dbError.message : 'Unknown database error'
+      return NextResponse.json({ error: `Database error: ${errorMessage}` }, { status: 500 })
+    }
 
     if (!order) {
-      return NextResponse.json({ error: 'Failed to create order' }, { status: 500 })
+      console.error('Failed to create order - createOrder returned null')
+      return NextResponse.json({ error: 'Failed to create order in database' }, { status: 500 })
     }
 
     // Send confirmation emails (fire-and-forget)
