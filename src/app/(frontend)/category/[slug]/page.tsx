@@ -95,8 +95,46 @@ interface ChildCategory {
   slug: string
 }
 
-// 使用 PostgreSQL 直接查询获取分类数据
+// 从静态数据获取分类（回退机制）
+function getCategoryFromStaticData(slug: string): { category: any, parent: any, grandparent: any, children: any[] } | null {
+  try {
+    const navData = require('@/data/nav-categories.json')
+    const categories = navData.categories || []
+    
+    // 递归查找分类
+    function findCategory(cats: any[], parent: any = null, grandparent: any = null): any {
+      for (const cat of cats) {
+        if (cat.slug === slug) {
+          return {
+            category: { ...cat, id: cat.id, name: cat.name, slug: cat.slug },
+            parent,
+            grandparent,
+            children: cat.children || []
+          }
+        }
+        if (cat.children) {
+          const found = findCategory(cat.children, { id: cat.id, name: cat.name, slug: cat.slug }, parent)
+          if (found) return found
+        }
+      }
+      return null
+    }
+    
+    return findCategory(categories)
+  } catch (error) {
+    console.error('[getCategoryFromStaticData] 错误:', error)
+    return null
+  }
+}
+
+// 使用 PostgreSQL 直接查询获取分类数据（带回退机制）
 async function getCategoryData(slug: string) {
+  // 检查 DATABASE_URI 是否存在
+  if (!process.env.DATABASE_URI) {
+    console.warn('[getCategoryData] DATABASE_URI 未配置，使用静态数据')
+    return getCategoryFromStaticData(slug)
+  }
+  
   const pool = getPool()
 
   try {
@@ -107,7 +145,11 @@ async function getCategoryData(slug: string) {
       [slug]
     )
 
-    if (catResult.rows.length === 0) return null
+    if (catResult.rows.length === 0) {
+      console.warn('[getCategoryData] 数据库中未找到分类，使用静态数据:', slug)
+      return getCategoryFromStaticData(slug)
+    }
+    
     const category = catResult.rows[0]
 
     // 获取父分类
@@ -143,8 +185,9 @@ async function getCategoryData(slug: string) {
 
     return { category, parent, grandparent, children }
   } catch (error) {
-    console.error('[getCategoryData] 错误:', error)
-    return null
+    console.error('[getCategoryData] 数据库查询错误:', error)
+    console.warn('使用静态数据作为回退')
+    return getCategoryFromStaticData(slug)
   }
 }
 
