@@ -120,6 +120,9 @@ export async function GET() {
       // g:condition - 产品状态（new/refurbished/used）
       xmlParts.push(`<g:condition>new</g:condition>`)
       
+      // g:target_country - 目标销售国家
+      xmlParts.push(`<g:target_country>US</g:target_country>`)
+      
       // g:product_type - 产品类别（使用分类路径）
       if (product.primary_category_id) {
         try {
