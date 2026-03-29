@@ -10,6 +10,33 @@ const nextConfig = {
     // 生产构建时忽略 TypeScript 错误
     ignoreBuildErrors: true,
   },
+  // 强制使用不带 www 的主域名
+  async redirects() {
+    return [
+      {
+        source: '/',
+        has: [
+          {
+            type: 'host',
+            value: 'www.machrio.com',
+          },
+        ],
+        destination: 'https://machrio.com/',
+        permanent: true,
+      },
+      {
+        source: '/:path*',
+        has: [
+          {
+            type: 'host',
+            value: 'www.machrio.com',
+          },
+        ],
+        destination: 'https://machrio.com/:path*',
+        permanent: true,
+      },
+    ]
+  },
   images: {
     formats: ['image/avif', 'image/webp'],
     deviceSizes: [640, 750, 828, 1080, 1200],
