@@ -8,7 +8,7 @@ Allow: /
 Disallow: /api/
 
 # Sitemap location
-Sitemap: https://www.machrio.com/sitemap.xml
+Sitemap: https://machrio.com/sitemap.xml
 
 # LLM-friendly site description (llmstxt.org standard)
 # https://www.machrio.com/llms.txt

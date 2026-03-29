@@ -5,7 +5,7 @@ export const dynamic = 'force-static'
 export const revalidate = 3600 // 每小时重新生成
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const baseUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'https://www.machrio.com'
+  const baseUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'https://machrio.com'
 
   // 静态页面
   const staticPages: MetadataRoute.Sitemap = [
