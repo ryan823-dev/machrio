@@ -47,8 +47,13 @@ function mapProductToCard(product: {
 }
 
 export default async function NewArrivalsPage() {
-  const result = await getProducts({ limit: 100, sort: '-created_at' })
-  const gridProducts = result.docs.map(mapProductToCard)
+  let gridProducts: any[] = []
+  try {
+    const result = await getProducts({ limit: 100, sort: '-created_at' })
+    gridProducts = result.docs.map(mapProductToCard)
+  } catch (error) {
+    console.error('Error loading new arrivals:', error)
+  }
 
   const breadcrumbs = [
     { label: 'Home', href: '/' },

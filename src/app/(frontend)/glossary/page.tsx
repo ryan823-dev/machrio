@@ -36,7 +36,12 @@ const categoryColors: Record<string, string> = {
 }
 
 export default async function GlossaryPage() {
-  const terms = await getGlossaryTerms(500)
+  let terms: any[] = []
+  try {
+    terms = await getGlossaryTerms(500)
+  } catch (error) {
+    console.error('Error loading glossary terms:', error)
+  }
   const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'https://machrio.com'
 
   // Group terms by first letter
