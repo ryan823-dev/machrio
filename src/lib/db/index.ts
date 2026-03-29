@@ -508,7 +508,7 @@ export async function createOrder(data: {
     return result.rows[0] || null
   } catch (error) {
     console.error('createOrder error:', error)
-    return null
+    throw error  // Re-throw to let caller handle it
   }
 }
 
