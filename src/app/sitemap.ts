@@ -65,16 +65,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }))
     staticPages.push(...categoryPages)
 
-    // 获取所有产品（带超时）
+    // 获取所有产品（带分类路径，带超时）
     const productsResult = await Promise.race([
-      pool.query('SELECT slug, updated_at FROM products ORDER BY created_at DESC'),
+      pool.query(`
+        SELECT p.slug, p.updated_at, c.slug as category_slug
+        FROM products p
+        LEFT JOIN categories c ON p.primary_category_id = c.id
+        WHERE p.status = 'published'
+        ORDER BY p.created_at DESC
+      `),
       new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Products query timeout')), 10000)
       ) as Promise<any>
     ])
     
     const productPages: MetadataRoute.Sitemap = productsResult.rows.map(product => ({
-      url: `${baseUrl}/product/products/${product.slug}`,
+      url: `${baseUrl}/product/${product.category_slug || 'products'}/${product.slug}`,
       lastModified: product.updated_at ? new Date(product.updated_at) : new Date(),
       changeFrequency: 'weekly' as const,
       priority: 0.6,
