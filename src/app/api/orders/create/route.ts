@@ -282,8 +282,18 @@ export async function POST(req: NextRequest) {
     })
   } catch (err) {
     console.error('Order creation error:', err)
+    const errorMessage = err instanceof Error ? err.message : String(err)
+    const errorStack = err instanceof Error ? err.stack : 'No stack'
+    console.error('Full error details:', {
+      message: errorMessage,
+      stack: errorStack,
+      cause: err instanceof Error && err.cause ? err.cause : 'No cause',
+    })
     return NextResponse.json(
-      { error: 'Failed to create order' },
+      { 
+        error: 'Failed to create order',
+        details: errorMessage,
+      },
       { status: 500 }
     )
   }
