@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getPool, createOrder } from '@/lib/db'
+import { getPool, createOrder } from '@/lib/db/index'
 import Stripe from 'stripe'
 import { sendOrderConfirmationEmail } from '@/lib/email'
 import { calculateShipping } from '@/lib/shipping/calculator'
