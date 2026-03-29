@@ -18,7 +18,7 @@ interface IndustryInfo {
   name: string
   description: string
   intro: string
-  categories: { name: string; slug: string }[]
+  // categories: { name: string; slug: string }[]  // 暂时移除，因为分类数据不存在
   scenarios: { title: string; description: string; icon: string; categories: string[] }[]
   compliance: { standards: string[]; description: string }
   faqs: { question: string; answer: string }[]
