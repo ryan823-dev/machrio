@@ -12,7 +12,8 @@
     "lint": "next lint",
     "generate:types": "payload generate:types",
     "generate:nav": "npx tsx scripts/generate-nav-data.ts",
-    "seed": "tsx src/scripts/seed.ts"
+    "seed": "tsx src/scripts/seed.ts",
+    "check-links": "tsx scripts/check-links.ts"
   },
   "dependencies": {
     "@payloadcms/db-mongodb": "3.17.1",
@@ -39,6 +40,7 @@
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@types/xml2js": "^0.4.14",
     "ali-oss": "^6.23.0",
     "autoprefixer": "^10.0.0",
     "dotenv": "^16.0.0",
@@ -50,7 +52,9 @@
     "tailwindcss": "^3.4.0",
     "tsx": "^4.21.0",
     "typescript": "^5.0.0",
-    "xlsx": "^0.18.5"
+    "web-vitals": "^5.1.0",
+    "xlsx": "^0.18.5",
+    "xml2js": "^0.6.2"
   },
   "engines": {
     "node": ">=18.0.0"
