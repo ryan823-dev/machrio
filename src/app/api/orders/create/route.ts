@@ -183,6 +183,26 @@ export async function POST(req: NextRequest) {
 
     if (!order) {
       console.error('Failed to create order - createOrder returned null')
+      // Check if table exists
+      try {
+        const tableCheck = await pool.query(`
+          SELECT EXISTS (
+            SELECT FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+            AND table_name = 'orders'
+          )
+        `)
+        const tableExists = tableCheck.rows[0]?.exists
+        console.error('Orders table exists:', tableExists)
+        if (!tableExists) {
+          return NextResponse.json({ 
+            error: 'Database table "orders" does not exist. Please create it first.',
+            tableExists: false
+          }, { status: 500 })
+        }
+      } catch (checkError) {
+        console.error('Error checking table existence:', checkError)
+      }
       return NextResponse.json({ error: 'Failed to create order in database' }, { status: 500 })
     }
 
