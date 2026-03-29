@@ -24,9 +24,9 @@ export async function GET() {
   const pool = getPool()
   
   try {
-    // 获取所有已发布的产品
+    // 获取所有已发布的产品（不限制数量）
     const result = await getProducts({ 
-      limit: 1000,  // 最多获取 1000 个产品
+      limit: 10000,  // 获取足够多的产品
       status: 'published' 
     })
 
