@@ -222,14 +222,34 @@ async function getCategoryProducts(categoryId: string, categorySlug: string) {
     )
 
     const docs = productsResult.rows.map((p) => {
+      // 解析 images（可能是 JSON 字符串或已解析的数组）
       let imageUrl: string | undefined = undefined
-      if (p.images && Array.isArray(p.images) && p.images.length > 0) {
-        imageUrl = (p.images[0] as { url?: string })?.url || undefined
+      try {
+        let imagesData = p.images
+        if (typeof imagesData === 'string') {
+          imagesData = JSON.parse(imagesData)
+        }
+        if (Array.isArray(imagesData) && imagesData.length > 0) {
+          imageUrl = (imagesData[0] as { url?: string })?.url || undefined
+        }
+      } catch {
+        imageUrl = undefined
       }
+
+      // 解析 pricing（可能是 JSON 字符串或已解析的对象）
       let basePrice: number | undefined = undefined
-      if (p.pricing && typeof p.pricing === 'object' && 'basePrice' in p.pricing) {
-        basePrice = (p.pricing as { basePrice: number }).basePrice
+      try {
+        let pricingData = p.pricing
+        if (typeof pricingData === 'string') {
+          pricingData = JSON.parse(pricingData)
+        }
+        if (pricingData && typeof pricingData === 'object' && 'basePrice' in pricingData) {
+          basePrice = (pricingData as { basePrice: number }).basePrice
+        }
+      } catch {
+        basePrice = undefined
       }
+
       return {
         id: p.id,
         name: p.name,

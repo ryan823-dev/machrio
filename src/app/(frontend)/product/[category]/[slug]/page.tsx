@@ -430,7 +430,8 @@ function generateProductFAQs(product: {
   const { name, brand_name, category_name, specifications, min_order_quantity, pricing, availability, lead_time } = product
   
   // 1. Specification / Selection question
-  const specs = (specifications as { label: string; value: string }[] | null) || []
+  const specsArray = specifications as { label: string; value: string }[] | null
+  const specs = Array.isArray(specsArray) ? specsArray : []
   const specSummary = specs.slice(0, 3).map(s => `${s.label}: ${s.value}`).join(', ')
   faqs.push({
     question: `What are the key specifications of ${name}?`,
@@ -564,7 +565,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
   ] : null)
 
   // Specs
-  const specifications = (product.specifications as { label: string; value: string; unit?: string }[] | null) || []
+  const specsRaw = product.specifications as { label: string; value: string; unit?: string }[] | null
+  const specifications = Array.isArray(specsRaw) ? specsRaw : []
 
   // Description
   const descriptionHtml = lexicalToHtml(product.full_description)
