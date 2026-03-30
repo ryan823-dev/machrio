@@ -193,8 +193,15 @@ async function getCategoryData(slug: string) {
 
 // 获取分类产品
 async function getCategoryProducts(categoryId: string, categorySlug: string) {
-  const pool = getPool()
   const PRODUCTS_PER_PAGE = 24
+
+  // 检查 DATABASE_URI 是否存在
+  if (!process.env.DATABASE_URI) {
+    console.warn('[getCategoryProducts] DATABASE_URI 未配置，返回空列表')
+    return { docs: [], totalDocs: 0 }
+  }
+
+  const pool = getPool()
 
   try {
     // 获取产品总数

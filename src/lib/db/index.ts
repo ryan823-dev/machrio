@@ -20,8 +20,13 @@ export function getPool(): Pool {
 }
 
 function createPool(): Pool {
+  const connectionString = process.env.DATABASE_URI
+  if (!connectionString) {
+    console.error('[createPool] DATABASE_URI 未配置')
+    throw new Error('DATABASE_URI environment variable is not set')
+  }
   return new Pool({
-    connectionString: process.env.DATABASE_URI,
+    connectionString,
     max: 5,
     min: 1,
     idleTimeoutMillis: 30000,
