@@ -12,19 +12,24 @@ const { Pool } = pg
 let globalPool: Pool | null = null
 
 function getGlobalPool(): Pool {
-  // 在开发环境使用普通全局变量
-  if (process.env.NODE_ENV === 'development') {
-    if (!globalPool) {
-      globalPool = createPool()
+  try {
+    // 在开发环境使用普通全局变量
+    if (process.env.NODE_ENV === 'development') {
+      if (!globalPool) {
+        globalPool = createPool()
+      }
+      return globalPool
     }
-    return globalPool
-  }
 
-  // 在生产环境使用 globalThis 跨请求持久化
-  if (!(globalThis as Record<string, unknown>).__pgPool) {
-    (globalThis as Record<string, unknown>).__pgPool = createPool()
+    // 在生产环境使用 globalThis 跨请求持久化
+    if (!(globalThis as Record<string, unknown>).__pgPool) {
+      (globalThis as Record<string, unknown>).__pgPool = createPool()
+    }
+    return (globalThis as Record<string, unknown>).__pgPool as Pool
+  } catch (error) {
+    console.error('[getGlobalPool] 创建连接池失败:', error)
+    throw error
   }
-  return (globalThis as Record<string, unknown>).__pgPool as Pool
 }
 
 // 创建连接池 - 带超时配置
