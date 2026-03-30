@@ -405,23 +405,36 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const parentCatSlug = product.parent_category_slug || ''
   const parentCatName = product.parent_category_name || ''
 
-  // Image
+  // Image - 解析 JSON 字符串（数据库存储为 text）
   let imageUrl = ''
   try {
-    const images = product.images as { url?: string }[] | null
+    let imagesData = product.images
+    if (typeof imagesData === 'string') {
+      imagesData = JSON.parse(imagesData)
+    }
+    const images = imagesData as { url?: string }[] | null
     imageUrl = images?.[0]?.url || product.external_image_url || ''
   } catch {
     imageUrl = product.external_image_url || ''
   }
 
-  // Pricing
-  const pricing = product.pricing as {
+  // Pricing - 解析 JSON 字符串（数据库存储为 text）
+  let pricing: {
     basePrice?: number
     priceUnit?: string
     currency?: string
     compareAtPrice?: number
     tieredPricing?: { minQty: number; maxQty?: number; unitPrice: number }[]
-  } | null
+  } | null = null
+  try {
+    let pricingData = product.pricing
+    if (typeof pricingData === 'string') {
+      pricingData = JSON.parse(pricingData)
+    }
+    pricing = pricingData as typeof pricing
+  } catch {
+    pricing = null
+  }
   const basePrice = pricing?.basePrice
   const priceUnit = pricing?.priceUnit
   const currency = pricing?.currency || 'USD'
@@ -435,9 +448,17 @@ export default async function ProductPage({ params }: ProductPageProps) {
     { minQty: 51, unitPrice: Math.round(basePrice * 0.9 * 100) / 100 },
   ] : null)
 
-  // Specs
-  const specsRaw = product.specifications as { label: string; value: string; unit?: string }[] | null
-  const specifications = Array.isArray(specsRaw) ? specsRaw : []
+  // Specs - 解析 JSON 字符串（数据库存储为 text）
+  let specifications: { label: string; value: string; unit?: string }[] = []
+  try {
+    let specsData = product.specifications
+    if (typeof specsData === 'string') {
+      specsData = JSON.parse(specsData)
+    }
+    specifications = Array.isArray(specsData) ? specsData : []
+  } catch {
+    specifications = []
+  }
 
   // Description
   const descriptionHtml = lexicalToHtml(product.full_description)
