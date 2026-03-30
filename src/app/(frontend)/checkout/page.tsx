@@ -6,6 +6,7 @@ import Link from 'next/link'
 export const dynamic = 'force-static'
 import { useRouter } from 'next/navigation'
 import { useCart } from '@/contexts/CartContext'
+import StripePayment from '@/components/StripePayment'
 
 interface CheckoutForm {
   name: string
@@ -55,6 +56,16 @@ const COUNTRY_CURRENCY_MAP: { code: string; name: string; flag: string; currency
   { code: 'CN', name: 'China', flag: '\u{1F1E8}\u{1F1F3}', currency: 'CNY', currencyName: 'Chinese Yuan' },
 ]
 
+// 嵌入式支付订单信息
+interface PendingOrder {
+  orderId: string
+  orderNumber: string
+  amount: number
+  currency: string
+  customerEmail: string
+  stripeUrl?: string // 回退跳转 URL
+}
+
 export default function CheckoutPage() {
   const router = useRouter()
   const {
@@ -65,6 +76,9 @@ export default function CheckoutPage() {
   const [form, setForm] = useState<CheckoutForm>(initialForm)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
+  // 嵌入式支付状态
+  const [showStripePayment, setShowStripePayment] = useState(false)
+  const [pendingOrder, setPendingOrder] = useState<PendingOrder | null>(null)
 
   // Only show selected items
   const selectedCartItems = items.filter(i => selectedItems.has(i.productId))
@@ -134,9 +148,18 @@ export default function CheckoutPage() {
       // Order created successfully - clear cart
       clearCart()
 
-      if (form.paymentMethod === 'stripe' && data.stripeUrl) {
-        // Redirect to Stripe Checkout
-        window.location.href = data.stripeUrl
+      if (form.paymentMethod === 'stripe') {
+        // 嵌入式支付：显示 StripePayment 组件
+        setPendingOrder({
+          orderId: data.orderId,
+          orderNumber: data.orderNumber,
+          amount: total,
+          currency: 'USD',
+          customerEmail: form.email,
+          stripeUrl: data.stripeUrl, // 保留跳转 URL 作为回退
+        })
+        setShowStripePayment(true)
+        setSubmitting(false)
       } else if (form.paymentMethod === 'paypal') {
         // Create PayPal order and redirect
         const paypalRes = await fetch('/api/paypal/create-order', {
@@ -178,6 +201,28 @@ export default function CheckoutPage() {
     }
   }
 
+  // 嵌入式支付成功回调
+  function handleStripeSuccess(paymentIntentId: string) {
+    setShowStripePayment(false)
+    router.push(`/order/${pendingOrder?.orderNumber}?payment=success`)
+  }
+
+  // 嵌入式支付失败回调
+  function handleStripeError(message: string) {
+    setError(`Payment failed: ${message}. You can try again or use another payment method.`)
+  }
+
+  // 取消嵌入式支付，回退到跳转式支付
+  function handleStripeCancel() {
+    if (pendingOrder?.stripeUrl) {
+      // 回退到 Stripe Checkout 跳转方式
+      window.location.href = pendingOrder.stripeUrl
+    } else {
+      setShowStripePayment(false)
+      setError('Payment cancelled. Please try again.')
+    }
+  }
+
   if (itemCount === 0) {
     return (
       <div className="container-main py-16 text-center">
@@ -192,9 +237,35 @@ export default function CheckoutPage() {
 
   return (
     <div className="container-main py-8">
-      <h1 className="text-2xl font-bold text-secondary-900">Checkout</h1>
+      {/* 嵌入式支付模式：显示 StripePayment 组件 */}
+      {showStripePayment && pendingOrder ? (
+        <div className="max-w-2xl mx-auto">
+          <h1 className="text-2xl font-bold text-secondary-900 mb-6">Complete Your Payment</h1>
+          <p className="text-secondary-600 mb-4">
+            Order <span className="font-semibold">{pendingOrder.orderNumber}</span> has been created.
+            Please complete your payment below.
+          </p>
+          <StripePayment
+            orderId={pendingOrder.orderId}
+            orderNumber={pendingOrder.orderNumber}
+            amount={pendingOrder.amount}
+            currency={pendingOrder.currency}
+            customerEmail={pendingOrder.customerEmail}
+            onSuccess={handleStripeSuccess}
+            onError={handleStripeError}
+            onCancel={handleStripeCancel}
+          />
+          {error && (
+            <div className="mt-4 rounded-md bg-red-50 p-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+        </div>
+      ) : (
+        <>
+          <h1 className="text-2xl font-bold text-secondary-900">Checkout</h1>
 
-      <form onSubmit={handleSubmit} className="mt-6 grid gap-8 lg:grid-cols-3">
+          <form onSubmit={handleSubmit} className="mt-6 grid gap-8 lg:grid-cols-3">
         {/* Left: Form fields */}
         <div className="lg:col-span-2 space-y-6">
           {/* Customer Information */}
@@ -510,6 +581,8 @@ export default function CheckoutPage() {
           </div>
         </div>
       </form>
+        </>
+      )}
     </div>
   )
 }

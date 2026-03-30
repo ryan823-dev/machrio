@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 })
   }
 
+  // 处理 Checkout Session 完成事件（原有逻辑，嵌入式支付前已存在）
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session
 
@@ -63,7 +64,48 @@ export async function POST(req: NextRequest) {
           ]
         )
 
-        console.log(`Order ${orderNumber} marked as paid via Stripe`)
+        console.log(`Order ${orderNumber} marked as paid via Stripe Checkout Session`)
+      } catch (err) {
+        console.error(`Failed to update order ${orderNumber}:`, err)
+        return NextResponse.json({ error: 'Failed to update order' }, { status: 500 })
+      }
+    }
+  }
+
+  // 处理 PaymentIntent 成功事件（新增，支持嵌入式支付）
+  if (event.type === 'payment_intent.succeeded') {
+    const paymentIntent = event.data.object as Stripe.PaymentIntent
+
+    const orderNumber = paymentIntent.metadata?.orderNumber
+    const orderId = paymentIntent.metadata?.orderId
+
+    if (orderId) {
+      try {
+        const pool = getPool()
+
+        // Update order status
+        await pool.query(
+          `UPDATE orders
+           SET status = 'confirmed',
+               payment_status = 'paid',
+               payment_info = jsonb_set(
+                 COALESCE(payment_info, '{}'),
+                 '{stripe}',
+                 $1
+               ),
+               updated_at = NOW()
+           WHERE id::text = $2`,
+          [
+            JSON.stringify({
+              method: 'stripe',
+              stripePaymentIntentId: paymentIntent.id,
+              paymentType: 'embedded',
+            }),
+            orderId
+          ]
+        )
+
+        console.log(`Order ${orderNumber} marked as paid via Stripe PaymentIntent (embedded)`)
       } catch (err) {
         console.error(`Failed to update order ${orderNumber}:`, err)
         return NextResponse.json({ error: 'Failed to update order' }, { status: 500 })

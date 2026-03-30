@@ -19,6 +19,7 @@
     "@payloadcms/next": "3.17.1",
     "@payloadcms/richtext-lexical": "3.17.1",
     "@payloadcms/ui": "3.17.1",
+    "@stripe/react-stripe-js": "^6.0.0",
     "@stripe/stripe-js": "^8.8.0",
     "graphql": "^16.10.0",
     "next": "15.3.9",
