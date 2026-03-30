@@ -24,6 +24,140 @@ interface ProductPageProps {
   params: Promise<{ category: string; slug: string }>
 }
 
+// 从静态数据获取产品（回退机制）
+// 注意：静态数据只包含基本产品信息，不包含实时库存、价格等
+async function getProductFromStaticData(slug: string): Promise<{
+  product: {
+    id: string
+    name: string
+    slug: string
+    sku: string
+    short_description: string | null
+    full_description: unknown | null
+    pricing: unknown | null
+    images: unknown | null
+    specifications: unknown | null
+    status: string
+    availability: string | null
+    lead_time: string | null
+    min_order_quantity: number | null
+    package_qty: number | null
+    package_unit: string | null
+    external_image_url: string | null
+    category_id: string | null
+    category_slug: string | null
+    category_name: string | null
+    parent_category_slug: string | null
+    parent_category_name: string | null
+    grandparent_category_slug: string | null
+  } | null
+}> {
+  try {
+    // 尝试从构建时生成的静态数据获取
+    const navData = require('@/data/nav-categories.json')
+    const categories = navData.categories || []
+    
+    // 递归查找分类
+    function findCategory(cats: any[], targetSlug: string): any | null {
+      for (const cat of cats) {
+        if (cat.slug === targetSlug) {
+          return cat
+        }
+        if (cat.children) {
+          const found = findCategory(cat.children, targetSlug)
+          if (found) return found
+        }
+      }
+      return null
+    }
+    
+    const category = findCategory(categories, slug)
+    if (category) {
+      // 返回分类信息（用于显示分类页面）
+      return {
+        product: {
+          id: `static-${category.slug}`,
+          name: category.name,
+          slug: category.slug,
+          sku: `CAT-${category.slug.toUpperCase()}`,
+          short_description: category.description || `Browse ${category.name} products.`,
+          full_description: null,
+          pricing: null,
+          images: null,
+          specifications: null,
+          status: 'published',
+          availability: 'contact',
+          lead_time: 'Contact for lead time',
+          min_order_quantity: 1,
+          package_qty: null,
+          package_unit: null,
+          external_image_url: null,
+          category_id: category.id,
+          category_slug: category.slug,
+          category_name: category.name,
+          parent_category_slug: null,
+          parent_category_name: null,
+          grandparent_category_slug: null,
+        }
+      }
+    }
+    
+    return { product: null }
+  } catch (error) {
+    console.error('[getProductFromStaticData] 错误:', error)
+    return { product: null }
+  }
+}
+
+// 获取产品数据（带回退机制）
+async function getProductWithFallback(slug: string): Promise<{
+  product: {
+    id: string
+    name: string
+    slug: string
+    sku: string | null
+    short_description: string | null
+    full_description: unknown | null
+    pricing: unknown | null
+    images: unknown | null
+    specifications: unknown | null
+    status: string
+    availability: string | null
+    lead_time: string | null
+    min_order_quantity: number | null
+    package_qty: number | null
+    package_unit: string | null
+    external_image_url: string | null
+    category_id: string | null
+    category_slug: string | null
+    category_name: string | null
+    parent_category_slug: string | null
+    parent_category_name: string | null
+    grandparent_category_slug: string | null
+  } | null
+}> {
+  // 检查 DATABASE_URI 是否存在
+  if (!process.env.DATABASE_URI) {
+    console.warn('[getProductWithFallback] DATABASE_URI 未配置，使用静态数据:', slug)
+    return getProductFromStaticData(slug)
+  }
+  
+  try {
+    const result = await getProductBySlug(slug)
+    
+    if (!result.product) {
+      console.warn('[getProductWithFallback] 数据库中未找到产品，使用静态数据:', slug)
+      return getProductFromStaticData(slug)
+    }
+    
+    return result
+  } catch (error) {
+    console.error('[getProductWithFallback] 数据库查询错误:', error)
+    console.warn('使用静态数据作为回退')
+    return getProductFromStaticData(slug)
+  }
+}
+
 // Simplified text extraction for plain text fields
 function extractPlainText(richText: unknown): string {
   if (!richText || typeof richText !== 'object') return ''
@@ -338,7 +472,7 @@ function generateProductFAQs(product: {
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params
-  const { product } = await getProductBySlug(slug)
+  const { product } = await getProductWithFallback(slug)
   
   if (!product) return { title: 'Product Not Found' }
 
@@ -383,8 +517,9 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 
 export default async function ProductPage({ params }: ProductPageProps) {
   const { slug } = await params
-  const { product } = await getProductBySlug(slug)
+  const { product } = await getProductWithFallback(slug)
   
+  // 如果数据库和静态数据都找不到产品，返回 404
   if (!product) notFound()
 
   const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'https://machrio.com'

@@ -69,14 +69,50 @@ npm start
 
 ## 🐛 故障排查
 
-### 分类页面 404 错误
+### 分类页面 404 或显示"0 products"
 
 **原因**：`DATABASE_URI` 未配置或数据库连接失败
 
+**症状**：
+- 分类页面能打开，但显示"0 products"
+- 产品页面返回 500 错误
+
 **解决方法**：
-1. 检查 Railway 环境变量是否正确配置
-2. 查看 Railway 部署日志，确认 `prebuild` 脚本成功运行
-3. 验证数据库连接字符串是否正确
+1. **检查环境变量名称**：
+   - 必须是 `DATABASE_URI`（不是 `DATABASE_URL`）
+   - 在 Railway 控制台 → Variables 标签页确认
+2. **检查环境变量值**：
+   - 格式：`postgresql://postgres:密码@主机：端口/数据库名`
+   - 确保没有多余的空格或引号
+3. **重新部署**：
+   - 修改环境变量后，必须点击 "Redeploy" 或推送新的 git commit
+4. **查看部署日志**：
+   - 在 Railway 控制台查看 Deploy 日志
+   - 搜索 "DATABASE_URI" 相关错误信息
+
+### 产品页面 500 错误
+
+**原因**：数据库连接失败，无法获取产品数据
+
+**症状**：
+- 访问 `/product/[category]/[slug]` 返回 500 错误
+- 分类页面显示"0 products"
+
+**解决方法**：
+1. 按照上述步骤检查 `DATABASE_URI` 配置
+2. **验证数据库连接**：
+   ```bash
+   # 本地测试数据库连接
+   psql "postgresql://postgres:密码@主机：端口/数据库名" -c "SELECT 1;"
+   ```
+3. **检查数据库表**：
+   ```bash
+   # 确认 products 表存在
+   psql "DATABASE_URI" -c "SELECT COUNT(*) FROM products;"
+   ```
+4. **查看应用日志**：
+   - Railway 控制台 → Deploy 日志
+   - 查找 "[getProductBySlug]" 或 "Database query error" 相关错误
 
 ### 构建失败
 
@@ -94,6 +130,42 @@ npm start
 **解决方法**：
 1. 重新触发 Railway 部署（git push）
 2. 或本地运行 `npm run generate:nav` 生成新数据并提交
+
+## 🔧 高级故障排查
+
+### 验证 DATABASE_URI 是否正确加载
+
+在 Railway 控制台中，检查日志中是否有以下信息：
+- 成功：无 DATABASE_URI 相关错误
+- 失败："[getProductWithFallback] DATABASE_URI 未配置"
+
+### 测试数据库连接
+
+使用本地 psql 测试连接：
+```bash
+# 替换为你的实际 DATABASE_URI
+psql "postgresql://postgres:密码@主机：端口/数据库名" -c "SELECT version();"
+```
+
+### 检查数据库表结构
+
+```bash
+# 查看 products 表结构
+psql "DATABASE_URI" -c "\d products"
+
+# 查看 categories 表结构
+psql "DATABASE_URI" -c "\d categories"
+
+# 测试产品查询
+psql "DATABASE_URI" -c "SELECT id, name, slug FROM products WHERE status = 'published' LIMIT 5;"
+```
+
+### 查看应用错误日志
+
+Railway 控制台 → 选择服务 → Logs 标签页：
+- 筛选 "error" 或 "Error" 关键字
+- 查找数据库连接相关错误
+- 注意错误发生的时间点是否与部署时间一致
 
 ## 📝 本地开发配置
 
