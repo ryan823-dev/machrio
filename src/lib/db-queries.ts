@@ -32,7 +32,7 @@ function getGlobalPool(): Pool {
   }
 }
 
-// 创建连接池 - 带超时配置
+// 创建连接池 - 带超时配置和 SSL 支持
 function createPool(): Pool {
   const connectionString = process.env.DATABASE_URI
   if (!connectionString) {
@@ -43,6 +43,7 @@ function createPool(): Pool {
     max: 5,  // 增加到 5 个连接（每个 Vercel 实例）
     connectionTimeoutMillis: 10000, // 10秒超时
     idleTimeoutMillis: 30000, // 30秒空闲超时
+    ssl: { rejectUnauthorized: false }, // Railway 需要 SSL 连接
   })
 }
 
