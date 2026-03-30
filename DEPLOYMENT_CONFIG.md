@@ -90,6 +90,34 @@ npm start
    - 在 Railway 控制台查看 Deploy 日志
    - 搜索 "DATABASE_URI" 相关错误信息
 
+### Railway 数据库连接问题（最常见）
+
+**症状**：
+- 本地 psql 可以连接数据库
+- 但网站产品页面返回 500 错误
+- 分类页面显示"0 products"
+- `/api/test-db` 返回失败
+
+**原因**：Railway 应用服务与数据库服务之间的网络连接问题
+
+**解决方法**：
+1. **检查 Railway 服务链接**：
+   - 打开 Railway 控制台
+   - 确认应用服务和 PostgreSQL 数据库在同一个项目
+   - 确保数据库服务已正确链接到应用（应该有连线）
+
+2. **重新生成 DATABASE_URI**：
+   - 在 Railway 控制台，点击 PostgreSQL 数据库服务
+   - 进入 "Variables" 标签
+   - 删除现有的 `DATABASE_URI` 变量
+   - 重新添加 `DATABASE_URI`（从 Railway 数据库服务自动注入）
+   - 点击 "Redeploy" 重新部署应用
+
+3. **验证连接**：
+   - 部署完成后访问 `https://machrio.com/api/test-db`
+   - 应该显示 `"success":true`
+   - 产品页面应该返回 200
+
 ### 产品页面 500 错误
 
 **原因**：数据库连接失败，无法获取产品数据
