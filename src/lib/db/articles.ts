@@ -1,13 +1,4 @@
-import { Pool } from 'pg'
-
-// PostgreSQL 连接池
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URI,
-  max: 1,
-  min: 0,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000,
-})
+import { getPool } from '@/lib/db'
 
 // Article 类型定义
 export interface Article {
@@ -46,6 +37,7 @@ export async function getArticles(options: {
 }> {
   const { category, page = 1, limit = 12 } = options
   const offset = (page - 1) * limit
+  const pool = getPool()
 
   try {
     // 构建 WHERE 条件
@@ -110,6 +102,7 @@ export async function getArticles(options: {
 
 // 获取单篇 article
 export async function getArticleBySlug(slug: string): Promise<Article | null> {
+  const pool = getPool()
   try {
     const result = await pool.query(
       `SELECT * FROM articles WHERE slug = $1 AND status = 'published'`,
@@ -165,7 +158,4 @@ function extractTextFromLexical(node: any): string {
   return ''
 }
 
-// 关闭连接池（用于 graceful shutdown）
-export async function closePool() {
-  await pool.end()
-}
+// 注意：不要导出 closePool() 函数，在 serverless 环境中连接池应该被复用

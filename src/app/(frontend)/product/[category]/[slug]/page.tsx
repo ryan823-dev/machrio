@@ -409,9 +409,9 @@ async function getRelatedProductsFromDB(
   } catch (err) {
     console.error('Error fetching related products:', err)
     return []
-  } finally {
-    await pool.end()
   }
+  // 注意：不要调用 pool.end()！
+  // 在 serverless 环境中，连接池应该被复用而不是关闭
 }
 
 // Generate product FAQs

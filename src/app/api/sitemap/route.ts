@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server'
-import { createPool } from '@/lib/db-queries'
+import { getPool } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
-  const pool = createPool()
+  const pool = getPool()
   const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'https://machrio.com'
   
   try {
@@ -89,9 +89,9 @@ export async function GET() {
     }
     
     xml += '</urlset>'
-    
-    await pool.end()
-    
+
+    // 注意：不要调用 pool.end()！在 serverless 环境中连接池应该被复用
+
     return new NextResponse(xml, {
       headers: {
         'Content-Type': 'application/xml',
@@ -100,7 +100,7 @@ export async function GET() {
     })
   } catch (error) {
     console.error('Sitemap generation error:', error)
-    await pool.end()
+    // 不要调用 pool.end()！
     return NextResponse.json(
       { error: 'Failed to generate sitemap' },
       { status: 500 }

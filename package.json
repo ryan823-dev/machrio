@@ -3,7 +3,6 @@
   "type": "module",
   "version": "0.1.0",
   "private": true,
-  "//": "trigger deploy",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -16,15 +15,12 @@
     "check-links": "tsx scripts/check-links.ts"
   },
   "dependencies": {
-    "@payloadcms/db-mongodb": "3.17.1",
     "@payloadcms/db-postgres": "3.17.1",
     "@payloadcms/next": "3.17.1",
     "@payloadcms/richtext-lexical": "3.17.1",
-    "@payloadcms/storage-vercel-blob": "3.17.1",
     "@payloadcms/ui": "3.17.1",
     "@stripe/stripe-js": "^8.8.0",
     "graphql": "^16.10.0",
-    "mongodb": "^7.1.0",
     "next": "15.3.9",
     "payload": "3.17.1",
     "pg": "^8.20.0",

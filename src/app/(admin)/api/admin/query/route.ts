@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Pool } from 'pg'
+import { getPool } from '@/lib/db'
 
 // Only allow queries in production with proper authentication
 const ALLOWED_ORIGINS = [
@@ -57,29 +57,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Connect to database
-    const databaseUri = process.env.DATABASE_URI
-    if (!databaseUri) {
-      return NextResponse.json(
-        { error: 'Database connection not configured' },
-        { status: 500 }
-      )
-    }
+    // Connect to database using global pool
+    const pool = getPool()
 
-    const pool = new Pool({
-      connectionString: databaseUri,
-      ssl:
-        process.env.NODE_ENV === 'production'
-          ? { rejectUnauthorized: false }
-          : false,
-    })
-
-    try {
-      const result = await pool.query(sql)
-      return NextResponse.json({ rows: result.rows })
-    } finally {
-      await pool.end()
-    }
+    const result = await pool.query(sql)
+    // 注意：不要调用 pool.end()！在 serverless 环境中连接池应该被复用
+    return NextResponse.json({ rows: result.rows })
   } catch (error) {
     console.error('Database query error:', error)
     return NextResponse.json(

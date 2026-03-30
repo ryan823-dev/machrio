@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { Pool } from 'pg'
+import { getPool } from '@/lib/db'
 
 /**
  * Internal API to check if a product exists
@@ -19,18 +19,15 @@ export async function GET(request: Request) {
     return NextResponse.json({ exists: true })
   }
 
-  let pool: Pool | null = null
   try {
-    pool = new Pool({
-      connectionString: process.env.DATABASE_URI,
-      max: 1,
-      connectionTimeoutMillis: 5000,
-    })
+    const pool = getPool()
 
     const result = await pool.query(
       'SELECT id FROM products WHERE slug = $1 LIMIT 1',
       [slug]
     )
+
+    // 注意：不要调用 pool.end()！在 serverless 环境中连接池应该被复用
 
     return NextResponse.json({
       exists: result.rows.length > 0,
@@ -39,9 +36,5 @@ export async function GET(request: Request) {
     console.error('[check-product] Error checking product:', error)
     // Return true to avoid breaking the site - let the product page handle 404
     return NextResponse.json({ exists: true, error: 'Database error' })
-  } finally {
-    if (pool) {
-      await pool.end()
-    }
   }
 }

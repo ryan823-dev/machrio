@@ -1,13 +1,10 @@
 import { NextResponse } from 'next/server'
-import { Pool } from 'pg'
+import { getPool } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URI,
-    max: 1,
-  })
+  const pool = getPool()
 
   try {
     // Check for specific product slug
@@ -25,14 +22,13 @@ export async function GET() {
       WHERE slug IN ('surface-protection-tape', 'tape', 'packing-tape')
     `)
 
-    await pool.end()
+    // 注意：不要调用 pool.end()！在 serverless 环境中连接池应该被复用
 
     return NextResponse.json({
       targetProduct: targetProduct.rows,
       categories: categoriesResult.rows,
     })
   } catch (error) {
-    await pool.end()
     return NextResponse.json({ error: String(error) }, { status: 500 })
   }
 }

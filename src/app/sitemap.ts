@@ -1,5 +1,5 @@
 import type { MetadataRoute } from 'next'
-import { Pool } from 'pg'
+import { getPool } from '@/lib/db'
 
 export const dynamic = 'force-static'
 export const revalidate = 3600 // 每小时重新生成
@@ -40,13 +40,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     return staticPages
   }
 
-  // 使用 PostgreSQL 连接获取数据
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URI,
-    max: 2,
-    idleTimeoutMillis: 3000,
-    connectionTimeoutMillis: 3000,
-  })
+  // 使用全局连接池获取数据
+  const pool = getPool()
 
   try {
     // 获取分类（带超时）
@@ -91,9 +86,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   } catch (error) {
     console.error('Sitemap database query failed, returning static pages only:', error)
     // 即使失败也返回静态页面，而不是空数组
-  } finally {
-    await pool.end()
   }
+  // 注意：不要调用 pool.end()！在 serverless 环境中连接池应该被复用
 
   return staticPages
 }

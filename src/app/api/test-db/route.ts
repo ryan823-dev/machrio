@@ -1,13 +1,10 @@
 import { NextResponse } from 'next/server'
-import { Pool } from 'pg'
+import { getPool } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET() {
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URI,
-    max: 1,
-  })
+  const pool = getPool()
 
   try {
     // 测试1：总产品数
@@ -89,7 +86,7 @@ export async function GET() {
       LIMIT 1
     `)
 
-    await pool.end()
+    // 注意：不要调用 pool.end()！在 serverless 环境中连接池应该被复用
 
     return NextResponse.json({
       success: true,
@@ -108,7 +105,7 @@ export async function GET() {
       seoTest,
     })
   } catch (error) {
-    await pool.end()
+    // 不要调用 pool.end()！
     return NextResponse.json({
       success: false,
       error: String(error),

@@ -1,24 +1,12 @@
 import { NextResponse } from 'next/server'
 import { getProducts } from '@/lib/db'
-import { Pool } from 'pg'
+import { getPool } from '@/lib/db'
 
 /**
  * Google Merchant Center XML Feed
  * 根据 Google Merchant Center 规范生成产品数据
  * 文档：https://support.google.com/merchants/answer/7052112
  */
-
-// 获取数据库连接池
-function getPool(): Pool {
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URI,
-    max: 5,
-    min: 1,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000,
-  })
-  return pool
-}
 
 export async function GET() {
   const pool = getPool()
@@ -166,8 +154,7 @@ export async function GET() {
 
     const xmlContent = xmlParts.join('\n')
 
-    // 关闭数据库连接
-    await pool.end()
+    // 注意：不要调用 pool.end()！在 serverless 环境中连接池应该被复用
 
     return new NextResponse(xmlContent, {
       headers: {
@@ -177,7 +164,7 @@ export async function GET() {
     })
   } catch (error) {
     console.error('Error generating merchant feed:', error)
-    await pool.end()
+    // 不要调用 pool.end()！
     return NextResponse.json(
       { error: 'Failed to generate product feed' },
       { status: 500 }

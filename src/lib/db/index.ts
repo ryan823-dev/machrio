@@ -1,4 +1,4 @@
-import { Pool } from 'pg'
+import { Pool, PoolClient, QueryResult } from 'pg'
 
 // 全局连接池 - Vercel Serverless 环境使用 globalThis 持久化
 let globalPool: Pool | null = null
@@ -25,14 +25,88 @@ function createPool(): Pool {
     console.error('[createPool] DATABASE_URI 未配置')
     throw new Error('DATABASE_URI environment variable is not set')
   }
-  return new Pool({
+
+  const pool = new Pool({
     connectionString,
-    max: 5,
-    min: 1,
-    idleTimeoutMillis: 30000,
+    max: 3,  // 减少最大连接数
+    min: 0,  // 让连接池在空闲时可以完全清空
+    idleTimeoutMillis: 5000,  // 5秒空闲超时，比 Railway 代理超时更短
     connectionTimeoutMillis: 10000,
     ssl: { rejectUnauthorized: false }, // Railway 需要 SSL 连接
   })
+
+  // 处理连接错误，避免进程崩溃
+  pool.on('error', (err) => {
+    console.error('[PostgreSQL Pool] 连接错误:', err.message)
+    // 不抛出错误，让连接池自动重连
+  })
+
+  return pool
+}
+
+// 带自动重试的查询函数 - 处理 Railway 代理超时问题
+export async function safeQuery<T = any>(
+  sql: string,
+  params?: any[],
+  retries = 2
+): Promise<QueryResult<T>> {
+  const pool = getPool()
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const result = await pool.query<T>(sql, params)
+      return result
+    } catch (error: any) {
+      const isConnectionError =
+        error.message?.includes('Connection terminated') ||
+        error.message?.includes('Connection closed') ||
+        error.message?.includes('ECONNRESET') ||
+        error.message?.includes('ETIMEDOUT') ||
+        error.code === '57P01' // admin_shutdown
+
+      if (isConnectionError && attempt < retries) {
+        console.warn(`[safeQuery] 连接错误，重试 ${attempt + 1}/${retries}:`, error.message)
+        // 等待一小段时间后重试
+        await new Promise(resolve => setTimeout(resolve, 100))
+        continue
+      }
+
+      throw error
+    }
+  }
+
+  // 不应该到达这里
+  throw new Error('Query failed after retries')
+}
+
+// 带连接验证的查询
+export async function queryWithValidation<T = any>(
+  sql: string,
+  params?: any[]
+): Promise<QueryResult<T>> {
+  const pool = getPool()
+  let client: PoolClient | null = null
+
+  try {
+    // 获取一个连接
+    client = await pool.connect()
+
+    // 验证连接是否有效
+    try {
+      await client.query('SELECT 1')
+    } catch {
+      // 连接无效，释放并重新获取
+      client.release(true) // true = 销毁连接
+      client = await pool.connect()
+    }
+
+    // 执行实际查询
+    return await client.query<T>(sql, params)
+  } finally {
+    if (client) {
+      client.release()
+    }
+  }
 }
 
 // ============================================
