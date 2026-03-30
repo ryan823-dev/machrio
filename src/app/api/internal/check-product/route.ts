@@ -13,12 +13,20 @@ export async function GET(request: Request) {
     return NextResponse.json({ exists: false, error: 'Missing slug parameter' }, { status: 400 })
   }
 
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URI,
-    max: 1,
-  })
+  // Check if DATABASE_URI is configured
+  if (!process.env.DATABASE_URI) {
+    console.warn('[check-product] DATABASE_URI not configured, assuming product exists')
+    return NextResponse.json({ exists: true })
+  }
 
+  let pool: Pool | null = null
   try {
+    pool = new Pool({
+      connectionString: process.env.DATABASE_URI,
+      max: 1,
+      connectionTimeoutMillis: 5000,
+    })
+
     const result = await pool.query(
       'SELECT id FROM products WHERE slug = $1 LIMIT 1',
       [slug]
@@ -28,9 +36,12 @@ export async function GET(request: Request) {
       exists: result.rows.length > 0,
     })
   } catch (error) {
-    console.error('Error checking product:', error)
-    return NextResponse.json({ exists: true, error: 'Database error' }, { status: 500 })
+    console.error('[check-product] Error checking product:', error)
+    // Return true to avoid breaking the site - let the product page handle 404
+    return NextResponse.json({ exists: true, error: 'Database error' })
   } finally {
-    await pool.end()
+    if (pool) {
+      await pool.end()
+    }
   }
 }

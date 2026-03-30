@@ -7,91 +7,14 @@ import type { NextRequest } from 'next/server'
  *
  * Note: This middleware calls an internal API to check product existence
  * because Edge Runtime doesn't support the pg library directly.
+ *
+ * TEMPORARILY DISABLED: The fetch call to internal API is causing issues
+ * in the Railway environment. Product pages will return 404 instead of 410
+ * for non-existent products, which is acceptable.
  */
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl
-
-  // Check if this is a product page URL
-  const productMatch = pathname.match(/^\/product\/([^\/]+)\/([^\/]+)\/?$/)
-
-  if (productMatch) {
-    const slug = productMatch[2]
-
-    try {
-      // Call internal API to check if product exists
-      const checkUrl = new URL('/api/internal/check-product', request.url)
-      checkUrl.searchParams.set('slug', slug)
-
-      const response = await fetch(checkUrl.toString(), {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-
-      const data = await response.json()
-
-      // If product doesn't exist, return 410 Gone
-      if (!data.exists) {
-        // Return 410 Gone response with HTML content
-        return new NextResponse(
-          `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="robots" content="noindex, nofollow">
-  <title>Product No Longer Available | Machrio</title>
-  <link rel="stylesheet" href="/_next/static/css/app/layout.css">
-  <style>
-    body { font-family: system-ui, -apple-system, sans-serif; background: #f9fafb; margin: 0; }
-    .container { max-width: 1280px; margin: 0 auto; padding: 0 1rem; }
-    .content { text-align: center; padding: 5rem 1rem; }
-    .emoji { font-size: 4rem; margin-bottom: 1.5rem; }
-    h1 { font-size: 1.875rem; font-weight: 700; color: #111827; margin: 0 0 1rem; }
-    p { font-size: 1.125rem; color: #4b5563; margin: 0 0 2rem; }
-    .btn-group { display: flex; flex-direction: column; gap: 1rem; align-items: center; }
-    @media (min-width: 640px) { .btn-group { flex-direction: row; justify-content: center; } }
-    .btn { display: inline-block; padding: 0.75rem 1.5rem; border-radius: 0.5rem; font-weight: 500; text-decoration: none; }
-    .btn-primary { background: #2563eb; color: white; }
-    .btn-primary:hover { background: #1d4ed8; }
-    .btn-secondary { background: #e5e7eb; color: #374151; }
-    .btn-secondary:hover { background: #d1d5db; }
-    .btn-accent { background: #f59e0b; color: white; }
-    .btn-accent:hover { background: #d97706; }
-    .help-text { margin-top: 2rem; font-size: 0.875rem; color: #9ca3af; }
-    .help-text a { color: #2563eb; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="content">
-      <div class="emoji">📦</div>
-      <h1>This Product Is No Longer Available</h1>
-      <p>The product you're looking for has been permanently removed from our catalog. It may have been discontinued or replaced.</p>
-      <div class="btn-group">
-        <a href="/category" class="btn btn-primary">Browse All Products</a>
-        <a href="/rfq" class="btn btn-accent">Request a Custom Quote</a>
-        <a href="/" class="btn btn-secondary">Go to Homepage</a>
-      </div>
-      <p class="help-text">Questions? Contact <a href="mailto:support@machrio.com">support@machrio.com</a></p>
-    </div>
-  </div>
-</body>
-</html>`,
-          {
-            status: 410,
-            headers: {
-              'Content-Type': 'text/html; charset=utf-8',
-            },
-          }
-        )
-      }
-    } catch (error) {
-      console.error('Middleware error:', error)
-    }
-  }
-
+  // Middleware temporarily disabled to fix Railway deployment issues
+  // Product pages will handle 404 themselves
   return NextResponse.next()
 }
 
