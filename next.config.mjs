@@ -517,6 +517,25 @@ const nextConfig = {
         destination: '/category/cleaning-carts',
         permanent: true,
       },
+
+      // ========== Remove Trailing Slashes for Product/Category URLs ==========
+      // Fix GSC "Page with redirect" issue for 1,074 URLs
+      // Redirect URLs with trailing slash to non-slash version (301 permanent)
+      {
+        source: '/product/:category/:slug/',
+        destination: '/product/:category/:slug',
+        permanent: true,
+      },
+      {
+        source: '/category/:slug/',
+        destination: '/category/:slug',
+        permanent: true,
+      },
+      {
+        source: '/brand/:slug/',
+        destination: '/brand/:slug',
+        permanent: true,
+      },
     ]
   },
 }
