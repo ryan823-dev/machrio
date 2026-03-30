@@ -138,16 +138,21 @@ function ListRow({ product, onAddToCart }: { product: ProductCardData; onAddToCa
       <div className="flex flex-shrink-0 flex-col items-end justify-center gap-2">
         {(product.purchaseMode === 'both' || product.purchaseMode === 'buy-online') && product.pricing.basePrice && (
           <button
-              onClick={() => onAddToCart({
-                productId: product.sku,
-                sku: product.sku,
-                name: product.name,
-                slug: product.slug,
-                categorySlug: product.categorySlug,
-                image: product.primaryImage,
-                price: product.pricing.basePrice || 0,
-                priceUnit: product.pricing.priceUnit,
-              })}
+              type="button"
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                onAddToCart({
+                  productId: product.sku,
+                  sku: product.sku,
+                  name: product.name,
+                  slug: product.slug,
+                  categorySlug: product.categorySlug,
+                  image: product.primaryImage,
+                  price: product.pricing.basePrice || 0,
+                  priceUnit: product.pricing.priceUnit,
+                })
+              }}
               className="btn-primary px-4 py-1.5 text-xs"
             >
               Add to Cart
