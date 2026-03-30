@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useCart } from '@/contexts/CartContext'
 
 interface ProductCardData {
+  id: string
   name: string
   slug: string
   categorySlug: string
@@ -29,6 +30,12 @@ interface ProductGridProps {
 
 export function ProductGrid({ products, view = 'list' }: ProductGridProps) {
   const { addItem } = useCart()
+  
+  // Debug: log first product
+  if (products.length > 0) {
+    console.log('[ProductGrid] First product:', products[0])
+  }
+  
   if (products.length === 0) {
     return (
       <div className="flex flex-col items-center py-16 text-center">
@@ -143,7 +150,7 @@ function ListRow({ product, onAddToCart }: { product: ProductCardData; onAddToCa
                 e.preventDefault()
                 e.stopPropagation()
                 onAddToCart({
-                  productId: product.sku,
+                  productId: product.id,
                   sku: product.sku,
                   name: product.name,
                   slug: product.slug,
