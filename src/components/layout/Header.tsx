@@ -7,9 +7,8 @@ import { useCart } from '@/contexts/CartContext'
 import { CategoryFlyoutMenu, type NavCategory } from './CategoryFlyoutMenu'
 import { CategoryDrawerMenu } from './CategoryDrawerMenu'
 
-// 内联导航数据 - 打包时直接嵌入 JS bundle
-// 这样首次加载就有数据，无需额外请求
-import navCategoriesData from '@/data/nav-categories.json'
+// 动态从API获取导航数据
+// 首次渲染使用空数组，数据加载后更新
 
 const HISTORY_KEY = 'machrio_search_history'
 const MAX_HISTORY = 5
@@ -120,9 +119,21 @@ export function Header() {
   const searchRef = useRef<HTMLDivElement>(null)
   const debounceRef = useRef<NodeJS.Timeout | null>(null)
 
-  // Categories mega-menu state - 直接使用内联数据，无需网络请求
-  const [navCategories] = useState<NavCategory[]>(() => (navCategoriesData as { categories: NavCategory[] }).categories || [])
+  // Categories mega-menu state - 从API动态获取
+  const [navCategories, setNavCategories] = useState<NavCategory[]>([])
   const [showMegaMenu, setShowMegaMenu] = useState(false)
+
+  // Fetch nav categories from API
+  useEffect(() => {
+    fetch('/api/categories/nav')
+      .then(res => res.json())
+      .then(data => {
+        if (data.categories) {
+          setNavCategories(data.categories)
+        }
+      })
+      .catch(err => console.error('Failed to fetch nav categories:', err))
+  }, [])
   const [showMobileMenu, setShowMobileMenu] = useState(false)
   const megaMenuRef = useRef<HTMLDivElement>(null)
   const megaMenuButtonRef = useRef<HTMLButtonElement>(null)

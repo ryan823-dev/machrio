@@ -26,22 +26,10 @@ export const metadata: Metadata = {
   },
 }
 
-// 从数据库获取分类和产品数量
+// 从数据库获取分类和产品数量（实时数据）
 async function getCategoriesWithCounts() {
-  try {
-    const { getL1CategoriesWithCounts } = await import('@/lib/db-queries')
-    return await getL1CategoriesWithCounts()
-  } catch (e) {
-    console.error('Failed to fetch categories from database:', e)
-    // Fallback to static data
-    const { staticL1Categories } = await import('@/data/static-catalog')
-    return staticL1Categories.map(cat => ({
-      id: cat.id,
-      name: cat.name,
-      slug: cat.slug,
-      productCount: 0,
-    }))
-  }
+  const { getL1CategoriesWithCounts } = await import('@/lib/db-queries')
+  return await getL1CategoriesWithCounts()
 }
 
 const industries = [

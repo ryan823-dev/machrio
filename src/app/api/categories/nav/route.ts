@@ -1,26 +1,48 @@
 import { NextResponse } from 'next/server'
-import fs from 'fs'
-import path from 'path'
+import { getPool } from '@/lib/db'
 
-// 静态数据 - 构建时生成，无需数据库连接
-// 这避免了冷启动延迟
-
+// 从数据库获取导航分类数据（实时数据）
 export async function GET() {
   try {
-    // 尝试读取预生成的静态数据
-    const dataPath = path.join(process.cwd(), 'public/data/nav-categories.json')
-    
-    if (fs.existsSync(dataPath)) {
-      const data = fs.readFileSync(dataPath, 'utf-8')
-      return NextResponse.json(JSON.parse(data), {
-        headers: { 
-          'Cache-Control': 'public, s-maxage=86400, stale-while-revalidate=604800',
-        },
+    const pool = getPool()
+
+    // 获取所有分类，按层级组织
+    const result = await pool.query(`
+      SELECT id, name, slug, parent_id, display_order
+      FROM categories
+      ORDER BY display_order, name
+    `)
+
+    // 构建树形结构
+    const categoriesMap = new Map()
+    const rootCategories: any[] = []
+
+    for (const row of result.rows) {
+      categoriesMap.set(row.id, {
+        id: row.id,
+        name: row.name,
+        slug: row.slug,
+        children: []
       })
     }
-    
-    // 如果静态文件不存在，返回空数据
-    return NextResponse.json({ categories: [] })
+
+    for (const row of result.rows) {
+      const node = categoriesMap.get(row.id)
+      if (row.parent_id) {
+        const parent = categoriesMap.get(row.parent_id)
+        if (parent) {
+          parent.children.push(node)
+        }
+      } else {
+        rootCategories.push(node)
+      }
+    }
+
+    return NextResponse.json({ categories: rootCategories }, {
+      headers: {
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+      },
+    })
   } catch (error) {
     console.error('Nav categories error:', error)
     return NextResponse.json({ categories: [] })

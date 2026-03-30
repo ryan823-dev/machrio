@@ -95,131 +95,78 @@ interface ChildCategory {
   slug: string
 }
 
-// 从静态数据获取分类（回退机制）
-function getCategoryFromStaticData(slug: string): { category: any, parent: any, grandparent: any, children: any[] } | null {
-  try {
-    const navData = require('@/data/nav-categories.json')
-    const categories = navData.categories || []
-    
-    // 递归查找分类
-    function findCategory(cats: any[], parent: any = null, grandparent: any = null): any {
-      for (const cat of cats) {
-        if (cat.slug === slug) {
-          return {
-            category: { ...cat, id: cat.id, name: cat.name, slug: cat.slug },
-            parent,
-            grandparent,
-            children: cat.children || []
-          }
-        }
-        if (cat.children) {
-          const found = findCategory(cat.children, { id: cat.id, name: cat.name, slug: cat.slug }, parent)
-          if (found) return found
-        }
-      }
-      return null
-    }
-    
-    return findCategory(categories)
-  } catch (error) {
-    console.error('[getCategoryFromStaticData] 错误:', error)
-    return null
-  }
-}
-
-// 使用 PostgreSQL 直接查询获取分类数据（带回退机制）
+// 使用 PostgreSQL 直接查询获取分类数据（纯数据库，无回退）
 async function getCategoryData(slug: string) {
-  // 检查 DATABASE_URI 是否存在
-  if (!process.env.DATABASE_URI) {
-    console.warn('[getCategoryData] DATABASE_URI 未配置，使用静态数据')
-    return getCategoryFromStaticData(slug)
-  }
-  
   const pool = getPool()
 
-  try {
-    // 获取分类信息（包含所有 SEO 字段）
-    const catResult = await pool.query<CategoryRow>(
-      `SELECT id, name, slug, short_description, intro_content, description, buying_guide, faq, seo_content, parent_id, display_order
-       FROM categories WHERE slug = $1`,
-      [slug]
+  // 获取分类信息（包含所有 SEO 字段）
+  const catResult = await pool.query<CategoryRow>(
+    `SELECT id, name, slug, short_description, intro_content, description, buying_guide, faq, seo_content, parent_id, display_order
+     FROM categories WHERE slug = $1`,
+    [slug]
+  )
+
+  if (catResult.rows.length === 0) {
+    return null
+  }
+
+  const category = catResult.rows[0]
+
+  // 获取父分类
+  let parent: { id: string; name: string; slug: string } | null = null
+  let grandparent: { id: string; name: string; slug: string } | null = null
+  if (category.parent_id) {
+    const parentResult = await pool.query<{ id: string; name: string; slug: string; parent_id: string | null }>(
+      'SELECT id, name, slug, parent_id FROM categories WHERE id = $1::uuid',
+      [category.parent_id]
     )
+    if (parentResult.rows[0]) {
+      parent = { id: parentResult.rows[0].id, name: parentResult.rows[0].name, slug: parentResult.rows[0].slug }
 
-    if (catResult.rows.length === 0) {
-      console.warn('[getCategoryData] 数据库中未找到分类，使用静态数据:', slug)
-      return getCategoryFromStaticData(slug)
-    }
-    
-    const category = catResult.rows[0]
-
-    // 获取父分类
-    let parent: { id: string; name: string; slug: string } | null = null
-    let grandparent: { id: string; name: string; slug: string } | null = null
-    if (category.parent_id) {
-      const parentResult = await pool.query<{ id: string; name: string; slug: string; parent_id: string | null }>(
-        'SELECT id, name, slug, parent_id FROM categories WHERE id = $1::uuid',
-        [category.parent_id]
-      )
-      if (parentResult.rows[0]) {
-        parent = { id: parentResult.rows[0].id, name: parentResult.rows[0].name, slug: parentResult.rows[0].slug }
-
-        // 获取祖父分类
-        if (parentResult.rows[0].parent_id) {
-          const gpResult = await pool.query<{ id: string; name: string; slug: string }>(
-            'SELECT id, name, slug FROM categories WHERE id = $1::uuid',
-            [parentResult.rows[0].parent_id]
-          )
-          if (gpResult.rows[0]) {
-            grandparent = { id: gpResult.rows[0].id, name: gpResult.rows[0].name, slug: gpResult.rows[0].slug }
-          }
+      // 获取祖父分类
+      if (parentResult.rows[0].parent_id) {
+        const gpResult = await pool.query<{ id: string; name: string; slug: string }>(
+          'SELECT id, name, slug FROM categories WHERE id = $1::uuid',
+          [parentResult.rows[0].parent_id]
+        )
+        if (gpResult.rows[0]) {
+          grandparent = { id: gpResult.rows[0].id, name: gpResult.rows[0].name, slug: gpResult.rows[0].slug }
         }
       }
     }
-
-    // 获取子分类
-    const childrenResult = await pool.query<ChildCategory>(
-      'SELECT id, name, slug FROM categories WHERE parent_id = $1::uuid ORDER BY display_order LIMIT 50',
-      [category.id]
-    )
-    const children = childrenResult.rows
-
-    return { category, parent, grandparent, children }
-  } catch (error) {
-    console.error('[getCategoryData] 数据库查询错误:', error)
-    console.warn('使用静态数据作为回退')
-    return getCategoryFromStaticData(slug)
   }
+
+  // 获取子分类
+  const childrenResult = await pool.query<ChildCategory>(
+    'SELECT id, name, slug FROM categories WHERE parent_id = $1::uuid ORDER BY display_order LIMIT 50',
+    [category.id]
+  )
+  const children = childrenResult.rows
+
+  return { category, parent, grandparent, children }
 }
 
 // 获取分类产品
 async function getCategoryProducts(categoryId: string, categorySlug: string) {
   const PRODUCTS_PER_PAGE = 24
-
-  // 检查 DATABASE_URI 是否存在
-  if (!process.env.DATABASE_URI) {
-    console.warn('[getCategoryProducts] DATABASE_URI 未配置，返回空列表')
-    return { docs: [], totalDocs: 0 }
-  }
-
   const pool = getPool()
 
-  try {
-    // 获取产品总数
-    const countResult = await pool.query<{ count: string }>(
-      'SELECT COUNT(*) FROM products WHERE primary_category_id = $1::uuid',
-      [categoryId]
-    )
-    const totalDocs = parseInt(countResult.rows[0].count)
+  // 获取产品总数
+  const countResult = await pool.query<{ count: string }>(
+    'SELECT COUNT(*) FROM products WHERE primary_category_id = $1::uuid',
+    [categoryId]
+  )
+  const totalDocs = parseInt(countResult.rows[0].count)
 
-    // 获取产品（包含图片和价格）
-    const productsResult = await pool.query(
-      `SELECT id, name, slug, sku, short_description, pricing, images, status
-       FROM products
-       WHERE primary_category_id = $1::uuid AND status = 'published'
-       ORDER BY name
-       LIMIT $2`,
-      [categoryId, PRODUCTS_PER_PAGE]
-    )
+  // 获取产品（包含图片和价格）
+  const productsResult = await pool.query(
+    `SELECT id, name, slug, sku, short_description, pricing, images, status
+     FROM products
+     WHERE primary_category_id = $1::uuid AND status = 'published'
+     ORDER BY name
+     LIMIT $2`,
+    [categoryId, PRODUCTS_PER_PAGE]
+  )
 
     const docs = productsResult.rows.map((p) => {
       // 解析 images（可能是 JSON 字符串或已解析的数组）
@@ -265,11 +212,7 @@ async function getCategoryProducts(categoryId: string, categorySlug: string) {
       }
     })
 
-    return { docs, totalDocs }
-  } catch (error) {
-    console.error('[getCategoryProducts] 错误:', error)
-    return { docs: [], totalDocs: 0 }
-  }
+  return { docs, totalDocs }
 }
 
 interface CategoryPageProps {
