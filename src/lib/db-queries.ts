@@ -284,9 +284,15 @@ export async function getProductBySlug(slug: string): Promise<{
     grandparent_category_slug: string | null
   } | null
 }> {
-  const pool = getGlobalPool()
-
   try {
+    // 检查 DATABASE_URI 是否存在
+    if (!process.env.DATABASE_URI) {
+      console.warn('[getProductBySlug] DATABASE_URI 未配置')
+      return { product: null }
+    }
+
+    const pool = getGlobalPool()
+
     // 查询产品及其分类信息
     const result = await pool.query<{
       id: string
