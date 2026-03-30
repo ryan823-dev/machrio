@@ -145,11 +145,9 @@ export default function CheckoutPage() {
         throw new Error(data.error || 'Failed to create order')
       }
 
-      // Order created successfully - clear cart
-      clearCart()
-
       if (form.paymentMethod === 'stripe') {
         // 嵌入式支付：显示 StripePayment 组件
+        // 注意：不要在这里清空购物车，支付成功后再清空
         setPendingOrder({
           orderId: data.orderId,
           orderNumber: data.orderNumber,
@@ -160,39 +158,44 @@ export default function CheckoutPage() {
         })
         setShowStripePayment(true)
         setSubmitting(false)
-      } else if (form.paymentMethod === 'paypal') {
-        // Create PayPal order and redirect
-        const paypalRes = await fetch('/api/paypal/create-order', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            orderNumber: data.orderNumber,
-            orderId: data.orderId,
-            items: selectedCartItems.map(item => ({
-              name: item.name,
-              sku: item.sku,
-              quantity: item.quantity,
-              unitPrice: item.price,
-            })),
-            subtotal,
-            shippingCost,
-            total,
-            currency: 'USD',
-            customerEmail: form.email,
-          }),
-        })
-
-        const paypalData = await paypalRes.json()
-
-        if (!paypalRes.ok) {
-          throw new Error(paypalData.error || 'Failed to create PayPal order')
-        }
-
-        // Redirect to PayPal for payment
-        window.location.href = paypalData.approvalUrl
       } else {
-        // Bank transfer - go to order confirmation with invoice
-        router.push(`/order/${data.orderNumber}`)
+        // PayPal 和银行转账：订单创建后清空购物车
+        clearCart()
+
+        if (form.paymentMethod === 'paypal') {
+          // Create PayPal order and redirect
+          const paypalRes = await fetch('/api/paypal/create-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              orderNumber: data.orderNumber,
+              orderId: data.orderId,
+              items: selectedCartItems.map(item => ({
+                name: item.name,
+                sku: item.sku,
+                quantity: item.quantity,
+                unitPrice: item.price,
+              })),
+              subtotal,
+              shippingCost,
+              total,
+              currency: 'USD',
+              customerEmail: form.email,
+            }),
+          })
+
+          const paypalData = await paypalRes.json()
+
+          if (!paypalRes.ok) {
+            throw new Error(paypalData.error || 'Failed to create PayPal order')
+          }
+
+          // Redirect to PayPal for payment
+          window.location.href = paypalData.approvalUrl
+        } else {
+          // Bank transfer - go to order confirmation with invoice
+          router.push(`/order/${data.orderNumber}`)
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
@@ -203,6 +206,7 @@ export default function CheckoutPage() {
 
   // 嵌入式支付成功回调
   function handleStripeSuccess(paymentIntentId: string) {
+    clearCart() // 支付成功后清空购物车
     setShowStripePayment(false)
     router.push(`/order/${pendingOrder?.orderNumber}?payment=success`)
   }
@@ -214,6 +218,7 @@ export default function CheckoutPage() {
 
   // 取消嵌入式支付，回退到跳转式支付
   function handleStripeCancel() {
+    clearCart() // 取消时也清空购物车（订单已创建）
     if (pendingOrder?.stripeUrl) {
       // 回退到 Stripe Checkout 跳转方式
       window.location.href = pendingOrder.stripeUrl
@@ -223,22 +228,10 @@ export default function CheckoutPage() {
     }
   }
 
-  if (itemCount === 0) {
+  // 嵌入式支付模式：优先显示支付表单（即使购物车已清空）
+  if (showStripePayment && pendingOrder) {
     return (
-      <div className="container-main py-16 text-center">
-        <h1 className="text-2xl font-bold text-secondary-900">No items to checkout</h1>
-        <p className="mt-2 text-secondary-500">Your cart is empty.</p>
-        <Link href="/category" className="btn-primary mt-6 inline-block">
-          Browse Products
-        </Link>
-      </div>
-    )
-  }
-
-  return (
-    <div className="container-main py-8">
-      {/* 嵌入式支付模式：显示 StripePayment 组件 */}
-      {showStripePayment && pendingOrder ? (
+      <div className="container-main py-8">
         <div className="max-w-2xl mx-auto">
           <h1 className="text-2xl font-bold text-secondary-900 mb-6">Complete Your Payment</h1>
           <p className="text-secondary-600 mb-4">
@@ -261,11 +254,27 @@ export default function CheckoutPage() {
             </div>
           )}
         </div>
-      ) : (
-        <>
-          <h1 className="text-2xl font-bold text-secondary-900">Checkout</h1>
+      </div>
+    )
+  }
 
-          <form onSubmit={handleSubmit} className="mt-6 grid gap-8 lg:grid-cols-3">
+  if (itemCount === 0) {
+    return (
+      <div className="container-main py-16 text-center">
+        <h1 className="text-2xl font-bold text-secondary-900">No items to checkout</h1>
+        <p className="mt-2 text-secondary-500">Your cart is empty.</p>
+        <Link href="/category" className="btn-primary mt-6 inline-block">
+          Browse Products
+        </Link>
+      </div>
+    )
+  }
+
+  return (
+    <div className="container-main py-8">
+      <h1 className="text-2xl font-bold text-secondary-900">Checkout</h1>
+
+      <form onSubmit={handleSubmit} className="mt-6 grid gap-8 lg:grid-cols-3">
         {/* Left: Form fields */}
         <div className="lg:col-span-2 space-y-6">
           {/* Customer Information */}
@@ -581,8 +590,6 @@ export default function CheckoutPage() {
           </div>
         </div>
       </form>
-        </>
-      )}
     </div>
   )
 }
