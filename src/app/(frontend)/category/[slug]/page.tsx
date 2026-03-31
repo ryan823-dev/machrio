@@ -10,6 +10,7 @@ import { CategoryBuyingGuide } from '@/components/shared/RelatedGuide'
 import { ProductGrid } from '@/components/category/ProductGrid'
 import { ExpandableIntro } from '@/components/category/ExpandableIntro'
 import { EmptyStateAIDialog } from '@/components/category/EmptyStateAIDialog'
+import { Pagination } from '@/components/category/Pagination'
 
 // 强制动态渲染（SSR）
 export const dynamic = 'force-dynamic'
@@ -146,17 +147,21 @@ async function getCategoryData(slug: string) {
   return { category, parent, grandparent, children }
 }
 
-// 获取分类产品
-async function getCategoryProducts(categoryId: string, categorySlug: string) {
+// 获取分类产品（支持分页）
+async function getCategoryProducts(categoryId: string, categorySlug: string, page: number = 1) {
   const PRODUCTS_PER_PAGE = 24
   const pool = getPool()
 
-  // 获取产品总数
+  // 获取产品总数（只统计已发布产品，与列表查询条件一致）
   const countResult = await pool.query<{ count: string }>(
-    'SELECT COUNT(*) FROM products WHERE primary_category_id = $1::uuid',
+    "SELECT COUNT(*) FROM products WHERE primary_category_id = $1::uuid AND status = 'published'",
     [categoryId]
   )
   const totalDocs = parseInt(countResult.rows[0].count)
+  const totalPages = Math.ceil(totalDocs / PRODUCTS_PER_PAGE)
+
+  // 计算偏移量
+  const offset = (page - 1) * PRODUCTS_PER_PAGE
 
   // 获取产品（包含图片和价格）
   const productsResult = await pool.query(
@@ -164,8 +169,8 @@ async function getCategoryProducts(categoryId: string, categorySlug: string) {
      FROM products
      WHERE primary_category_id = $1::uuid AND status = 'published'
      ORDER BY name
-     LIMIT $2`,
-    [categoryId, PRODUCTS_PER_PAGE]
+     LIMIT $2 OFFSET $3`,
+    [categoryId, PRODUCTS_PER_PAGE, offset]
   )
 
     const docs = productsResult.rows.map((p) => {
@@ -212,11 +217,18 @@ async function getCategoryProducts(categoryId: string, categorySlug: string) {
       }
     })
 
-  return { docs, totalDocs }
+  return {
+    docs,
+    totalDocs,
+    page,
+    totalPages,
+    hasMore: page < totalPages,
+  }
 }
 
 interface CategoryPageProps {
   params: Promise<{ slug: string }>
+  searchParams: Promise<{ page?: string }>
 }
 
 export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
@@ -238,8 +250,10 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
   }
 }
 
-export default async function CategoryPage({ params }: CategoryPageProps) {
+export default async function CategoryPage({ params, searchParams }: CategoryPageProps) {
   const { slug } = await params
+  const { page: pageParam } = await searchParams
+  const currentPage = parseInt(pageParam || '1', 10)
 
   const data = await getCategoryData(slug)
   if (!data) notFound()
@@ -255,8 +269,8 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
 
   // 只在叶子分类或 L3 分类显示产品
   const productsResult = isL3 || isLeafCategory
-    ? await getCategoryProducts(category.id, slug)
-    : { docs: [], totalDocs: 0 }
+    ? await getCategoryProducts(category.id, slug, currentPage)
+    : { docs: [], totalDocs: 0, page: 1, totalPages: 0, hasMore: false }
 
   const breadcrumbs = [
     { label: 'Home', href: '/' },
@@ -342,9 +356,20 @@ export default async function CategoryPage({ params }: CategoryPageProps) {
           </div>
 
           {productsResult.docs.length > 0 ? (
-            <Suspense fallback={<div className="h-96 animate-pulse rounded bg-secondary-100" />}>
-              <ProductGrid products={productsResult.docs} view="list" />
-            </Suspense>
+            <>
+              <Suspense fallback={<div className="h-96 animate-pulse rounded bg-secondary-100" />}>
+                <ProductGrid products={productsResult.docs} view="list" />
+              </Suspense>
+
+              {/* 分页组件 */}
+              {productsResult.totalPages > 1 && (
+                <Pagination
+                  currentPage={productsResult.page}
+                  totalPages={productsResult.totalPages}
+                  basePath={`/category/${slug}`}
+                />
+              )}
+            </>
           ) : (
             <EmptyStateAIDialog
               categoryName={category.name}
