@@ -518,6 +518,49 @@ const nextConfig = {
         permanent: true,
       },
 
+      // ========== Deleted Product Redirects ==========
+      // Redirect removed products to relevant categories to fix GSC "Crawled - not indexed" errors
+      {
+        source: '/product/label-protection-tape/t50-thermal-index-label-peach-pink-color-0-98in-by-1-10in-pkg-qty-100-5173.0',
+        destination: '/category/signs-and-facility-identification-products',
+        permanent: true,
+      },
+      {
+        source: '/product/seals-gaskets/fkm-tc-skeleton-oil-seal-high-temperature-fluororubber-shaft-seal-for-industrial-594937',
+        destination: '/category/caulks-and-sealants',
+        permanent: true,
+      },
+      {
+        source: '/product/parts-bin-drawer-organizer/drawer-type-parts-box-18-compartments-length-18-90-inch-width-14-57-inch-height--759076',
+        destination: '/category/tool-organizers',
+        permanent: true,
+      },
+      {
+        source: '/product/leg-body-protection/rubber-half-body-waist-high-waders-black-gh2117779',
+        destination: '/category/footwear-and-footwear-accessories',
+        permanent: true,
+      },
+      {
+        source: '/product/hex-nuts/stainless-steel-304-a2-70-hex-nut-0-94-in-flats-m16-pkg-qty-25-9549',
+        destination: '/category/fasteners',
+        permanent: true,
+      },
+      {
+        source: '/product/hex-nuts/grade-8-carbon-steel-hex-nut-1-18-in-zinc-plated-m30-pkg-qty-100-9472',
+        destination: '/category/fasteners',
+        permanent: true,
+      },
+      {
+        source: '/product/hand-and-arm-protection/aramid-high-temp-safety-gloves-18-inches-400-f-pkg-qty-12-1186',
+        destination: '/category/safety-gloves',
+        permanent: true,
+      },
+      {
+        source: '/product/hand-and-arm-protection/aluminum-foil-heat-resistant-gloves-15-inches-pkg-qty-8-9869',
+        destination: '/category/safety-gloves',
+        permanent: true,
+      },
+
       // ========== Remove Trailing Slashes for Product/Category URLs ==========
       // Fix GSC "Page with redirect" issue for 1,074 URLs
       // Redirect URLs with trailing slash to non-slash version (301 permanent)
