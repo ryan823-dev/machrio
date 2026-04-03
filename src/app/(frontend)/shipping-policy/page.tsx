@@ -7,7 +7,7 @@ export const dynamic = 'force-static'
 export const metadata: Metadata = {
   title: 'Shipping Policy | Machrio',
   description: 'Machrio shipping policy - DDP duty-free delivery, U.S. warehouse fast shipping, and global logistics options for industrial supplies.',
-  alternates: { canonical: '/shipping-policy/' },
+  alternates: { canonical: '/shipping-policy' },
   openGraph: {
     title: 'Shipping Policy | Machrio',
     description: 'Machrio shipping policy - DDP duty-free delivery, U.S. warehouse fast shipping, and global logistics options for industrial supplies.',

@@ -579,6 +579,15 @@ const nextConfig = {
         destination: '/brand/:slug',
         permanent: true,
       },
+
+      // ========== Fix "products" Default Category Issue ==========
+      // Redirect /product/products/[slug] to search page to help users find the product
+      // This handles products without a proper category in the database
+      {
+        source: '/product/products/:slug',
+        destination: '/search?q=:slug',
+        permanent: true,
+      },
     ]
   },
 }

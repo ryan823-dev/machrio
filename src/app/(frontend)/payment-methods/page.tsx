@@ -7,7 +7,7 @@ export const dynamic = 'force-static'
 export const metadata: Metadata = {
   title: 'Payment Methods | Machrio',
   description: 'Machrio accepts credit cards via Stripe, bank transfers, and will soon support BNPL options. Secure, flexible payment for B2B industrial procurement.',
-  alternates: { canonical: '/payment-methods/' },
+  alternates: { canonical: '/payment-methods' },
   openGraph: {
     title: 'Payment Methods | Machrio',
     description: 'Machrio accepts credit cards via Stripe, bank transfers, and will soon support BNPL options. Secure, flexible payment for B2B industrial procurement.',

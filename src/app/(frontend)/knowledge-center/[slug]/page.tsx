@@ -211,7 +211,7 @@ export async function generateMetadata({
   return {
     title,
     description,
-    alternates: { canonical: `/knowledge-center/${slug}/` },
+    alternates: { canonical: `/knowledge-center/${slug}` },
     openGraph: {
       title,
       description,

@@ -6,7 +6,7 @@ export const dynamic = 'force-static'
 export const metadata: Metadata = {
   title: 'Terms & Conditions | Machrio',
   description: 'Machrio terms and conditions for global industrial buyers - pricing, warranties, customs duties, liability, and governing law.',
-  alternates: { canonical: '/terms/' },
+  alternates: { canonical: '/terms' },
   openGraph: {
     title: 'Terms & Conditions | Machrio',
     description: 'Machrio terms and conditions for global industrial buyers - pricing, warranties, customs duties, liability, and governing law.',

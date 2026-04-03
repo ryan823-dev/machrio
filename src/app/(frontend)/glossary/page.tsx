@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = {
   title: 'Industrial Glossary — MRO & Supply Chain Terms | Machrio',
   description: 'Definitions of key industrial terms, acronyms, and concepts used in MRO procurement, workplace safety, maintenance operations, and supply chain management.',
-  alternates: { canonical: '/glossary/' },
+  alternates: { canonical: '/glossary' },
   openGraph: {
     title: 'Industrial Glossary — MRO & Supply Chain Terms | Machrio',
     description: 'Definitions of key industrial terms, acronyms, and concepts used in MRO procurement, workplace safety, maintenance operations, and supply chain management.',

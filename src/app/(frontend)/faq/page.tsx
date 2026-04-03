@@ -7,7 +7,7 @@ export const dynamic = 'force-static'
 export const metadata: Metadata = {
   title: 'FAQ | Machrio',
   description: 'Frequently asked questions about ordering, payment, shipping, returns, and more at Machrio industrial supplies.',
-  alternates: { canonical: '/faq/' },
+  alternates: { canonical: '/faq' },
   openGraph: {
     title: 'FAQ | Machrio',
     description: 'Frequently asked questions about ordering, payment, shipping, returns, and more at Machrio industrial supplies.',

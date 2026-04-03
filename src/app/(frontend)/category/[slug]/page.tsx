@@ -245,7 +245,7 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
   return {
     title,
     description,
-    alternates: { canonical: `/category/${slug}/` },
+    alternates: { canonical: `/category/${slug}` },
     openGraph: { title, description },
   }
 }

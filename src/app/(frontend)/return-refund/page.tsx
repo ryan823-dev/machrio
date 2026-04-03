@@ -7,7 +7,7 @@ export const dynamic = 'force-static'
 export const metadata: Metadata = {
   title: 'Return & Refund Policy | Machrio',
   description: 'Machrio return and refund policy - 30-day return window, transparent process, and fair resolution for all industrial supply orders.',
-  alternates: { canonical: '/return-refund/' },
+  alternates: { canonical: '/return-refund' },
   openGraph: {
     title: 'Return & Refund Policy | Machrio',
     description: 'Machrio return and refund policy - 30-day return window, transparent process, and fair resolution for all industrial supply orders.',

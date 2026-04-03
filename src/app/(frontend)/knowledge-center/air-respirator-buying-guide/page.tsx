@@ -8,7 +8,7 @@ export const dynamic = 'force-static'
 export const metadata: Metadata = {
   title: 'Key Features to Consider When Purchasing an Air Respirator | Machrio',
   description: 'Learn the 10 essential features to consider when buying an air respirator: protection level, filter compatibility, fit, comfort, breathing resistance, durability, PPE compatibility, and safety certification.',
-  alternates: { canonical: '/knowledge-center/air-respirator-buying-guide/' },
+  alternates: { canonical: '/knowledge-center/air-respirator-buying-guide' },
   openGraph: {
     title: 'Key Features to Consider When Purchasing an Air Respirator | Machrio',
     description: 'Learn the 10 essential features to consider when buying an air respirator: protection level, filter compatibility, fit, comfort, and safety certification.',

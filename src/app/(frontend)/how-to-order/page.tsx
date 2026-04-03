@@ -8,7 +8,7 @@ export const dynamic = 'force-static'
 export const metadata: Metadata = {
   title: 'How To Order | Machrio',
   description: 'Learn how to place an order on Machrio - online checkout, bulk quotations, purchase orders, and order tracking.',
-  alternates: { canonical: '/how-to-order/' },
+  alternates: { canonical: '/how-to-order' },
   openGraph: {
     title: 'How To Order | Machrio',
     description: 'Learn how to place an order on Machrio - online checkout, bulk quotations, purchase orders, and order tracking.',

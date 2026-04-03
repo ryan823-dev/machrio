@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = {
   title: 'All Categories | Machrio Industrial Supplies',
   description: 'Browse all industrial product categories. Safety, adhesives, material handling, power transmission, and more.',
-  alternates: { canonical: '/category/' },
+  alternates: { canonical: '/category' },
 }
 
 // 从数据库获取顶级分类及子分类数量

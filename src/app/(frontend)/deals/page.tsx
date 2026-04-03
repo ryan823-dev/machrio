@@ -7,7 +7,7 @@ export const dynamic = 'force-static'
 export const metadata: Metadata = {
   title: 'Volume Pricing & Bulk Discounts | Machrio',
   description: 'Save more when you buy more. Machrio offers tiered volume pricing on all industrial products. See how our bulk discount tiers work.',
-  alternates: { canonical: '/deals/' },
+  alternates: { canonical: '/deals' },
   openGraph: {
     title: 'Volume Pricing & Bulk Discounts | Machrio',
     description: 'Save more when you buy more. Machrio offers tiered volume pricing on all industrial products.',

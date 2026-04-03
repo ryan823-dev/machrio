@@ -367,11 +367,11 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   return {
     title,
     description,
-    alternates: { canonical: `/product/${catSlug}/${slug}/` },
+    alternates: { canonical: `/product/${catSlug}/${slug}` },  // Fixed: Remove trailing slash
     openGraph: {
       title,
       description,
-      url: `${serverUrl}/product/${catSlug}/${slug}/`,
+      url: `${serverUrl}/product/${catSlug}/${slug}`,  // Fixed: Remove trailing slash
       ...(fullImageUrl && {
         images: [{ url: fullImageUrl, width: 800, height: 800, alt: product.name }],
       }),

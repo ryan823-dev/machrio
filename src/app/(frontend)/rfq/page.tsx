@@ -7,7 +7,7 @@ export const dynamic = 'force-static'
 export const metadata: Metadata = {
   title: 'Request a Quote',
   description: 'Request a quote for bulk orders, custom specifications, or products without listed pricing. Our team responds within 24 hours.',
-  alternates: { canonical: '/rfq/' },
+  alternates: { canonical: '/rfq' },  // Fixed: Remove trailing slash to match actual URL structure
   openGraph: {
     title: 'Request a Quote | Machrio',
     description: 'Request a quote for bulk orders, custom specifications, or products without listed pricing. Our team responds within 24 hours.',

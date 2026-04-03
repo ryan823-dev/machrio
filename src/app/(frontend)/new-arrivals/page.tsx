@@ -10,7 +10,7 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = {
   title: 'New Arrivals | Machrio Industrial Supplies',
   description: 'Discover the latest industrial products added to our catalog. New tools, safety equipment, MRO supplies, and more.',
-  alternates: { canonical: '/new-arrivals/' },
+  alternates: { canonical: '/new-arrivals' },
   openGraph: {
     title: 'New Arrivals | Machrio Industrial Supplies',
     description: 'Discover the latest industrial products added to our catalog.',

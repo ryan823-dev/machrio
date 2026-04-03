@@ -402,7 +402,7 @@ export async function generateMetadata({
   return {
     title: `${industry.name} Industry Solutions | Machrio`,
     description: industry.description,
-    alternates: { canonical: `/industry/${slug}/` },
+    alternates: { canonical: `/industry/${slug}` },
     openGraph: {
       title: `${industry.name} Industry Solutions | Machrio`,
       description: industry.description,

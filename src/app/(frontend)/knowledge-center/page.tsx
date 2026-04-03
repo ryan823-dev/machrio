@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 export const metadata: Metadata = {
   title: 'Knowledge Center — Guides, Tips & Industry Insights | Machrio',
   description: 'Industrial buying guides, product comparisons, how-to articles, and industry insights. Expert content to help you make informed MRO purchasing decisions.',
-  alternates: { canonical: '/knowledge-center/' },
+  alternates: { canonical: '/knowledge-center' },
   openGraph: {
     title: 'Knowledge Center — Guides, Tips & Industry Insights | Machrio',
     description: 'Industrial buying guides, product comparisons, how-to articles, and industry insights.',

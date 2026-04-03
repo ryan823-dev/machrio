@@ -6,7 +6,7 @@ export const dynamic = 'force-static'
 export const metadata: Metadata = {
   title: 'Privacy Policy | Machrio',
   description: 'Machrio privacy policy - how we collect, use, protect, and disclose your personal information.',
-  alternates: { canonical: '/privacy/' },
+  alternates: { canonical: '/privacy' },
   openGraph: {
     title: 'Privacy Policy | Machrio',
     description: 'Machrio privacy policy - how we collect, use, protect, and disclose your personal information.',

@@ -7,7 +7,7 @@ export const dynamic = 'force-static'
 export const metadata: Metadata = {
   title: 'Clearance & Duties | Machrio',
   description: 'Machrio clearance and duties information - DDP duty-free delivery, customs documentation, and international shipping compliance.',
-  alternates: { canonical: '/clearance-duties/' },
+  alternates: { canonical: '/clearance-duties' },
   openGraph: {
     title: 'Clearance & Duties | Machrio',
     description: 'Machrio clearance and duties information - DDP duty-free delivery, customs documentation, and international shipping compliance.',

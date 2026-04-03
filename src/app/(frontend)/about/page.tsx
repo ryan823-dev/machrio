@@ -9,7 +9,7 @@ const SITE_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://machrio.com'
 export const metadata: Metadata = {
   title: 'About Us | Machrio',
   description: 'Machrio is a tools, parts, and industrial essentials platform operated by VERTAX LIMITED, offering competitive pricing, DDP global shipping, and trusted quality.',
-  alternates: { canonical: '/about/' },
+  alternates: { canonical: '/about' },
   openGraph: {
     title: 'About Us | Machrio',
     description: 'Machrio is a tools, parts, and industrial essentials platform operated by VERTAX LIMITED, offering competitive pricing, DDP global shipping, and trusted quality.',
