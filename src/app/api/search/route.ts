@@ -52,9 +52,12 @@ export async function GET(request: NextRequest) {
     const totalDocs = parseInt(countResult.rows[0]?.total || '0', 10)
     const totalPages = Math.ceil(totalDocs / limit) || 1
 
-    // Fetch products
+    // Fetch products with category slug for correct product page URLs
     const dataResult = await pool.query(
-      `SELECT * FROM products ${whereClause} ORDER BY created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
+      `SELECT p.*, c.slug as category_slug
+       FROM products p
+       LEFT JOIN categories c ON p.primary_category_id = c.id
+       ${whereClause} ORDER BY p.created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
       [...params, limit, offset]
     )
 
@@ -67,7 +70,7 @@ export async function GET(request: NextRequest) {
       shortDescription: p.short_description,
       externalImageUrl: p.external_image_url,
       brand: null,
-      category: null,
+      category: p.category_slug ? { name: p.name, slug: p.category_slug } : null,
       pricing: null,
       packageQty: p.package_qty,
       availability: p.availability,
