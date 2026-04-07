@@ -300,6 +300,8 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
         <h1 className="text-2xl font-bold text-secondary-900">{category.name}</h1>
         {category.intro_content ? (
           <ExpandableIntro content={category.intro_content} />
+        ) : hasRichTextContent(category.description) ? (
+          <div className="mt-2 prose prose-sm prose-secondary max-w-none text-secondary-600" dangerouslySetInnerHTML={{ __html: lexicalToHtml(category.description) }} />
         ) : (
           <p className="mt-2 text-sm leading-relaxed text-secondary-600">
             {category.short_description || `Browse our selection of ${category.name} products.`}
