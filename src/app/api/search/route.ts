@@ -28,11 +28,16 @@ export async function GET(request: NextRequest) {
     // e.g., "insulated-steel-lockout-padlock" → "insulated steel lockout padlock"
     const normalizedQuery = query.toLowerCase().replace(/-/g, ' ')
     const searchTerm = `%${normalizedQuery}%`
+    // Also search original query with hyphens for products that have hyphens in name
+    const originalTerm = `%${query.toLowerCase()}%`
 
-    // Build WHERE conditions
-    let whereClause = `WHERE status = 'published' AND (LOWER(name) LIKE $1 OR LOWER(short_description) LIKE $1 OR LOWER(sku) LIKE $1)`
-    const params: any[] = [searchTerm]
-    let paramIndex = 2
+    // Build WHERE conditions - match both hyphenated and space-separated versions
+    let whereClause = `WHERE status = 'published' AND (
+      LOWER(name) LIKE $1 OR LOWER(short_description) LIKE $1 OR LOWER(sku) LIKE $1
+      OR LOWER(name) LIKE $2 OR LOWER(short_description) LIKE $2 OR LOWER(sku) LIKE $2
+    )`
+    const params: any[] = [searchTerm, originalTerm]
+    let paramIndex = 3
 
     // Category filter
     if (categoryFilter) {
@@ -53,14 +58,18 @@ export async function GET(request: NextRequest) {
     const totalPages = Math.ceil(totalDocs / limit) || 1
 
     // Fetch products with category slug for correct product page URLs
-    // Replace 'WHERE' with 'AND' since we already have a WHERE clause from JOIN
-    const whereWithAnd = whereClause.replace('WHERE', 'WHERE').replace('status =', 'p.status =').replace('LOWER(name)', 'LOWER(p.name)').replace('LOWER(short_description)', 'LOWER(p.short_description)').replace('LOWER(sku)', 'LOWER(p.sku)')
+    // Add table aliases to WHERE clause columns to avoid ambiguity with JOIN
+    const whereWithAliases = whereClause
+      .replace('status =', 'p.status =')
+      .replace('LOWER(name)', 'LOWER(p.name)')
+      .replace('LOWER(short_description)', 'LOWER(p.short_description)')
+      .replace('LOWER(sku)', 'LOWER(p.sku)')
     
     const dataResult = await pool.query(
       `SELECT p.*, c.slug as category_slug
        FROM products p
        LEFT JOIN categories c ON p.primary_category_id = c.id
-       ${whereWithAnd} ORDER BY p.created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
+       ${whereWithAliases} ORDER BY p.created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
       [...params, limit, offset]
     )
 
