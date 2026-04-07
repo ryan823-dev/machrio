@@ -24,7 +24,10 @@ export async function GET(request: NextRequest) {
 
   try {
     const pool = getPool()
-    const searchTerm = `%${query.toLowerCase()}%`
+    // Normalize search term: replace hyphens with spaces to match product names
+    // e.g., "insulated-steel-lockout-padlock" → "insulated steel lockout padlock"
+    const normalizedQuery = query.toLowerCase().replace(/-/g, ' ')
+    const searchTerm = `%${normalizedQuery}%`
 
     // Build WHERE conditions
     let whereClause = `WHERE status = 'published' AND (LOWER(name) LIKE $1 OR LOWER(short_description) LIKE $1 OR LOWER(sku) LIKE $1)`

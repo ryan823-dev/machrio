@@ -10,17 +10,20 @@ export async function GET(request: NextRequest) {
 
   try {
     const pool = getPool()
-    const searchTerm = `%${query.toLowerCase()}%`
+    // Normalize search term: replace hyphens with spaces to match product names
+    const normalizedQuery = query.toLowerCase().replace(/-/g, ' ')
+    const searchTerm = `%${normalizedQuery}%`
 
     // Run all queries in parallel
     const [productResults, categoryResults] = await Promise.all([
-      // Products: top 4
+      // Products: top 4 (JOIN with categories to get category slug for correct URLs)
       pool.query(
-        `SELECT name, slug, sku, external_image_url, short_description
-         FROM products
-         WHERE status = 'published'
-         AND (LOWER(name) LIKE $1 OR LOWER(sku) LIKE $1 OR LOWER(short_description) LIKE $1)
-         ORDER BY created_at DESC LIMIT 4`,
+        `SELECT p.name, p.slug, p.sku, p.external_image_url, p.short_description, c.slug as category_slug
+         FROM products p
+         LEFT JOIN categories c ON p.primary_category_id = c.id
+         WHERE p.status = 'published'
+         AND (LOWER(p.name) LIKE $1 OR LOWER(p.sku) LIKE $1 OR LOWER(p.short_description) LIKE $1)
+         ORDER BY p.created_at DESC LIMIT 4`,
         [searchTerm]
       ),
       // Categories: top 3 matching by name
@@ -32,11 +35,11 @@ export async function GET(request: NextRequest) {
       ),
     ])
 
-    // Map products
+    // Map products - use actual category slug for correct product page URLs
     const products = productResults.rows.map((p) => ({
       name: p.name,
       slug: p.slug,
-      categorySlug: 'products',
+      categorySlug: p.category_slug || 'products', // Use actual category slug or fallback to 'products'
       sku: p.sku,
       imageUrl: p.external_image_url || null,
       price: null,
