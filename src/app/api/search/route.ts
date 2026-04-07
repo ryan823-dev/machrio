@@ -32,9 +32,10 @@ export async function GET(request: NextRequest) {
     const originalTerm = `%${query.toLowerCase()}%`
 
     // Build WHERE conditions - match both hyphenated and space-separated versions
-    let whereClause = `WHERE status = 'published' AND (
-      LOWER(name) LIKE $1 OR LOWER(short_description) LIKE $1 OR LOWER(sku) LIKE $1
-      OR LOWER(name) LIKE $2 OR LOWER(short_description) LIKE $2 OR LOWER(sku) LIKE $2
+    // Use p. prefix for products table columns to avoid ambiguity with categories JOIN
+    let whereClause = `WHERE p.status = 'published' AND (
+      LOWER(p.name) LIKE $1 OR LOWER(p.short_description) LIKE $1 OR LOWER(p.sku) LIKE $1
+      OR LOWER(p.name) LIKE $2 OR LOWER(p.short_description) LIKE $2 OR LOWER(p.sku) LIKE $2
     )`
     const params: any[] = [searchTerm, originalTerm]
     let paramIndex = 3
@@ -43,7 +44,7 @@ export async function GET(request: NextRequest) {
     if (categoryFilter) {
       const cat = await getCategoryBySlug(categoryFilter)
       if (cat) {
-        whereClause += ` AND primary_category_id::text = $${paramIndex}`
+        whereClause += ` AND p.primary_category_id::text = $${paramIndex}`
         params.push(cat.id)
         paramIndex++
       }
@@ -51,19 +52,14 @@ export async function GET(request: NextRequest) {
 
     // Count total
     const countResult = await pool.query(
-      `SELECT COUNT(*) as total FROM products ${whereClause}`,
+      `SELECT COUNT(*) as total FROM products p ${whereClause}`,
       params
     )
     const totalDocs = parseInt(countResult.rows[0]?.total || '0', 10)
     const totalPages = Math.ceil(totalDocs / limit) || 1
 
     // Fetch products with category slug for correct product page URLs
-    // Add table aliases to WHERE clause columns to avoid ambiguity with JOIN
-    const whereWithAliases = whereClause
-      .replace('status =', 'p.status =')
-      .replace('LOWER(name)', 'LOWER(p.name)')
-      .replace('LOWER(short_description)', 'LOWER(p.short_description)')
-      .replace('LOWER(sku)', 'LOWER(p.sku)')
+    const whereWithAliases = whereClause // Already has p. prefix
     
     const dataResult = await pool.query(
       `SELECT p.*, c.slug as category_slug
