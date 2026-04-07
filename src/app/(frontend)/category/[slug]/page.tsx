@@ -165,7 +165,7 @@ async function getCategoryProducts(categoryId: string, categorySlug: string, pag
 
   // 获取产品（包含图片和价格）
   const productsResult = await pool.query(
-    `SELECT id, name, slug, sku, short_description, pricing, images, status
+    `SELECT id, name, slug, sku, short_description, pricing, external_image_url, status
      FROM products
      WHERE primary_category_id = $1::uuid AND status = 'published'
      ORDER BY name
@@ -174,19 +174,8 @@ async function getCategoryProducts(categoryId: string, categorySlug: string, pag
   )
 
     const docs = productsResult.rows.map((p) => {
-      // 解析 images（可能是 JSON 字符串或已解析的数组）
-      let imageUrl: string | undefined = undefined
-      try {
-        let imagesData = p.images
-        if (typeof imagesData === 'string') {
-          imagesData = JSON.parse(imagesData)
-        }
-        if (Array.isArray(imagesData) && imagesData.length > 0) {
-          imageUrl = (imagesData[0] as { url?: string })?.url || undefined
-        }
-      } catch {
-        imageUrl = undefined
-      }
+      // Use external_image_url directly
+      let imageUrl: string | undefined = p.external_image_url || undefined
 
       // 解析 pricing（可能是 JSON 字符串或已解析的对象）
       let basePrice: number | undefined = undefined
