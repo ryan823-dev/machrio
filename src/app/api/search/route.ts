@@ -53,11 +53,14 @@ export async function GET(request: NextRequest) {
     const totalPages = Math.ceil(totalDocs / limit) || 1
 
     // Fetch products with category slug for correct product page URLs
+    // Replace 'WHERE' with 'AND' since we already have a WHERE clause from JOIN
+    const whereWithAnd = whereClause.replace('WHERE', 'WHERE').replace('status =', 'p.status =').replace('LOWER(name)', 'LOWER(p.name)').replace('LOWER(short_description)', 'LOWER(p.short_description)').replace('LOWER(sku)', 'LOWER(p.sku)')
+    
     const dataResult = await pool.query(
       `SELECT p.*, c.slug as category_slug
        FROM products p
        LEFT JOIN categories c ON p.primary_category_id = c.id
-       ${whereClause} ORDER BY p.created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
+       ${whereWithAnd} ORDER BY p.created_at DESC LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`,
       [...params, limit, offset]
     )
 
