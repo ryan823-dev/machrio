@@ -176,15 +176,19 @@ function ListRow({ product, onAddToCart }: { product: ProductCardData; onAddToCa
 }
 
 function PriceDisplay({ product }: { product: ProductCardData }) {
-  const unitPrice = product.packageQty && product.packageQty > 1 && product.pricing.basePrice
-    ? (product.pricing.basePrice / product.packageQty)
+  const basePrice = product.pricing.basePrice
+  // Ensure basePrice is a valid number before using toFixed
+  const validBasePrice = typeof basePrice === 'number' && !isNaN(basePrice) ? basePrice : null
+  const unitPrice = product.packageQty && product.packageQty > 1 && validBasePrice
+    ? (validBasePrice / product.packageQty)
     : null
-  if (product.purchaseMode === 'rfq-only' || !product.pricing.basePrice) {
+  
+  if (product.purchaseMode === 'rfq-only' || !validBasePrice) {
     return <span className="text-sm font-semibold text-amber-600">Contact for Price</span>
   }
   return (
     <span className="text-sm font-semibold text-secondary-900">
-      ${product.pricing.basePrice.toFixed(2)}
+      ${validBasePrice.toFixed(2)}
       {unitPrice && (
         <span className="text-xs font-normal text-secondary-500"> (${unitPrice.toFixed(2)}/each)</span>
       )}

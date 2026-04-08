@@ -185,7 +185,16 @@ async function getCategoryProducts(categoryId: string, categorySlug: string, pag
           pricingData = JSON.parse(pricingData)
         }
         if (pricingData && typeof pricingData === 'object' && 'basePrice' in pricingData) {
-          basePrice = (pricingData as { basePrice: number }).basePrice
+          const rawPrice = (pricingData as { basePrice: unknown }).basePrice
+          // Ensure basePrice is a valid number
+          if (typeof rawPrice === 'number' && !isNaN(rawPrice)) {
+            basePrice = rawPrice
+          } else if (typeof rawPrice === 'string') {
+            const parsed = parseFloat(rawPrice)
+            if (!isNaN(parsed)) {
+              basePrice = parsed
+            }
+          }
         }
       } catch {
         basePrice = undefined
