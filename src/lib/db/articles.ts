@@ -61,7 +61,7 @@ export async function getArticles(options: {
     // 查询数据
     const dataResult = await pool.query(
       `SELECT
-        id, title, slug, description, excerpt, category, tags,
+        id, title, slug, description, short_description, excerpt, category, tags,
         featured_image, hero_image_id, author, status, published_at,
         meta_title, meta_description, created_at, updated_at
        FROM articles
@@ -76,7 +76,7 @@ export async function getArticles(options: {
     return {
       docs: dataResult.rows.map(row => ({
         ...row,
-        excerpt: row.description || row.excerpt,
+        excerpt: row.short_description || row.description || row.excerpt,
         featuredImage: row.featured_image,
         publishedAt: row.published_at,
         readingTime: estimateReadingTime(row.content),

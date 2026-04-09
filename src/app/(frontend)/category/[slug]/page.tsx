@@ -11,6 +11,10 @@ import { ProductGrid } from '@/components/category/ProductGrid'
 import { ExpandableIntro } from '@/components/category/ExpandableIntro'
 import { EmptyStateAIDialog } from '@/components/category/EmptyStateAIDialog'
 import { Pagination } from '@/components/category/Pagination'
+import { HowToChoose } from '@/components/category/HowToChoose'
+import { ProductRecommendation } from '@/components/category/ProductRecommendation'
+import { EnhancedFAQ } from '@/components/category/EnhancedFAQ'
+import { SubcategoryGrid } from '@/components/category/SubcategoryGrid'
 
 // 强制动态渲染（SSR）
 export const dynamic = 'force-dynamic'
@@ -320,23 +324,13 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
 
       <CategoryBuyingGuide categorySlug={slug} />
 
+      {/* L1/L2: Show subcategories with product counts */}
       {(isL1 || isL2) && children.length > 0 && (
-        <section className="mb-8">
-          <h2 className="mb-4 text-lg font-semibold text-secondary-800">
-            Browse {category.name} Categories
-          </h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
-            {children.map((child) => (
-              <Link
-                key={child.id}
-                href={`/category/${child.slug}`}
-                className="rounded-lg border border-secondary-200 bg-white px-4 py-4 text-center text-sm font-medium text-secondary-700 transition-all hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700"
-              >
-                {child.name}
-              </Link>
-            ))}
-          </div>
-        </section>
+        <SubcategoryGrid 
+          categorySlug={slug}
+          categoryName={category.name}
+          subcategories={children}
+        />
       )}
 
       {/* 无子分类时显示 EmptyStateAIDialog */}
@@ -380,30 +374,45 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
         </>
       )}
 
-      {/* SEO 内容 */}
-      {(hasRichTextContent(category.description) || hasRichTextContent(category.buying_guide) || hasRichTextContent(category.seo_content) || faqList.length > 0) && (
-        <section className="mt-12 border-t border-secondary-200 pt-8">
-          {hasRichTextContent(category.description) && (
-            <div className="mb-10">
-              <div className="prose prose-sm prose-secondary max-w-none text-secondary-600" dangerouslySetInnerHTML={{ __html: lexicalToHtml(category.description) }} />
-            </div>
-          )}
-          {hasRichTextContent(category.buying_guide) && (
-            <div className="mb-10">
-              <h2 className="mb-4 text-lg font-bold text-secondary-900">How to Choose the Right {category.name}</h2>
-              <div className="prose prose-sm prose-secondary max-w-none text-secondary-600" dangerouslySetInnerHTML={{ __html: lexicalToHtml(category.buying_guide) }} />
-            </div>
-          )}
-          {hasRichTextContent(category.seo_content) && (
-            <div className="mb-10">
-              <div className="prose prose-sm prose-secondary max-w-none text-secondary-600" dangerouslySetInnerHTML={{ __html: lexicalToHtml(category.seo_content) }} />
-            </div>
-          )}
-          {faqList.length > 0 && (
-            <FAQSection faqs={faqList} title="Frequently Asked Questions" />
-          )}
-        </section>
-      )}
+      {/* SEO Content Modules */}
+      <section className="mt-12 border-t border-secondary-200 pt-8">
+        {/* How to Choose (for L3 or if buying_guide exists) */}
+        {(isL3 || !isL3) && category.buying_guide && hasRichTextContent(category.buying_guide) && (
+          <HowToChoose
+            categorySlug={slug}
+            categoryName={category.name}
+            buyingGuideContent={category.buying_guide}
+          />
+        )}
+        
+        {/* Product Recommendation (for L1/L2/L3) */}
+        {(isL1 || isL2 || isL3) && (
+          <ProductRecommendation
+            categoryId={category.id}
+            categorySlug={slug}
+            categoryName={category.name}
+            limit={isL3 ? 4 : 8}
+          />
+        )}
+        
+        {/* Enhanced FAQ */}
+        {faqList.length > 0 && (
+          <EnhancedFAQ
+            faqs={faqList}
+            categoryName={category.name}
+          />
+        )}
+        
+        {/* Additional SEO Content */}
+        {hasRichTextContent(category.seo_content) && (
+          <div className="mb-10">
+            <div 
+              className="prose prose-sm prose-secondary max-w-none text-secondary-600"
+              dangerouslySetInnerHTML={{ __html: lexicalToHtml(category.seo_content) }}
+            />
+          </div>
+        )}
+      </section>
 
       {/* FAQ Schema */}
       {faqList.length > 0 && (
