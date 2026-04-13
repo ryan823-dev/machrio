@@ -469,15 +469,15 @@ export default function WriteForUsPage() {
                   ].map((category) => (
                     <label
                       key={category.id}
-                      className="flex items-start gap-3 p-3 rounded-lg border border-secondary-200 hover:border-primary-300 hover:bg-primary-50 cursor-pointer transition-all group"
+                      className="flex items-center gap-3 p-3 rounded-lg border border-secondary-200 hover:border-primary-300 hover:bg-primary-50 cursor-pointer transition-all group min-h-[52px]"
                     >
                       <input
                         type="checkbox"
                         name="expertise"
                         value={category.id}
-                        className="mt-0.5 h-4 w-4 text-primary-600 border-secondary-300 rounded focus:ring-primary-500"
+                        className="flex-shrink-0 h-5 w-5 text-primary-600 border-2 border-secondary-300 rounded focus:ring-primary-500"
                       />
-                      <span className="text-sm text-secondary-700 group-hover:text-primary-800">
+                      <span className="text-sm text-secondary-700 group-hover:text-primary-800 leading-tight">
                         {category.label}
                       </span>
                     </label>
@@ -501,15 +501,15 @@ export default function WriteForUsPage() {
                   ].map((type) => (
                     <label
                       key={type.id}
-                      className="flex items-start gap-3 p-3 rounded-lg border border-secondary-200 hover:border-primary-300 hover:bg-primary-50 cursor-pointer transition-all group"
+                      className="flex items-center gap-3 p-3 rounded-lg border border-secondary-200 hover:border-primary-300 hover:bg-primary-50 cursor-pointer transition-all group min-h-[52px]"
                     >
                       <input
                         type="checkbox"
                         name="expertise"
                         value={type.id}
-                        className="mt-0.5 h-4 w-4 text-primary-600 border-secondary-300 rounded focus:ring-primary-500"
+                        className="flex-shrink-0 h-5 w-5 text-primary-600 border-2 border-secondary-300 rounded focus:ring-primary-500"
                       />
-                      <span className="text-sm text-secondary-700 group-hover:text-primary-800">
+                      <span className="text-sm text-secondary-700 group-hover:text-primary-800 leading-tight">
                         {type.label}
                       </span>
                     </label>
