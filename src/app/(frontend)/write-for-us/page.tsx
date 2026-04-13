@@ -132,18 +132,27 @@ export default function WriteForUsPage() {
         </h2>
         <div className="grid md:grid-cols-3 gap-4">
           {[
-            'Stepper Motors',
-            'Industrial Automation',
-            'Sensors & Instrumentation',
-            'Paint Systems / Paint Booths',
-            'Engineering Guides',
+            // Product Categories
+            'Abrasives & Surface Finishing',
+            'Adhesives, Sealants & Tape',
+            'Cleaning & Janitorial Supplies',
+            'Electrical & Power Distribution',
+            'Hand Tools & Power Tools',
+            'Industrial Controls & Automation',
+            'Material Handling & Storage',
+            'Mechanical Components',
+            'Paint Systems & Paint Booths',
+            'Plumbing, Pipes & Fittings',
+            'PPE & Safety Equipment',
+            'Power Transmission',
+            
+            // Content Types
+            'Product Selection Guides',
+            'Application Notes',
             'Product Comparisons',
-            'Case Studies',
-            'Motion Control Systems',
-            'PLC Programming',
-            'Robotics & CNC',
-            'Safety Equipment',
+            'Troubleshooting Guides',
             'Maintenance Best Practices',
+            'Industry-Specific Solutions',
           ].map((topic, i) => (
             <div key={i} className="rounded-lg bg-primary-50 border border-primary-200 p-4 text-center">
               <span className="text-primary-800 font-medium">{topic}</span>
@@ -439,18 +448,30 @@ export default function WriteForUsPage() {
                 required
                 multiple
                 className="w-full px-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                size={5}
+                size={8}
               >
-                <option value="stepper-motors">Stepper Motors</option>
-                <option value="industrial-automation">Industrial Automation</option>
-                <option value="sensors-instrumentation">Sensors & Instrumentation</option>
-                <option value="paint-systems">Paint Systems / Paint Booths</option>
-                <option value="motion-control">Motion Control Systems</option>
-                <option value="plc-programming">PLC Programming</option>
-                <option value="robotics-cnc">Robotics & CNC</option>
-                <option value="safety-equipment">Safety Equipment</option>
-                <option value="maintenance">Maintenance Best Practices</option>
-                <option value="other">Other Engineering Topics</option>
+                <optgroup label="Product Categories">
+                  <option value="abrasives">Abrasives & Surface Finishing</option>
+                  <option value="adhesives-sealants-tape">Adhesives, Sealants & Tape</option>
+                  <option value="cleaning-janitorial">Cleaning & Janitorial Supplies</option>
+                  <option value="electrical-power">Electrical & Power Distribution</option>
+                  <option value="hand-power-tools">Hand Tools & Power Tools</option>
+                  <option value="industrial-automation">Industrial Controls & Automation</option>
+                  <option value="material-handling">Material Handling & Storage</option>
+                  <option value="mechanical-components">Mechanical Components</option>
+                  <option value="paint-systems">Paint Systems & Paint Booths</option>
+                  <option value="plumbing-pipes">Plumbing, Pipes & Fittings</option>
+                  <option value="ppe-safety">PPE & Safety Equipment</option>
+                  <option value="power-transmission">Power Transmission</option>
+                </optgroup>
+                <optgroup label="Content Types">
+                  <option value="product-guides">Product Selection Guides</option>
+                  <option value="application-notes">Application Notes</option>
+                  <option value="product-comparisons">Product Comparisons</option>
+                  <option value="troubleshooting">Troubleshooting Guides</option>
+                  <option value="maintenance">Maintenance Best Practices</option>
+                  <option value="industry-solutions">Industry-Specific Solutions</option>
+                </optgroup>
               </select>
               <p className="mt-2 text-sm text-secondary-500">Hold Ctrl/Cmd to select multiple options</p>
             </div>
