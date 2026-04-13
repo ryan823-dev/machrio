@@ -186,21 +186,30 @@ export default function WriteForUsPage() {
         <div className="rounded-lg border border-secondary-200 bg-white p-8">
           <div className="grid md:grid-cols-3 gap-6 mb-6">
             <div className="text-center p-4 rounded-lg bg-green-50 border border-green-200">
-              <p className="text-3xl font-bold text-green-700 mb-2">$50-150</p>
+              <p className="text-3xl font-bold text-green-700 mb-2">$30-50</p>
               <p className="text-sm text-green-600">per article</p>
             </div>
             <div className="text-center p-4 rounded-lg bg-blue-50 border border-blue-200">
-              <p className="text-3xl font-bold text-blue-700 mb-2">Based on</p>
-              <p className="text-sm text-blue-600">quality & expertise</p>
+              <p className="text-3xl font-bold text-blue-700 mb-2">Growth Path</p>
+              <p className="text-sm text-blue-600">up to $100+</p>
             </div>
             <div className="text-center p-4 rounded-lg bg-purple-50 border border-purple-200">
               <p className="text-3xl font-bold text-purple-700 mb-2">Bonus</p>
-              <p className="text-sm text-purple-600">high-performing content</p>
+              <p className="text-sm text-purple-600">performance-based</p>
             </div>
           </div>
-          <p className="text-secondary-600 text-center">
-            Compensation depends on expertise, content quality, and article performance. 
-            Payment is processed within 30 days of article publication.
+          <p className="text-secondary-600 text-center mb-4">
+            Base compensation starts at $30-50 per article, depending on length and complexity. 
+            Rates increase as you become a trusted contributor.
+          </p>
+          <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+            <p className="text-sm text-amber-800">
+              <strong>Pro tip:</strong> Our top contributors earn $80-150 per article through consistent quality, 
+              technical depth, and reader engagement. Performance bonuses and long-term partnerships available.
+            </p>
+          </div>
+          <p className="mt-4 text-sm text-secondary-500 text-center">
+            Payment is processed within 30 days of article publication via bank transfer or PayPal.
           </p>
         </div>
       </section>
