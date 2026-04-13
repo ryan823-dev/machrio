@@ -98,6 +98,7 @@ interface ChildCategory {
   id: string
   name: string
   slug: string
+  productCount?: number
 }
 
 // 使用 PostgreSQL 直接查询获取分类数据（纯数据库，无回退）
@@ -141,9 +142,16 @@ async function getCategoryData(slug: string) {
     }
   }
 
-  // 获取子分类
+  // 获取子分类（包含产品数量）
   const childrenResult = await pool.query<ChildCategory>(
-    'SELECT id, name, slug FROM categories WHERE parent_id = $1::uuid ORDER BY display_order LIMIT 50',
+    `SELECT c.id, c.name, c.slug, 
+            COALESCE(COUNT(p.id), 0)::int as "productCount"
+     FROM categories c
+     LEFT JOIN products p ON p.primary_category_id = c.id AND p.status = 'published'
+     WHERE c.parent_id = $1::uuid
+     GROUP BY c.id
+     ORDER BY c.display_order
+     LIMIT 50`,
     [category.id]
   )
   const children = childrenResult.rows
