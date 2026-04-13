@@ -4,6 +4,7 @@ const footerLinks = {
   company: [
     { label: 'About Us', href: '/about' },
     { label: 'Contact Us', href: '/contact' },
+    { label: 'Write for Us', href: '/write-for-us' },
     { label: 'Clearance & Duties', href: '/clearance-duties' },
   ],
   industries: [
