@@ -181,36 +181,106 @@ export default function WriteForUsPage() {
       {/* Payment Section */}
       <section className="max-w-4xl mx-auto mb-16">
         <h2 className="text-3xl font-bold text-secondary-900 text-center mb-8">
-          Payment
+          Payment & Commission
         </h2>
         <div className="rounded-lg border border-secondary-200 bg-white p-8">
-          <div className="grid md:grid-cols-3 gap-6 mb-6">
-            <div className="text-center p-4 rounded-lg bg-green-50 border border-green-200">
-              <p className="text-3xl font-bold text-green-700 mb-2">$30-50</p>
-              <p className="text-sm text-green-600">per article</p>
+          {/* Base Payment */}
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
+            <div className="text-center p-6 rounded-lg bg-green-50 border border-green-200">
+              <div className="text-4xl font-bold text-green-700 mb-2">$10-30</div>
+              <p className="text-sm text-green-600 font-medium mb-3">Base Payment per Article</p>
+              <p className="text-xs text-green-700">
+                Paid within 30 days of publication via PayPal or bank transfer
+              </p>
             </div>
-            <div className="text-center p-4 rounded-lg bg-blue-50 border border-blue-200">
-              <p className="text-3xl font-bold text-blue-700 mb-2">Growth Path</p>
-              <p className="text-sm text-blue-600">up to $100+</p>
-            </div>
-            <div className="text-center p-4 rounded-lg bg-purple-50 border border-purple-200">
-              <p className="text-3xl font-bold text-purple-700 mb-2">Bonus</p>
-              <p className="text-sm text-purple-600">performance-based</p>
+            <div className="text-center p-6 rounded-lg bg-blue-50 border border-blue-200">
+              <div className="text-4xl font-bold text-blue-700 mb-2">3% Commission</div>
+              <p className="text-sm text-blue-600 font-medium mb-3">Performance Bonus</p>
+              <p className="text-xs text-blue-700">
+                Earn 3% commission on sales generated from your articles
+              </p>
             </div>
           </div>
-          <p className="text-secondary-600 text-center mb-4">
-            Base compensation starts at $30-50 per article, depending on length and complexity. 
-            Rates increase as you become a trusted contributor.
-          </p>
-          <div className="mt-4 p-4 bg-amber-50 border border-amber-200 rounded-lg">
-            <p className="text-sm text-amber-800">
-              <strong>Pro tip:</strong> Our top contributors earn $80-150 per article through consistent quality, 
-              technical depth, and reader engagement. Performance bonuses and long-term partnerships available.
+
+          {/* Commission Details */}
+          <div className="mb-6 p-5 bg-amber-50 border border-amber-200 rounded-lg">
+            <h3 className="text-lg font-semibold text-amber-900 mb-3">
+              How the 3% Commission Works
+            </h3>
+            <ol className="space-y-2 text-sm text-amber-800">
+              <li className="flex items-start gap-2">
+                <span className="font-bold">1.</span>
+                <span>Your article is published on Machrio.com and promoted across our channels</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="font-bold">2.</span>
+                <span>Readers click through product links in your article and make purchases</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="font-bold">3.</span>
+                <span>You earn 3% commission on all sales attributed to your article</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="font-bold">4.</span>
+                <span>Commission is tracked via unique referral links and paid monthly</span>
+              </li>
+            </ol>
+          </div>
+
+          {/* Earning Potential */}
+          <div className="grid md:grid-cols-3 gap-4 mb-6">
+            <div className="text-center p-4 rounded-lg bg-purple-50 border border-purple-200">
+              <p className="text-xs text-purple-600 mb-1">Example: $1,000 in sales</p>
+              <p className="text-2xl font-bold text-purple-700 mb-1">$30</p>
+              <p className="text-xs text-purple-600">commission earned</p>
+            </div>
+            <div className="text-center p-4 rounded-lg bg-indigo-50 border border-indigo-200">
+              <p className="text-xs text-indigo-600 mb-1">Example: $5,000 in sales</p>
+              <p className="text-2xl font-bold text-indigo-700 mb-1">$150</p>
+              <p className="text-xs text-indigo-600">commission earned</p>
+            </div>
+            <div className="text-center p-4 rounded-lg bg-pink-50 border border-pink-200">
+              <p className="text-xs text-pink-600 mb-1">Example: $10,000 in sales</p>
+              <p className="text-2xl font-bold text-pink-700 mb-1">$300</p>
+              <p className="text-xs text-pink-600">commission earned</p>
+            </div>
+          </div>
+
+          {/* Payment Details */}
+          <div className="border-t border-secondary-200 pt-6">
+            <h3 className="text-base font-semibold text-secondary-900 mb-3">
+              Payment Schedule
+            </h3>
+            <ul className="space-y-2 text-sm text-secondary-600">
+              <li className="flex items-start gap-2">
+                <svg className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span><strong>Base payment:</strong> $10-30 per article (based on length and quality), paid within 30 days of publication</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <svg className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span><strong>Commission:</strong> 3% of attributed sales, tracked via unique referral links, paid monthly</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <svg className="h-5 w-5 text-green-600 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                <span><strong>Payment methods:</strong> PayPal, bank transfer, or store credit (with 10% bonus)</span>
+              </li>
+            </ul>
+          </div>
+
+          {/* Important Note */}
+          <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+            <p className="text-sm text-gray-700">
+              <strong>Note:</strong> Commission is calculated on net sales (after returns/refunds) from orders 
+              where the customer clicked through your article's product links. You'll have access to a 
+              dashboard to track your article's performance and earnings in real-time.
             </p>
           </div>
-          <p className="mt-4 text-sm text-secondary-500 text-center">
-            Payment is processed within 30 days of article publication via bank transfer or PayPal.
-          </p>
         </div>
       </section>
 
