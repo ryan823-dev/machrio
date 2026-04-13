@@ -438,42 +438,84 @@ export default function WriteForUsPage() {
               />
             </div>
 
+            {/* Areas of Expertise - Checkbox Grid */}
             <div>
-              <label htmlFor="expertise" className="block text-sm font-medium text-secondary-700 mb-2">
+              <label className="block text-sm font-medium text-secondary-700 mb-3">
                 Areas of Expertise *
               </label>
-              <select
-                id="expertise"
-                name="expertise"
-                required
-                multiple
-                className="w-full px-4 py-3 border border-secondary-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                size={8}
-              >
-                <optgroup label="Product Categories">
-                  <option value="abrasives">Abrasives & Surface Finishing</option>
-                  <option value="adhesives-sealants-tape">Adhesives, Sealants & Tape</option>
-                  <option value="cleaning-janitorial">Cleaning & Janitorial Supplies</option>
-                  <option value="electrical-power">Electrical & Power Distribution</option>
-                  <option value="hand-power-tools">Hand Tools & Power Tools</option>
-                  <option value="industrial-automation">Industrial Controls & Automation</option>
-                  <option value="material-handling">Material Handling & Storage</option>
-                  <option value="mechanical-components">Mechanical Components</option>
-                  <option value="paint-systems">Paint Systems & Paint Booths</option>
-                  <option value="plumbing-pipes">Plumbing, Pipes & Fittings</option>
-                  <option value="ppe-safety">PPE & Safety Equipment</option>
-                  <option value="power-transmission">Power Transmission</option>
-                </optgroup>
-                <optgroup label="Content Types">
-                  <option value="product-guides">Product Selection Guides</option>
-                  <option value="application-notes">Application Notes</option>
-                  <option value="product-comparisons">Product Comparisons</option>
-                  <option value="troubleshooting">Troubleshooting Guides</option>
-                  <option value="maintenance">Maintenance Best Practices</option>
-                  <option value="industry-solutions">Industry-Specific Solutions</option>
-                </optgroup>
-              </select>
-              <p className="mt-2 text-sm text-secondary-500">Hold Ctrl/Cmd to select multiple options</p>
+              <p className="text-xs text-secondary-500 mb-4">
+                Select all areas that match your expertise (minimum 1 required)
+              </p>
+              
+              {/* Product Categories */}
+              <fieldset className="mb-6">
+                <legend className="text-xs font-semibold text-primary-700 uppercase tracking-wide mb-3">
+                  Product Categories
+                </legend>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {[
+                    { id: 'abrasives', label: 'Abrasives & Surface Finishing' },
+                    { id: 'adhesives-sealants-tape', label: 'Adhesives, Sealants & Tape' },
+                    { id: 'cleaning-janitorial', label: 'Cleaning & Janitorial Supplies' },
+                    { id: 'electrical-power', label: 'Electrical & Power Distribution' },
+                    { id: 'hand-power-tools', label: 'Hand Tools & Power Tools' },
+                    { id: 'industrial-automation', label: 'Industrial Controls & Automation' },
+                    { id: 'material-handling', label: 'Material Handling & Storage' },
+                    { id: 'mechanical-components', label: 'Mechanical Components' },
+                    { id: 'paint-systems', label: 'Paint Systems & Paint Booths' },
+                    { id: 'plumbing-pipes', label: 'Plumbing, Pipes & Fittings' },
+                    { id: 'ppe-safety', label: 'PPE & Safety Equipment' },
+                    { id: 'power-transmission', label: 'Power Transmission' },
+                  ].map((category) => (
+                    <label
+                      key={category.id}
+                      className="flex items-start gap-3 p-3 rounded-lg border border-secondary-200 hover:border-primary-300 hover:bg-primary-50 cursor-pointer transition-all group"
+                    >
+                      <input
+                        type="checkbox"
+                        name="expertise"
+                        value={category.id}
+                        className="mt-0.5 h-4 w-4 text-primary-600 border-secondary-300 rounded focus:ring-primary-500"
+                      />
+                      <span className="text-sm text-secondary-700 group-hover:text-primary-800">
+                        {category.label}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+
+              {/* Content Types */}
+              <fieldset>
+                <legend className="text-xs font-semibold text-primary-700 uppercase tracking-wide mb-3">
+                  Content Types
+                </legend>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  {[
+                    { id: 'product-guides', label: 'Product Selection Guides' },
+                    { id: 'application-notes', label: 'Application Notes' },
+                    { id: 'product-comparisons', label: 'Product Comparisons' },
+                    { id: 'troubleshooting', label: 'Troubleshooting Guides' },
+                    { id: 'maintenance', label: 'Maintenance Best Practices' },
+                    { id: 'industry-solutions', label: 'Industry-Specific Solutions' },
+                  ].map((type) => (
+                    <label
+                      key={type.id}
+                      className="flex items-start gap-3 p-3 rounded-lg border border-secondary-200 hover:border-primary-300 hover:bg-primary-50 cursor-pointer transition-all group"
+                    >
+                      <input
+                        type="checkbox"
+                        name="expertise"
+                        value={type.id}
+                        className="mt-0.5 h-4 w-4 text-primary-600 border-secondary-300 rounded focus:ring-primary-500"
+                      />
+                      <span className="text-sm text-secondary-700 group-hover:text-primary-800">
+                        {type.label}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
             </div>
 
             <div>
