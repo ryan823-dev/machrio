@@ -1,4 +1,4 @@
-import { Pool, PoolClient, QueryResult } from 'pg'
+import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg'
 
 // 全局连接池 - Vercel Serverless 环境使用 globalThis 持久化
 let globalPool: Pool | null = null
@@ -45,7 +45,7 @@ function createPool(): Pool {
 }
 
 // 带自动重试的查询函数 - 处理 Railway 代理超时问题
-export async function safeQuery<T = any>(
+export async function safeQuery<T extends QueryResultRow = QueryResultRow>(
   sql: string,
   params?: any[],
   retries = 2
@@ -80,7 +80,7 @@ export async function safeQuery<T = any>(
 }
 
 // 带连接验证的查询
-export async function queryWithValidation<T = any>(
+export async function queryWithValidation<T extends QueryResultRow = QueryResultRow>(
   sql: string,
   params?: any[]
 ): Promise<QueryResult<T>> {
@@ -119,6 +119,8 @@ export interface ProductRow {
   slug: string
   sku: string
   short_description: string | null
+  pricing: unknown | null
+  images: unknown | null
   full_description: string | null
   primary_category_id: string | null
   brand_id: string | null
@@ -126,6 +128,7 @@ export interface ProductRow {
   availability: string | null
   purchase_mode: string | null
   package_qty: number | null
+  package_unit?: string | null
   external_image_url: string | null
   primary_image_id: string | null
   created_at: string
@@ -275,7 +278,7 @@ export interface CategoryRow {
 }
 
 export async function getCategories(options?: {
-  parentId?: string
+  parentId?: string | null
   featured?: boolean
   limit?: number
 }): Promise<CategoryRow[]> {
@@ -478,7 +481,9 @@ export interface GlossaryTermRow {
   term: string
   slug: string
   full_name: string | null
+  fullName?: string | null
   definition: string
+  content?: unknown | null
   category: string | null
   status: string
   created_at: string
@@ -529,9 +534,11 @@ export interface OrderRow {
   shipping_cost: number
   tax: number
   total: number
+  currency: string
   shipping_address: any
   billing_address: any
   items: any
+  payment_info: any
   notes: string | null
   created_at: string
   updated_at: string
@@ -543,6 +550,19 @@ export async function getOrderByNumber(orderNumber: string): Promise<OrderRow | 
     const result = await pool.query(
       `SELECT * FROM orders WHERE order_number = $1`,
       [orderNumber]
+    )
+    return result.rows[0] || null
+  } catch {
+    return null
+  }
+}
+
+export async function getOrderById(orderId: string): Promise<OrderRow | null> {
+  const pool = getPool()
+  try {
+    const result = await pool.query(
+      `SELECT * FROM orders WHERE id::text = $1`,
+      [orderId]
     )
     return result.rows[0] || null
   } catch {
@@ -563,6 +583,7 @@ export async function createOrder(data: {
   shippingCost: number
   tax: number
   total: number
+  currency: string
   shippingAddress: any
   billingAddress: any
   items: any
@@ -573,14 +594,14 @@ export async function createOrder(data: {
     const result = await pool.query(
       `INSERT INTO orders (
         order_number, customer_email, customer_name, customer_phone, customer_company,
-        status, payment_status, payment_method, subtotal, shipping_cost, tax, total,
+        status, payment_status, payment_method, subtotal, shipping_cost, tax, total, currency,
         shipping_address, billing_address, items, notes
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
       RETURNING *`,
       [
         data.orderNumber, data.customerEmail, data.customerName, data.customerPhone || null,
         data.customerCompany || null, data.status, data.paymentStatus, data.paymentMethod || null,
-        data.subtotal, data.shippingCost, data.tax, data.total,
+        data.subtotal, data.shippingCost, data.tax, data.total, data.currency,
         JSON.stringify(data.shippingAddress), JSON.stringify(data.billingAddress),
         JSON.stringify(data.items), data.notes || null
       ]

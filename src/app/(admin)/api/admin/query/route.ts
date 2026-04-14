@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPool } from '@/lib/db'
+import { getPayload } from 'payload'
+import config from '@payload-config'
 
 // Only allow queries in production with proper authentication
 const ALLOWED_ORIGINS = [
@@ -10,6 +12,18 @@ const ALLOWED_ORIGINS = [
 
 export async function POST(request: NextRequest) {
   try {
+    const payload = await getPayload({ config })
+    const authResult = await payload.auth({ headers: request.headers })
+    const user = authResult.user as { role?: string } | null
+
+    if (!user) {
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+    }
+
+    if (user.role !== 'admin') {
+      return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
+    }
+
     // CORS check
     const origin = request.headers.get('origin') || ''
     if (!ALLOWED_ORIGINS.includes(origin)) {

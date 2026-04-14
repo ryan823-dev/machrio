@@ -592,4 +592,23 @@ const nextConfig = {
   },
 }
 
-export default withPayload(nextConfig)
+const payloadNextConfig = withPayload(nextConfig)
+
+if (payloadNextConfig.experimental?.turbo) {
+  payloadNextConfig.turbopack = {
+    ...payloadNextConfig.turbopack,
+    ...payloadNextConfig.experimental.turbo,
+    resolveAlias: {
+      ...payloadNextConfig.turbopack?.resolveAlias,
+      ...payloadNextConfig.experimental.turbo.resolveAlias,
+    },
+  }
+
+  delete payloadNextConfig.experimental.turbo
+
+  if (Object.keys(payloadNextConfig.experimental).length === 0) {
+    delete payloadNextConfig.experimental
+  }
+}
+
+export default payloadNextConfig

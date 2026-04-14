@@ -18,7 +18,7 @@ interface IndustryInfo {
   name: string
   description: string
   intro: string
-  // categories: { name: string; slug: string }[]  // 暂时移除，因为分类数据不存在
+  categories: { name: string; slug: string }[]
   scenarios: { title: string; description: string; icon: string; categories: string[] }[]
   compliance: { standards: string[]; description: string }
   faqs: { question: string; answer: string }[]
@@ -307,6 +307,7 @@ const industryData: Record<string, IndustryInfo> = {
 // ---------------------------------------------------------------------------
 
 interface ProductCardData {
+  id: string
   name: string
   slug: string
   categorySlug: string
@@ -317,6 +318,8 @@ interface ProductCardData {
   pricing: { basePrice?: number; currency: string; priceUnit?: string }
   purchaseMode: 'both' | 'buy-online' | 'rfq-only'
   availability: string
+  packageQty?: number
+  packageUnit?: string
 }
 
 function mapProductToCard(product: Record<string, unknown>): ProductCardData {
@@ -340,6 +343,7 @@ function mapProductToCard(product: Record<string, unknown>): ProductCardData {
   const primaryImage = (primaryImageObj?.url as string) || (product.externalImageUrl as string) || undefined
 
   return {
+    id: product.id as string,
     name: product.name as string,
     slug: product.slug as string,
     categorySlug,
@@ -354,6 +358,8 @@ function mapProductToCard(product: Record<string, unknown>): ProductCardData {
     },
     purchaseMode: (product.purchaseMode as 'both' | 'buy-online' | 'rfq-only') || 'both',
     availability: (product.availability as string) || 'contact',
+    packageQty: product.packageQty as number | undefined,
+    packageUnit: product.packageUnit as string | undefined,
   }
 }
 
@@ -367,6 +373,7 @@ async function getIndustryProducts(industrySlug: string, limit = 8): Promise<Pro
     const result = await searchProducts(searchTerms[0], { limit })
 
     return result.docs.map((p) => ({
+      id: p.id,
       name: p.name,
       slug: p.slug,
       categorySlug: 'products',
@@ -377,6 +384,7 @@ async function getIndustryProducts(industrySlug: string, limit = 8): Promise<Pro
       pricing: { basePrice: undefined, currency: 'USD', priceUnit: undefined },
       purchaseMode: (p.purchase_mode as 'both' | 'buy-online' | 'rfq-only') || 'both',
       availability: p.availability || 'contact',
+      packageQty: p.package_qty || undefined,
     }))
   } catch {
     return []

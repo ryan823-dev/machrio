@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { getOrderByNumber } from '@/lib/db'
 import { PayPalCaptureHandler } from '@/components/payment/PayPalCaptureHandler'
+import { StripeReturnHandler } from '@/components/payment/StripeReturnHandler'
 import { PaymentReceiptUpload } from '@/components/order/PaymentReceiptUpload'
 
 export const dynamic = 'force-dynamic'
@@ -24,19 +25,33 @@ export default async function OrderConfirmationPage({ params, searchParams }: Or
     company: order.customer_company,
   }
   const shipping = order.shipping_address as Record<string, unknown> || {}
-  const paymentInfo = (order as any).payment_info || {}
+  const paymentInfo = (order.payment_info || {}) as {
+    method?: string
+    paypal?: unknown
+    stripe?: unknown
+  }
   const items = (order.items as Record<string, unknown>[]) || []
-  const isBankTransfer = paymentInfo.method === 'bank-transfer'
+  const paymentMethod = order.payment_method
+    || paymentInfo.method
+    || (paymentInfo.paypal ? 'paypal' : paymentInfo.stripe ? 'stripe' : 'bank-transfer')
+  const currency = order.currency || 'USD'
+  const isBankTransfer = paymentMethod === 'bank-transfer'
   const isPaid = order.payment_status === 'paid'
   const paymentSuccess = payment === 'success'
+  const paymentMethodLabel = paymentMethod === 'paypal'
+    ? 'PayPal'
+    : isBankTransfer
+      ? 'Bank Transfer'
+      : 'Stripe (Online)'
 
   return (
     <div className="container-main py-8">
       {/* PayPal Capture Handler */}
       <PayPalCaptureHandler orderNumber={orderNumber} />
+      <StripeReturnHandler orderNumber={orderNumber} />
       
       {/* Status banner */}
-      {paymentSuccess && paymentInfo.method !== 'paypal' && (
+      {paymentSuccess && paymentMethod !== 'paypal' && (
         <div className="mb-6 rounded-lg bg-green-50 border border-green-200 p-4">
           <div className="flex items-center gap-2">
             <svg className="h-5 w-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -57,6 +72,18 @@ export default async function OrderConfirmationPage({ params, searchParams }: Or
             <span className="font-semibold text-amber-800">Payment was not completed</span>
           </div>
           <p className="mt-1 text-sm text-amber-700">Your order has been created but payment was not completed. You can still pay later or contact us.</p>
+        </div>
+      )}
+
+      {payment === 'processing' && (
+        <div className="mb-6 rounded-lg bg-blue-50 border border-blue-200 p-4">
+          <div className="flex items-center gap-2">
+            <svg className="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            <span className="font-semibold text-blue-800">Payment is processing</span>
+          </div>
+          <p className="mt-1 text-sm text-blue-700">We&apos;re waiting for Stripe to finish confirming your payment. This page will reflect the final status shortly.</p>
         </div>
       )}
 
@@ -112,7 +139,7 @@ export default async function OrderConfirmationPage({ params, searchParams }: Or
               </div>
               <div className="flex justify-between font-bold text-secondary-900 pt-1 border-t border-secondary-100">
                 <span>Total</span>
-                <span>${order.total.toFixed(2)} USD</span>
+                <span>${order.total.toFixed(2)} {currency}</span>
               </div>
             </div>
           </section>
@@ -136,7 +163,7 @@ export default async function OrderConfirmationPage({ params, searchParams }: Or
           <section className="rounded-lg border border-secondary-200 bg-white p-6">
             <h2 className="text-lg font-bold text-secondary-900">Payment</h2>
             <p className="mt-2 text-sm text-secondary-600">
-              Method: <span className="font-medium">{isBankTransfer ? 'Bank Transfer' : 'Stripe (Online)'}</span>
+              Method: <span className="font-medium">{paymentMethodLabel}</span>
             </p>
             <p className="mt-1 text-sm text-secondary-600">
               Status: <span className={`font-medium ${isPaid ? 'text-green-700' : 'text-amber-700'}`}>

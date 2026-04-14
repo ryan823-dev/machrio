@@ -28,7 +28,7 @@ export default async function InvoicePage({ params }: InvoicePageProps) {
   const dueDate = new Date(createdAt.getTime() + 14 * 24 * 60 * 60 * 1000) // 14 days
 
   // Match bank accounts by currency, or show all if none match
-  const currency = 'USD'
+  const currency = order.currency || 'USD'
   const matchedAccounts = bankAccounts.filter(a => a.currency === currency)
   const displayAccounts = matchedAccounts.length > 0 ? matchedAccounts : bankAccounts
 

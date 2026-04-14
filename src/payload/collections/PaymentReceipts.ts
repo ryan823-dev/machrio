@@ -117,9 +117,10 @@ export const PaymentReceipts: CollectionConfig = {
     },
     {
       name: 'verifiedAt',
-      type: 'datetime',
+      type: 'date',
       admin: {
         position: 'sidebar',
+        date: { pickerAppearance: 'dayAndTime' },
       },
     },
   ],

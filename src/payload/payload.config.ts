@@ -38,7 +38,20 @@ const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
 // 使用 PostgreSQL 作为默认数据库（迁移后不再支持 MongoDB）
-const usePostgres = process.env.USE_POSTGRES !== '0' && !!process.env.DATABASE_URI
+const databaseUri =
+  process.env.DATABASE_URI ||
+  process.env.DATABASE_URL ||
+  'postgresql://postgres:postgres@127.0.0.1:5432/postgres'
+
+const db = postgresAdapter({
+  pool: {
+    connectionString: databaseUri,
+    max: 1,
+    min: 0,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 30000,
+  },
+})
 
 export default buildConfig({
   sharp,
@@ -60,11 +73,6 @@ export default buildConfig({
           exact: true,
         },
       },
-    },
-    // 禁用不需要的功能
-    disable: {
-      // 保留数据，可以稍后清理
-      dataLoader: false,
     },
   },
   // 保留 i18n 但可以精简
@@ -111,17 +119,7 @@ export default buildConfig({
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
   // Database
-  db: usePostgres
-    ? postgresAdapter({
-        pool: {
-          connectionString: process.env.DATABASE_URI!,
-          max: 1,
-          min: 0,
-          idleTimeoutMillis: 30000,
-          connectionTimeoutMillis: 30000,
-        },
-      })
-    : undefined,
+  db,
   // 简化 plugins
   plugins: [],
 })

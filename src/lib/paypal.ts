@@ -16,6 +16,14 @@ interface PayPalAccessTokenResponse {
 interface PayPalOrderResponse {
   id: string
   status: string
+  purchase_units: Array<{
+    reference_id?: string
+    custom_id?: string
+    amount?: {
+      currency_code: string
+      value: string
+    }
+  }>
   links: Array<{
     href: string
     rel: string
@@ -142,6 +150,8 @@ interface CapturePayPalOrderResponse {
   id: string
   status: string
   purchase_units: Array<{
+    reference_id?: string
+    custom_id?: string
     payments: {
       captures: Array<{
         id: string

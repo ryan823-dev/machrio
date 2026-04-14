@@ -126,7 +126,9 @@ export default async function GlossaryTermPage({
 
   const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'https://machrio.com'
   const category = term.category || 'standards'
-  const contentHtml = lexicalToHtml(term.content)
+  const fullName = ('fullName' in term ? term.fullName : term.full_name) || null
+  const content = ('content' in term ? term.content : null) || null
+  const contentHtml = lexicalToHtml(content)
 
   // DefinedTerm Schema
   const definedTermSchema = {
@@ -134,7 +136,7 @@ export default async function GlossaryTermPage({
     '@type': 'DefinedTerm',
     name: term.term,
     description: term.definition,
-    ...(term.full_name && { alternateName: term.full_name }),
+    ...(fullName && { alternateName: fullName }),
     url: `${serverUrl}/glossary/${slug}/`,
     inDefinedTermSet: {
       '@type': 'DefinedTermSet',
@@ -150,20 +152,20 @@ export default async function GlossaryTermPage({
     mainEntity: [
       {
         '@type': 'Question',
-        name: `What is ${term.term}${term.full_name ? ` (${term.full_name})` : ''}?`,
+        name: `What is ${term.term}${fullName ? ` (${fullName})` : ''}?`,
         acceptedAnswer: {
           '@type': 'Answer',
           text: term.definition,
         },
       },
-      ...(term.full_name
+      ...(fullName
         ? [
             {
               '@type': 'Question',
               name: `What does ${term.term} stand for?`,
               acceptedAnswer: {
                 '@type': 'Answer',
-                text: `${term.term} stands for ${term.full_name}.`,
+                text: `${term.term} stands for ${fullName}.`,
               },
             },
           ]
@@ -191,9 +193,9 @@ export default async function GlossaryTermPage({
         <h1 className="mt-3 text-3xl font-bold text-secondary-900">
           What is {term.term}?
         </h1>
-        {term.full_name && (
+        {fullName && (
           <p className="mt-1 text-lg text-secondary-500">
-            {term.term} — {term.full_name}
+            {term.term} — {fullName}
           </p>
         )}
       </header>

@@ -24,6 +24,14 @@ interface ProductPageProps {
   params: Promise<{ category: string; slug: string }>
 }
 
+interface ParsedPricing {
+  basePrice?: number
+  priceUnit?: string
+  currency?: string
+  compareAtPrice?: number
+  tieredPricing?: { minQty: number; maxQty?: number; unitPrice: number }[]
+}
+
 // 获取产品数据（纯数据库，无回退）
 async function getProductBySlugFromDB(slug: string) {
   return await getProductBySlug(slug)
@@ -419,19 +427,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
   }
 
   // Pricing - 解析 JSON 字符串（数据库存储为 text）
-  let pricing: {
-    basePrice?: number
-    priceUnit?: string
-    currency?: string
-    compareAtPrice?: number
-    tieredPricing?: { minQty: number; maxQty?: number; unitPrice: number }[]
-  } | null = null
+  let pricing: ParsedPricing | null = null
   try {
     let pricingData = product.pricing
     if (typeof pricingData === 'string') {
       pricingData = JSON.parse(pricingData)
     }
-    pricing = pricingData as typeof pricing
+    pricing = (pricingData as ParsedPricing | null) || null
   } catch {
     pricing = null
   }

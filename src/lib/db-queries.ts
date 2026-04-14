@@ -4,9 +4,7 @@
  * 使用全局连接池避免每次创建新连接
  */
 
-import pg from 'pg'
-
-const { Pool } = pg
+import { Pool } from 'pg'
 
 // 全局连接池 - Vercel Serverless 环境使用 globalThis 持久化
 let globalPool: Pool | null = null
@@ -174,13 +172,14 @@ export async function getCategoryBySlug(slug: string): Promise<{
     )
     
     if (parentResult.rows.length > 0) {
-      parent = parentResult.rows[0]
+      const parentCategory = parentResult.rows[0]
+      parent = parentCategory
       
       // 如果有祖父分类（L2 的情况）
-      if (parent.parent_id !== null) {
+      if (parentCategory.parent_id !== null) {
         const gpResult = await pool.query<DbCategory>(
           'SELECT * FROM categories WHERE id = $1',
-          [parent.parent_id]
+          [parentCategory.parent_id]
         )
         if (gpResult.rows.length > 0) {
           grandparent = gpResult.rows[0]

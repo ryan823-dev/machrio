@@ -275,8 +275,12 @@ export const Orders: CollectionConfig = {
         },
         {
           name: 'receiptUploadDate',
-          type: 'datetime',
-          admin: { description: 'When the receipt was uploaded', position: 'sidebar' },
+          type: 'date',
+          admin: {
+            description: 'When the receipt was uploaded',
+            position: 'sidebar',
+            date: { pickerAppearance: 'dayAndTime' },
+          },
         },
       ],
     },

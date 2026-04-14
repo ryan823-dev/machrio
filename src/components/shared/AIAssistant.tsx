@@ -6,9 +6,7 @@ import { useCart } from '@/contexts/CartContext'
 import { useAIAssistantVisibility } from '@/contexts/AIAssistantVisibilityContext'
 import { 
   generateSessionId, 
-  saveConversation, 
   ConversationTracker,
-  ConversationMessage 
 } from '@/lib/conversation-tracker'
 
 interface ProductCard {

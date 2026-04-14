@@ -20,6 +20,7 @@ export interface Config {
     customers: Customer;
     quotes: Quote;
     'bank-accounts': BankAccount;
+    'payment-receipts': PaymentReceipt;
     'rfq-submissions': RfqSubmission;
     'contact-submissions': ContactSubmission;
     'shipping-methods': ShippingMethod;
@@ -48,6 +49,7 @@ export interface Config {
     customers: CustomersSelect<false> | CustomersSelect<true>;
     quotes: QuotesSelect<false> | QuotesSelect<true>;
     'bank-accounts': BankAccountsSelect<false> | BankAccountsSelect<true>;
+    'payment-receipts': PaymentReceiptsSelect<false> | PaymentReceiptsSelect<true>;
     'rfq-submissions': RfqSubmissionsSelect<false> | RfqSubmissionsSelect<true>;
     'contact-submissions': ContactSubmissionsSelect<false> | ContactSubmissionsSelect<true>;
     'shipping-methods': ShippingMethodsSelect<false> | ShippingMethodsSelect<true>;
@@ -66,7 +68,7 @@ export interface Config {
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
   };
   db: {
-    defaultIDType: string;
+    defaultIDType: number;
   };
   globals: {
     homepage: Homepage;
@@ -110,7 +112,7 @@ export interface UserAuthOperations {
  * via the `definition` "users".
  */
 export interface User {
-  id: string;
+  id: number;
   name: string;
   role: 'admin' | 'editor' | 'sales';
   updatedAt: string;
@@ -129,7 +131,7 @@ export interface User {
  * via the `definition` "categories".
  */
 export interface Category {
-  id: string;
+  id: number;
   /**
    * Display name for the category
    */
@@ -141,7 +143,7 @@ export interface Category {
   /**
    * Parent category (leave empty for top-level)
    */
-  parent?: (string | null) | Category;
+  parent?: (number | null) | Category;
   /**
    * SEO description (minimum 150 words recommended)
    */
@@ -205,11 +207,11 @@ export interface Category {
   /**
    * Category banner image
    */
-  heroImage?: (string | null) | Media;
+  heroImage?: (number | null) | Media;
   /**
    * Category icon for navigation
    */
-  icon?: (string | null) | Media;
+  icon?: (number | null) | Media;
   /**
    * Emoji icon for category cards (e.g. 🛡️, 📦)
    */
@@ -295,7 +297,7 @@ export interface Category {
  * via the `definition` "media".
  */
 export interface Media {
-  id: string;
+  id: number;
   /**
    * Describe this image for accessibility and SEO
    */
@@ -347,7 +349,7 @@ export interface Media {
  * via the `definition` "products".
  */
 export interface Product {
-  id: string;
+  id: number;
   /**
    * URL-safe identifier
    */
@@ -372,15 +374,15 @@ export interface Product {
   /**
    * Main category (used in URL)
    */
-  primaryCategory: string | Category;
+  primaryCategory: number | Category;
   /**
    * Product brand (optional)
    */
-  brand?: (string | null) | Brand;
+  brand?: (number | null) | Brand;
   /**
    * Additional categories
    */
-  categories?: (string | Category)[] | null;
+  categories?: (number | Category)[] | null;
   /**
    * Brief description (50+ words, used for meta description)
    */
@@ -468,12 +470,12 @@ export interface Product {
   };
   externalImageUrl?: string | null;
   additionalImageUrls?: string[] | null;
-  primaryImage?: (string | null) | Media;
-  images?: (string | Media)[] | null;
+  primaryImage?: (number | null) | Media;
+  images?: (number | Media)[] | null;
   /**
    * PDF datasheet/specification document
    */
-  datasheet?: (string | null) | Media;
+  datasheet?: (number | null) | Media;
   /**
    * Technical specifications
    */
@@ -526,7 +528,7 @@ export interface Product {
   /**
    * Related products for cross-selling
    */
-  relatedProducts?: (string | Product)[] | null;
+  relatedProducts?: (number | Product)[] | null;
   /**
    * Original product source URL (for tracking)
    */
@@ -556,13 +558,13 @@ export interface Product {
  * via the `definition` "brands".
  */
 export interface Brand {
-  id: string;
+  id: number;
   name: string;
   slug: string;
   /**
    * Brand logo
    */
-  logo?: (string | null) | Media;
+  logo?: (number | null) | Media;
   /**
    * Brand description (minimum 200 words for SEO)
    */
@@ -601,7 +603,7 @@ export interface Brand {
  * via the `definition` "orders".
  */
 export interface Order {
-  id: string;
+  id: number;
   orderNumber: string;
   status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
   paymentStatus: 'unpaid' | 'paid' | 'refunded';
@@ -612,7 +614,7 @@ export interface Order {
   /**
    * Link to customer profile
    */
-  customerRef?: (string | null) | Customer;
+  customerRef?: (number | null) | Customer;
   customer: {
     name: string;
     email: string;
@@ -620,7 +622,7 @@ export interface Order {
     company: string;
   };
   items: {
-    product: string | Product;
+    product: number | Product;
     /**
      * Snapshot of product name at time of order
      */
@@ -690,12 +692,24 @@ export interface Order {
      */
     paypalCaptureId?: string | null;
     transactionId?: string | null;
+    /**
+     * Payment receipt has been uploaded
+     */
+    receiptUploaded?: boolean | null;
+    /**
+     * When the receipt was uploaded
+     */
+    receiptUploadDate?: string | null;
   };
+  /**
+   * Bank transfer payment receipt/proof
+   */
+  paymentReceipt?: (number | null) | PaymentReceipt;
   /**
    * Notes from the customer at checkout
    */
   customerNotes?: string | null;
-  assignedTo?: (string | null) | User;
+  assignedTo?: (number | null) | User;
   /**
    * Internal notes
    */
@@ -722,7 +736,7 @@ export interface Order {
  * via the `definition` "customers".
  */
 export interface Customer {
-  id: string;
+  id: number;
   /**
    * Company name
    */
@@ -805,19 +819,88 @@ export interface Customer {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payment-receipts".
+ */
+export interface PaymentReceipt {
+  id: number;
+  /**
+   * Associated order number
+   */
+  orderNumber: string;
+  /**
+   * Link to order
+   */
+  orderId: number | Order;
+  /**
+   * Customer email who uploaded this receipt
+   */
+  uploadedBy?: string | null;
+  /**
+   * File size in bytes
+   */
+  fileSize?: number | null;
+  /**
+   * MIME type of the file
+   */
+  fileType?: string | null;
+  /**
+   * Additional notes about this payment
+   */
+  notes?: string | null;
+  /**
+   * Payment receipt verified by finance team
+   */
+  verified?: boolean | null;
+  /**
+   * User who verified this receipt
+   */
+  verifiedBy?: (number | null) | User;
+  verifiedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename: string;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+  sizes?: {
+    thumbnail?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+    medium?: {
+      url?: string | null;
+      width?: number | null;
+      height?: number | null;
+      mimeType?: string | null;
+      filesize?: number | null;
+      filename?: string | null;
+    };
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "quotes".
  */
 export interface Quote {
-  id: string;
+  id: number;
   quoteNumber: string;
   status: 'draft' | 'sent' | 'accepted' | 'converted' | 'expired' | 'rejected';
   /**
    * Source RFQ inquiry (leave empty for proactive quotes)
    */
-  rfq?: (string | null) | RfqSubmission;
-  customer: string | Customer;
+  rfq?: (number | null) | RfqSubmission;
+  customer: number | Customer;
   items: {
-    product: string | Product;
+    product: number | Product;
     /**
      * Snapshot of product name
      */
@@ -854,11 +937,11 @@ export interface Quote {
   /**
    * Order created from this quote
    */
-  convertedOrder?: (string | null) | Order;
+  convertedOrder?: (number | null) | Order;
   /**
    * Sales representative
    */
-  assignedTo?: (string | null) | User;
+  assignedTo?: (number | null) | User;
   /**
    * Internal notes (not visible to customer)
    */
@@ -885,7 +968,7 @@ export interface Quote {
  * via the `definition` "rfq-submissions".
  */
 export interface RfqSubmission {
-  id: string;
+  id: number;
   displayTitle?: string | null;
   submittedAt: string;
   customer: {
@@ -902,7 +985,7 @@ export interface RfqSubmission {
     /**
      * Products the customer is inquiring about
      */
-    products?: (string | Product)[] | null;
+    products?: (number | Product)[] | null;
     /**
      * Requested quantity
      */
@@ -914,21 +997,21 @@ export interface RfqSubmission {
     /**
      * Specification documents, drawings, etc.
      */
-    attachments?: (string | Media)[] | null;
+    attachments?: (number | Media)[] | null;
   };
   /**
    * Link to customer profile
    */
-  customerRef?: (string | null) | Customer;
+  customerRef?: (number | null) | Customer;
   /**
    * Quote created from this inquiry
    */
-  quote?: (string | null) | Quote;
+  quote?: (number | null) | Quote;
   status: 'new' | 'contacted' | 'quoted' | 'converted' | 'lost';
   /**
    * Sales representative
    */
-  assignedTo?: (string | null) | User;
+  assignedTo?: (number | null) | User;
   /**
    * Internal notes (not visible to customer)
    */
@@ -965,7 +1048,7 @@ export interface RfqSubmission {
  * via the `definition` "bank-accounts".
  */
 export interface BankAccount {
-  id: string;
+  id: number;
   /**
    * Display name, e.g. "USD - HSBC Hong Kong"
    */
@@ -1034,7 +1117,7 @@ export interface BankAccount {
  * via the `definition` "contact-submissions".
  */
 export interface ContactSubmission {
-  id: string;
+  id: number;
   displayTitle?: string | null;
   submittedAt: string;
   name: string;
@@ -1056,7 +1139,7 @@ export interface ContactSubmission {
  * via the `definition` "shipping-methods".
  */
 export interface ShippingMethod {
-  id: string;
+  id: number;
   /**
    * Display name, e.g. "Standard Air Shipping"
    */
@@ -1086,7 +1169,7 @@ export interface ShippingMethod {
  * via the `definition` "shipping-rates".
  */
 export interface ShippingRate {
-  id: string;
+  id: number;
   /**
    * Auto-generated from method + country
    */
@@ -1094,7 +1177,7 @@ export interface ShippingRate {
   /**
    * Which shipping method this rate applies to
    */
-  shippingMethod: string | ShippingMethod;
+  shippingMethod: number | ShippingMethod;
   /**
    * ISO country code e.g. "US", "DE", "GB". Use "OTHER" as fallback for unlisted countries.
    */
@@ -1132,7 +1215,7 @@ export interface ShippingRate {
  * via the `definition` "free-shipping-rules".
  */
 export interface FreeShippingRule {
-  id: string;
+  id: number;
   /**
    * e.g. "Economy Free Shipping $500+"
    */
@@ -1140,7 +1223,7 @@ export interface FreeShippingRule {
   /**
    * Which shipping method this threshold applies to
    */
-  shippingMethod: string | ShippingMethod;
+  shippingMethod: number | ShippingMethod;
   /**
    * Leave blank for global, or set ISO code (e.g. "US") for country-specific rule
    */
@@ -1162,7 +1245,7 @@ export interface FreeShippingRule {
  * via the `definition` "verification-codes".
  */
 export interface VerificationCode {
-  id: string;
+  id: number;
   email: string;
   code: string;
   expiresAt: string;
@@ -1176,7 +1259,7 @@ export interface VerificationCode {
  * via the `definition` "account-sessions".
  */
 export interface AccountSession {
-  id: string;
+  id: number;
   email: string;
   token: string;
   expiresAt: string;
@@ -1190,8 +1273,8 @@ export interface AccountSession {
  * via the `definition` "productViews".
  */
 export interface ProductView {
-  id: string;
-  product: string | Product;
+  id: number;
+  product: number | Product;
   /**
    * Anonymous session identifier (from cookie/localStorage)
    */
@@ -1215,7 +1298,7 @@ export interface ProductView {
  * via the `definition` "articles".
  */
 export interface Article {
-  id: string;
+  id: number;
   /**
    * Article title — include target keyword naturally
    */
@@ -1275,7 +1358,7 @@ export interface Article {
   /**
    * Featured image for article cards and hero section
    */
-  featuredImage?: (string | null) | Media;
+  featuredImage?: (number | null) | Media;
   /**
    * Only published articles appear on the site
    */
@@ -1287,11 +1370,11 @@ export interface Article {
   /**
    * Products to display at the bottom of the article
    */
-  relatedProducts?: (string | Product)[] | null;
+  relatedProducts?: (number | Product)[] | null;
   /**
    * Related product categories for internal linking
    */
-  relatedCategories?: (string | Category)[] | null;
+  relatedCategories?: (number | Category)[] | null;
   /**
    * SEO overrides (leave empty to auto-generate from title/excerpt)
    */
@@ -1318,7 +1401,7 @@ export interface Article {
  * via the `definition` "pages".
  */
 export interface Page {
-  id: string;
+  id: number;
   title: string;
   /**
    * URL path, e.g., about, faq, privacy
@@ -1332,7 +1415,7 @@ export interface Page {
   /**
    * Optional hero/banner image at the top of the page
    */
-  heroImage?: (string | null) | Media;
+  heroImage?: (number | null) | Media;
   /**
    * Main page content (Lexical rich text editor)
    */
@@ -1390,7 +1473,7 @@ export interface Page {
   seo?: {
     metaTitle?: string | null;
     metaDescription?: string | null;
-    ogImage?: (string | null) | Media;
+    ogImage?: (number | null) | Media;
     /**
      * Prevent this page from being indexed by search engines
      */
@@ -1405,14 +1488,14 @@ export interface Page {
  * via the `definition` "industries".
  */
 export interface Industry {
-  id: string;
+  id: number;
   /**
    * e.g., Manufacturing, Construction
    */
   name: string;
   slug: string;
   status: 'draft' | 'published';
-  heroImage?: (string | null) | Media;
+  heroImage?: (number | null) | Media;
   /**
    * Industry overview
    */
@@ -1454,7 +1537,7 @@ export interface Industry {
   /**
    * Product categories relevant to this industry
    */
-  featuredCategories?: (string | Category)[] | null;
+  featuredCategories?: (number | Category)[] | null;
   /**
    * Industry-specific FAQ (generates FAQPage schema)
    */
@@ -1478,7 +1561,7 @@ export interface Industry {
  * via the `definition` "redirects".
  */
 export interface Redirect {
-  id: string;
+  id: number;
   /**
    * Source path, e.g., /old-page
    */
@@ -1503,7 +1586,7 @@ export interface Redirect {
  * via the `definition` "glossary-terms".
  */
 export interface GlossaryTerm {
-  id: string;
+  id: number;
   /**
    * The term or acronym (e.g. "PPE", "LOTO", "MRO")
    */
@@ -1545,11 +1628,11 @@ export interface GlossaryTerm {
   /**
    * Related glossary terms for internal linking
    */
-  relatedTerms?: (string | GlossaryTerm)[] | null;
+  relatedTerms?: (number | GlossaryTerm)[] | null;
   /**
    * Related product categories
    */
-  relatedCategories?: (string | Category)[] | null;
+  relatedCategories?: (number | Category)[] | null;
   status: 'draft' | 'published';
   /**
    * SEO overrides
@@ -1572,100 +1655,104 @@ export interface GlossaryTerm {
  * via the `definition` "payload-locked-documents".
  */
 export interface PayloadLockedDocument {
-  id: string;
+  id: number;
   document?:
     | ({
         relationTo: 'users';
-        value: string | User;
+        value: number | User;
       } | null)
     | ({
         relationTo: 'categories';
-        value: string | Category;
+        value: number | Category;
       } | null)
     | ({
         relationTo: 'products';
-        value: string | Product;
+        value: number | Product;
       } | null)
     | ({
         relationTo: 'brands';
-        value: string | Brand;
+        value: number | Brand;
       } | null)
     | ({
         relationTo: 'media';
-        value: string | Media;
+        value: number | Media;
       } | null)
     | ({
         relationTo: 'orders';
-        value: string | Order;
+        value: number | Order;
       } | null)
     | ({
         relationTo: 'customers';
-        value: string | Customer;
+        value: number | Customer;
       } | null)
     | ({
         relationTo: 'quotes';
-        value: string | Quote;
+        value: number | Quote;
       } | null)
     | ({
         relationTo: 'bank-accounts';
-        value: string | BankAccount;
+        value: number | BankAccount;
+      } | null)
+    | ({
+        relationTo: 'payment-receipts';
+        value: number | PaymentReceipt;
       } | null)
     | ({
         relationTo: 'rfq-submissions';
-        value: string | RfqSubmission;
+        value: number | RfqSubmission;
       } | null)
     | ({
         relationTo: 'contact-submissions';
-        value: string | ContactSubmission;
+        value: number | ContactSubmission;
       } | null)
     | ({
         relationTo: 'shipping-methods';
-        value: string | ShippingMethod;
+        value: number | ShippingMethod;
       } | null)
     | ({
         relationTo: 'shipping-rates';
-        value: string | ShippingRate;
+        value: number | ShippingRate;
       } | null)
     | ({
         relationTo: 'free-shipping-rules';
-        value: string | FreeShippingRule;
+        value: number | FreeShippingRule;
       } | null)
     | ({
         relationTo: 'verification-codes';
-        value: string | VerificationCode;
+        value: number | VerificationCode;
       } | null)
     | ({
         relationTo: 'account-sessions';
-        value: string | AccountSession;
+        value: number | AccountSession;
       } | null)
     | ({
         relationTo: 'productViews';
-        value: string | ProductView;
+        value: number | ProductView;
       } | null)
     | ({
         relationTo: 'articles';
-        value: string | Article;
+        value: number | Article;
       } | null)
     | ({
         relationTo: 'pages';
-        value: string | Page;
+        value: number | Page;
       } | null)
     | ({
         relationTo: 'industries';
-        value: string | Industry;
+        value: number | Industry;
       } | null)
     | ({
         relationTo: 'redirects';
-        value: string | Redirect;
+        value: number | Redirect;
       } | null)
     | ({
         relationTo: 'glossary-terms';
-        value: string | GlossaryTerm;
+        value: number | GlossaryTerm;
       } | null);
   globalSlug?: string | null;
   user: {
     relationTo: 'users';
-    value: string | User;
+    value: number | User;
   };
   updatedAt: string;
   createdAt: string;
@@ -1675,10 +1762,10 @@ export interface PayloadLockedDocument {
  * via the `definition` "payload-preferences".
  */
 export interface PayloadPreference {
-  id: string;
+  id: number;
   user: {
     relationTo: 'users';
-    value: string | User;
+    value: number | User;
   };
   key?: string | null;
   value?:
@@ -1698,7 +1785,7 @@ export interface PayloadPreference {
  * via the `definition` "payload-migrations".
  */
 export interface PayloadMigration {
-  id: string;
+  id: number;
   name?: string | null;
   batch?: number | null;
   updatedAt: string;
@@ -1981,7 +2068,10 @@ export interface OrdersSelect<T extends boolean = true> {
         paypalOrderId?: T;
         paypalCaptureId?: T;
         transactionId?: T;
+        receiptUploaded?: T;
+        receiptUploadDate?: T;
       };
+  paymentReceipt?: T;
   customerNotes?: T;
   assignedTo?: T;
   notes?: T;
@@ -2078,6 +2168,56 @@ export interface BankAccountsSelect<T extends boolean = true> {
   sortOrder?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payment-receipts_select".
+ */
+export interface PaymentReceiptsSelect<T extends boolean = true> {
+  orderNumber?: T;
+  orderId?: T;
+  uploadedBy?: T;
+  fileSize?: T;
+  fileType?: T;
+  notes?: T;
+  verified?: T;
+  verifiedBy?: T;
+  verifiedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+  sizes?:
+    | T
+    | {
+        thumbnail?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+        medium?:
+          | T
+          | {
+              url?: T;
+              width?: T;
+              height?: T;
+              mimeType?: T;
+              filesize?: T;
+              filename?: T;
+            };
+      };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2407,7 +2547,7 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
  * via the `definition` "homepage".
  */
 export interface Homepage {
-  id: string;
+  id: number;
   /**
    * Top announcement bar displayed across the site
    */
@@ -2427,7 +2567,7 @@ export interface Homepage {
    */
   heroBanners?:
     | {
-        image: string | Media;
+        image: number | Media;
         title?: string | null;
         subtitle?: string | null;
         /**
@@ -2442,12 +2582,12 @@ export interface Homepage {
   /**
    * Categories shown in Browse Categories section (overrides default displayOrder)
    */
-  featuredCategories?: (string | Category)[] | null;
+  featuredCategories?: (number | Category)[] | null;
   /**
    * Mid-page promotional banner
    */
   promotionBanner?: {
-    image?: (string | null) | Media;
+    image?: (number | null) | Media;
     title?: string | null;
     linkUrl?: string | null;
     isActive?: boolean | null;
@@ -2467,10 +2607,10 @@ export interface Homepage {
  * via the `definition` "site-settings".
  */
 export interface SiteSetting {
-  id: string;
+  id: number;
   siteName?: string | null;
-  logo?: (string | null) | Media;
-  favicon?: (string | null) | Media;
+  logo?: (number | null) | Media;
+  favicon?: (number | null) | Media;
   contact?: {
     email?: string | null;
     phone?: string | null;
@@ -2507,7 +2647,7 @@ export interface SiteSetting {
     /**
      * Default Open Graph image
      */
-    ogImage?: (string | null) | Media;
+    ogImage?: (number | null) | Media;
   };
   updatedAt?: string | null;
   createdAt?: string | null;
@@ -2517,7 +2657,7 @@ export interface SiteSetting {
  * via the `definition` "navigation".
  */
 export interface Navigation {
-  id: string;
+  id: number;
   /**
    * Top navigation bar links
    */

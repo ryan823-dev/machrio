@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
+import { getOrderById } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
 
@@ -7,6 +8,12 @@ function getStripe() {
   const key = process.env.STRIPE_SECRET_KEY
   if (!key || key.includes('placeholder')) return null
   return new Stripe(key, { apiVersion: '2026-02-25.clover' })
+}
+
+function toMinorUnits(amount: unknown): number {
+  const numericAmount = typeof amount === 'number' ? amount : Number(amount)
+  if (!Number.isFinite(numericAmount) || numericAmount <= 0) return 0
+  return Math.round(numericAmount * 100)
 }
 
 /**
@@ -25,25 +32,64 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { orderId, orderNumber, amount, currency = 'usd', customerEmail } = body
+    const { orderId, orderNumber } = body
 
-    if (!amount || amount <= 0) {
+    if (!orderId || typeof orderId !== 'string') {
       return NextResponse.json(
-        { error: 'Valid amount is required' },
+        { error: 'orderId is required' },
         { status: 400 }
       )
     }
 
+    const order = await getOrderById(orderId)
+    if (!order) {
+      return NextResponse.json(
+        { error: 'Order not found' },
+        { status: 404 }
+      )
+    }
+
+    if (orderNumber && order.order_number !== orderNumber) {
+      return NextResponse.json(
+        { error: 'Order number does not match order id' },
+        { status: 400 }
+      )
+    }
+
+    if (order.payment_method !== 'stripe') {
+      return NextResponse.json(
+        { error: 'Order is not configured for Stripe payment' },
+        { status: 400 }
+      )
+    }
+
+    if (order.payment_status === 'paid') {
+      return NextResponse.json(
+        { error: 'Order is already paid' },
+        { status: 409 }
+      )
+    }
+
+    const amount = toMinorUnits(order.total)
+    if (amount <= 0) {
+      return NextResponse.json(
+        { error: 'Order total is invalid' },
+        { status: 400 }
+      )
+    }
+
+    const currency = (order.currency || 'USD').toLowerCase()
+
     // 创建 PaymentIntent
     const paymentIntent = await stripe.paymentIntents.create({
-      amount: Math.round(amount * 100), // 转换为分
-      currency: currency.toLowerCase(),
+      amount,
+      currency,
       automatic_payment_methods: { enabled: true },
       metadata: {
-        orderId: orderId || '',
-        orderNumber: orderNumber || '',
+        orderId,
+        orderNumber: order.order_number,
       },
-      receipt_email: customerEmail || undefined,
+      receipt_email: order.customer_email || undefined,
     })
 
     return NextResponse.json({

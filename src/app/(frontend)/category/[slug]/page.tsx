@@ -385,7 +385,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
       {/* SEO Content Modules */}
       <section className="mt-12 border-t border-secondary-200 pt-8">
         {/* How to Choose (for L3 or if buying_guide exists) */}
-        {(isL3 || !isL3) && category.buying_guide && hasRichTextContent(category.buying_guide) && (
+        {hasRichTextContent(category.buying_guide) && (
           <HowToChoose
             categorySlug={slug}
             categoryName={category.name}

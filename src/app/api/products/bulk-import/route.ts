@@ -402,8 +402,8 @@ export async function POST(req: NextRequest) {
         }
 
         // Find category by L1/L2/L3 path
-        let categoryId: string | null = null
-        let parentCategoryIds: string[] = []
+        let categoryId: number | null = null
+        let parentCategoryIds: number[] = []
         const l1 = row['L1 Category']?.toLowerCase() || ''
         const l2 = row['L2 Category']?.toLowerCase() || ''
         const l3 = row['L3 Category']?.toLowerCase() || ''

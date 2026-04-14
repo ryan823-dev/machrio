@@ -13,6 +13,22 @@ export async function POST(
     const { notes, notifyCustomer } = body || {}
 
     const payload = await getPayload({ config })
+    const authResult = await payload.auth({ headers: req.headers })
+    const user = authResult.user as { role?: string } | null
+
+    if (!user) {
+      return NextResponse.json(
+        { error: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
+    if (user.role !== 'admin' && user.role !== 'sales') {
+      return NextResponse.json(
+        { error: 'Admin or sales access required' },
+        { status: 403 }
+      )
+    }
 
     // Update order payment status
     const order = await payload.update({

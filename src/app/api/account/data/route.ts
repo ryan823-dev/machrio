@@ -67,7 +67,7 @@ export async function GET(request: Request) {
       status: order.status,
       paymentStatus: order.payment_status,
       total: order.total,
-      currency: 'USD',
+      currency: order.currency || 'USD',
       itemCount: order.items?.length || 0,
       createdAt: order.created_at,
     }))

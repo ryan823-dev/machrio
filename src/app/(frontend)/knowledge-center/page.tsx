@@ -168,10 +168,10 @@ export default async function KnowledgeCenterPage({
         {hasArticles ? (
           <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {articles.map((article) => {
-              const imageUrl = article.featured_image || article.hero_image_id
-              const publishedAt = article.published_at
+              const imageUrl = article.featuredImage
+              const publishedAt = article.publishedAt
               const cat = article.category || 'buying-guide'
-              const readingTime = article.reading_time || 3
+              const readingTime = article.readingTime || 3
               const title = article.title
               const coverTheme = getCoverTheme(title)
 
@@ -207,7 +207,7 @@ export default async function KnowledgeCenterPage({
                       {article.title}
                     </h3>
                     <p className="mt-1 line-clamp-2 text-xs text-secondary-500">
-                      {article.excerpt || article.description}
+                      {article.excerpt}
                     </p>
                     {publishedAt && (
                       <time className="mt-auto pt-3 text-xs text-secondary-400" dateTime={publishedAt}>

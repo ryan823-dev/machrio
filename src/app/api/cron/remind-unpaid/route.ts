@@ -46,12 +46,12 @@ export async function GET(req: NextRequest) {
           },
           {
             createdAt: {
-              greater_than_or_equal: sevenDaysAgo.toISOString(),
+              greater_than_equal: fourteenDaysAgo.toISOString(),
             },
           },
           {
             createdAt: {
-              less_than_or_equal: fourteenDaysAgo.toISOString(),
+              less_than_equal: sevenDaysAgo.toISOString(),
             },
           },
         ],

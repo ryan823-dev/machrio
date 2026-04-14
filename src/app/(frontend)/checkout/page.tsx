@@ -56,13 +56,28 @@ const COUNTRY_CURRENCY_MAP: { code: string; name: string; flag: string; currency
   { code: 'CN', name: 'China', flag: '\u{1F1E8}\u{1F1F3}', currency: 'CNY', currencyName: 'Chinese Yuan' },
 ]
 
+const SUPPORTED_BANK_TRANSFER_CURRENCIES = new Set(['USD', 'HKD', 'EUR', 'GBP', 'CAD', 'CNY'])
+const BANK_TRANSFER_CURRENCY_OPTIONS = COUNTRY_CURRENCY_MAP.filter(
+  (option, index, options) =>
+    SUPPORTED_BANK_TRANSFER_CURRENCIES.has(option.currency)
+    && index === options.findIndex(candidate => candidate.currency === option.currency)
+)
+
+function getPreferredCurrencyForCountry(country: string): string {
+  const match = COUNTRY_CURRENCY_MAP.find(option => option.code === country)
+  if (!match || !SUPPORTED_BANK_TRANSFER_CURRENCIES.has(match.currency)) {
+    return 'USD'
+  }
+
+  return match.currency
+}
+
 // 嵌入式支付订单信息
 interface PendingOrder {
-  orderId: string
   orderNumber: string
   amount: number
   currency: string
-  customerEmail: string
+  clientSecret: string
   stripeUrl?: string // 回退跳转 URL
 }
 
@@ -89,8 +104,7 @@ export default function CheckoutPage() {
       const updated = { ...prev, [field]: value }
       // Auto-set currency when country changes (if bank transfer selected)
       if (field === 'country') {
-        const match = COUNTRY_CURRENCY_MAP.find(c => c.code === value)
-        if (match) updated.preferredCurrency = match.currency
+        updated.preferredCurrency = getPreferredCurrencyForCountry(value)
         // Sync shipping country for live re-quote
         setShippingCountry(value)
       }
@@ -146,54 +160,33 @@ export default function CheckoutPage() {
       }
 
       if (form.paymentMethod === 'stripe') {
+        if (!data.stripeClientSecret) {
+          throw new Error('Failed to initialize Stripe payment')
+        }
+
         // 嵌入式支付：显示 StripePayment 组件
         // 注意：不要在这里清空购物车，支付成功后再清空
         setPendingOrder({
-          orderId: data.orderId,
           orderNumber: data.orderNumber,
-          amount: total,
-          currency: 'USD',
-          customerEmail: form.email,
+          amount: data.total,
+          currency: data.currency,
+          clientSecret: data.stripeClientSecret,
           stripeUrl: data.stripeUrl, // 保留跳转 URL 作为回退
         })
         setShowStripePayment(true)
         setSubmitting(false)
       } else {
-        // PayPal 和银行转账：订单创建后清空购物车
-        clearCart()
-
         if (form.paymentMethod === 'paypal') {
-          // Create PayPal order and redirect
-          const paypalRes = await fetch('/api/paypal/create-order', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              orderNumber: data.orderNumber,
-              orderId: data.orderId,
-              items: selectedCartItems.map(item => ({
-                name: item.name,
-                sku: item.sku,
-                quantity: item.quantity,
-                unitPrice: item.price,
-              })),
-              subtotal,
-              shippingCost,
-              total,
-              currency: 'USD',
-              customerEmail: form.email,
-            }),
-          })
-
-          const paypalData = await paypalRes.json()
-
-          if (!paypalRes.ok) {
-            throw new Error(paypalData.error || 'Failed to create PayPal order')
+          if (!data.approvalUrl) {
+            throw new Error('Failed to initialize PayPal payment')
           }
 
           // Redirect to PayPal for payment
-          window.location.href = paypalData.approvalUrl
+          clearCart()
+          window.location.href = data.approvalUrl
         } else {
           // Bank transfer - go to order confirmation with invoice
+          clearCart()
           router.push(`/order/${data.orderNumber}`)
         }
       }
@@ -205,7 +198,7 @@ export default function CheckoutPage() {
   }
 
   // 嵌入式支付成功回调
-  function handleStripeSuccess(paymentIntentId: string) {
+  function handleStripeSuccess() {
     clearCart() // 支付成功后清空购物车
     setShowStripePayment(false)
     router.push(`/order/${pendingOrder?.orderNumber}?payment=success`)
@@ -218,13 +211,20 @@ export default function CheckoutPage() {
 
   // 取消嵌入式支付，回退到跳转式支付
   function handleStripeCancel() {
-    clearCart() // 取消时也清空购物车（订单已创建）
+    if (!pendingOrder?.orderNumber) {
+      setShowStripePayment(false)
+      setError('Payment cancelled. Please try again.')
+      return
+    }
+
     if (pendingOrder?.stripeUrl) {
+      clearCart() // 取消时也清空购物车（订单已创建）
       // 回退到 Stripe Checkout 跳转方式
       window.location.href = pendingOrder.stripeUrl
     } else {
+      clearCart()
       setShowStripePayment(false)
-      setError('Payment cancelled. Please try again.')
+      router.push(`/order/${pendingOrder.orderNumber}?payment=cancelled&provider=stripe`)
     }
   }
 
@@ -239,11 +239,10 @@ export default function CheckoutPage() {
             Please complete your payment below.
           </p>
           <StripePayment
-            orderId={pendingOrder.orderId}
             orderNumber={pendingOrder.orderNumber}
             amount={pendingOrder.amount}
             currency={pendingOrder.currency}
-            customerEmail={pendingOrder.customerEmail}
+            clientSecret={pendingOrder.clientSecret}
             onSuccess={handleStripeSuccess}
             onError={handleStripeError}
             onCancel={handleStripeCancel}
@@ -453,22 +452,21 @@ export default function CheckoutPage() {
                     Preferred Payment Currency
                   </label>
                   <p className="text-xs text-secondary-500 mt-0.5">
-                    We&apos;ll show you our local bank account for this currency on your invoice.
+                    Choose from our supported bank transfer currencies for invoicing.
                   </p>
                   <select
                     value={form.preferredCurrency}
                     onChange={e => updateField('preferredCurrency', e.target.value)}
                     className="input-field mt-2 w-full"
                   >
-                    {COUNTRY_CURRENCY_MAP.map(c => (
+                    {BANK_TRANSFER_CURRENCY_OPTIONS.map(c => (
                       <option key={c.currency + c.code} value={c.currency}>
                         {c.flag} {c.currency} - {c.currencyName}
                       </option>
                     ))}
-                    <option value="USD">Other (USD default)</option>
                   </select>
                   {(() => {
-                    const match = COUNTRY_CURRENCY_MAP.find(c => c.currency === form.preferredCurrency)
+                    const match = BANK_TRANSFER_CURRENCY_OPTIONS.find(c => c.currency === form.preferredCurrency)
                     return match ? (
                       <p className="mt-2 text-xs text-primary-700">
                         {match.flag} Your invoice will include our <strong>{match.name}</strong> bank account for <strong>{match.currency}</strong> payment.

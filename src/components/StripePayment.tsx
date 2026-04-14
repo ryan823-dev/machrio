@@ -23,16 +23,17 @@ const fetchStripePublishableKey = async (): Promise<string | null> => {
 }
 
 const isValidKey = (key: string | null | undefined): boolean =>
-  key && key.startsWith('pk_')
+  Boolean(key && key.startsWith('pk_'))
 
 interface CheckoutFormProps {
+  returnPath: string
   onSuccess: (paymentIntentId: string) => void
   onError: (message: string) => void
   onCancel: () => void
 }
 
 // 支付表单组件
-function CheckoutForm({ onSuccess, onError, onCancel }: CheckoutFormProps) {
+function CheckoutForm({ returnPath, onSuccess, onError, onCancel }: CheckoutFormProps) {
   const stripe = useStripe()
   const elements = useElements()
   const [isProcessing, setIsProcessing] = useState(false)
@@ -48,7 +49,7 @@ function CheckoutForm({ onSuccess, onError, onCancel }: CheckoutFormProps) {
     const { error, paymentIntent } = await stripe.confirmPayment({
       elements,
       confirmParams: {
-        return_url: window.location.origin + '/checkout/success',
+        return_url: window.location.origin + returnPath,
       },
       redirect: 'if_required',
     })
@@ -109,11 +110,10 @@ function CheckoutForm({ onSuccess, onError, onCancel }: CheckoutFormProps) {
 }
 
 interface StripePaymentProps {
-  orderId: string
   orderNumber: string
   amount: number
   currency: string
-  customerEmail?: string
+  clientSecret: string
   onSuccess: (paymentIntentId: string) => void
   onError: (message: string) => void
   onCancel: () => void
@@ -121,17 +121,15 @@ interface StripePaymentProps {
 
 // 主组件
 export default function StripePayment({
-  orderId,
   orderNumber,
   amount,
   currency,
-  customerEmail,
+  clientSecret,
   onSuccess,
   onError,
   onCancel,
 }: StripePaymentProps) {
   const [stripePromise, setStripePromise] = useState<Promise<Stripe | null> | null>(null)
-  const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [initError, setInitError] = useState<string | null>(null)
 
@@ -142,7 +140,7 @@ export default function StripePayment({
         let key = await fetchStripePublishableKey()
         if (!isValidKey(key)) {
           // Fallback to env variable
-          key = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+          key = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || null
         }
 
         if (!isValidKey(key)) {
@@ -153,29 +151,6 @@ export default function StripePayment({
 
         // 2. 初始化 Stripe.js
         setStripePromise(loadStripe(key!))
-
-        // 3. 创建 PaymentIntent
-        const res = await fetch('/api/payment/stripe/create-payment-intent', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            orderId,
-            orderNumber,
-            amount,
-            currency,
-            customerEmail,
-          }),
-        })
-
-        const data = await res.json()
-
-        if (!res.ok) {
-          setInitError(data.error || 'Failed to initialize payment')
-          setLoading(false)
-          return
-        }
-
-        setClientSecret(data.clientSecret)
         setLoading(false)
       } catch (err) {
         console.error('Stripe initialization error:', err)
@@ -185,7 +160,7 @@ export default function StripePayment({
     }
 
     init()
-  }, [orderId, orderNumber, amount, currency, customerEmail])
+  }, [])
 
   if (loading) {
     return (
@@ -249,6 +224,7 @@ export default function StripePayment({
         }}
       >
         <CheckoutForm
+          returnPath={`/order/${orderNumber}?provider=stripe`}
           onSuccess={onSuccess}
           onError={onError}
           onCancel={onCancel}

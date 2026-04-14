@@ -34,6 +34,16 @@ export async function GET() {
 
     // 添加每个产品
     for (const product of products) {
+      const images = Array.isArray(product.images)
+        ? product.images
+        : typeof product.images === 'string'
+          ? JSON.parse(product.images)
+          : null
+
+      const pricing = product.pricing && typeof product.pricing === 'string'
+        ? JSON.parse(product.pricing)
+        : product.pricing
+
       xmlParts.push(`<item>`)
       
       // 必需字段
@@ -57,10 +67,10 @@ export async function GET() {
       let imageUrl = product.external_image_url
       
       // 如果没有 external_image_url，检查 images 字段（JSON 数组）
-      if (!imageUrl && product.images && Array.isArray(product.images)) {
-        const images = product.images as Array<{ url?: string }>
-        if (images.length > 0 && images[0].url) {
-          imageUrl = images[0].url
+      if (!imageUrl && Array.isArray(images)) {
+        const productImages = images as Array<{ url?: string }>
+        if (productImages.length > 0 && productImages[0].url) {
+          imageUrl = productImages[0].url
         }
       }
       
@@ -77,9 +87,9 @@ export async function GET() {
       xmlParts.push(`<g:availability>${availability}</g:availability>`)
       
       // g:price - 价格和货币
-      if (product.pricing && typeof product.pricing === 'object' && 'basePrice' in product.pricing) {
-        const pricing = product.pricing as { basePrice: number; currency: string }
-        const price = `${pricing.basePrice.toFixed(2)} ${pricing.currency || 'USD'}`
+      if (pricing && typeof pricing === 'object' && 'basePrice' in pricing) {
+        const productPricing = pricing as { basePrice: number; currency: string }
+        const price = `${productPricing.basePrice.toFixed(2)} ${productPricing.currency || 'USD'}`
         xmlParts.push(`<g:price>${price}</g:price>`)
       } else {
         // 如果没有价格，提供默认值
