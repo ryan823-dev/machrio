@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { ProductImage } from '@/components/shared/ProductImage'
 
 const STORAGE_KEY = 'machrio_recently_viewed'
 const MAX_ITEMS = 8
@@ -97,19 +98,12 @@ export function RecentlyViewed({
             className="group relative rounded-lg border border-secondary-200 bg-white p-3 transition-all hover:border-primary-300 hover:shadow-md"
           >
             <div className="flex aspect-[4/3] items-center justify-center rounded bg-secondary-50">
-              {product.imageUrl ? (
-                <img
-                  src={product.imageUrl}
-                  alt={product.name}
-                  className="h-full w-full object-contain" loading="lazy" decoding="async"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center text-secondary-300">
-                  <svg className="h-10 w-10" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
-                  </svg>
-                </div>
-              )}
+              <ProductImage
+                src={product.imageUrl}
+                alt={product.name}
+                className="h-full w-full object-contain"
+                fallbackClassName="h-10 w-10 text-secondary-300"
+              />
             </div>
             <div className="mt-2">
               <p className="line-clamp-2 text-xs font-medium text-secondary-700 group-hover:text-primary-700">
