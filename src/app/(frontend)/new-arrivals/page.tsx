@@ -1,9 +1,10 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { getProducts } from '@/lib/db'
+import { getProducts, type ProductRow } from '@/lib/db'
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 import { ProductGrid } from '@/components/category/ProductGrid'
 import { normalizePurchaseMode } from '@/lib/purchase-mode'
+import { parsePricing } from '@/lib/pricing'
 
 // SSR: 直接查询 PostgreSQL
 export const dynamic = 'force-dynamic'
@@ -18,17 +19,11 @@ export const metadata: Metadata = {
   },
 }
 
-function mapProductToCard(product: {
-  name: string
-  slug: string
-  sku: string
-  short_description: string | null
-  external_image_url: string | null
-  package_qty: number | null
-  availability: string | null
-  purchase_mode: string | null
-}) {
+function mapProductToCard(product: ProductRow) {
+  const pricing = parsePricing(product.pricing)
+
   return {
+    id: product.id,
     name: product.name,
     slug: product.slug,
     categorySlug: 'products',
@@ -37,18 +32,19 @@ function mapProductToCard(product: {
     primaryImage: product.external_image_url || undefined,
     shortDescription: product.short_description || '',
     pricing: {
-      basePrice: undefined,
-      currency: 'USD',
-      priceUnit: undefined,
+      basePrice: pricing?.basePrice,
+      currency: pricing?.currency || 'USD',
+      priceUnit: pricing?.priceUnit,
     },
     packageQty: product.package_qty || undefined,
+    packageUnit: product.package_unit || undefined,
     purchaseMode: normalizePurchaseMode(product.purchase_mode),
     availability: product.availability || 'contact',
   }
 }
 
 export default async function NewArrivalsPage() {
-  let gridProducts: any[] = []
+  let gridProducts: Array<ReturnType<typeof mapProductToCard>> = []
   try {
     const result = await getProducts({ limit: 100, sort: '-created_at' })
     gridProducts = result.docs.map(mapProductToCard)

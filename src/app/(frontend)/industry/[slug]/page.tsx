@@ -1,12 +1,13 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { searchProducts } from '@/lib/db'
+import { searchProducts, type ProductRow } from '@/lib/db'
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 import { StructuredData } from '@/components/shared/StructuredData'
 import { FAQSchema, FAQSection } from '@/components/shared/FAQSchema'
 import { ProductGrid } from '@/components/category/ProductGrid'
 import { normalizePurchaseMode } from '@/lib/purchase-mode'
+import { parsePricing } from '@/lib/pricing'
 
 // SSR: 直接查询 PostgreSQL
 export const dynamic = 'force-dynamic'
@@ -323,44 +324,27 @@ interface ProductCardData {
   packageUnit?: string
 }
 
-function mapProductToCard(product: Record<string, unknown>): ProductCardData {
-  const pricing = product.pricing as Record<string, unknown> | undefined
-  const brand = product.brand as Record<string, unknown> | null
-
-  const primaryCategory = product.primaryCategory as Record<string, unknown> | string | null
-  let categorySlug = 'products'
-  if (primaryCategory && typeof primaryCategory === 'object') {
-    const parent = (primaryCategory as Record<string, unknown>).parent as Record<string, unknown> | string | null
-    if (parent && typeof parent === 'object') {
-      categorySlug = (parent as Record<string, unknown>).slug as string || 'products'
-    } else {
-      categorySlug = (primaryCategory as Record<string, unknown>).slug as string || 'products'
-    }
-  }
-
-  const primaryImageObj = product.primaryImage && typeof product.primaryImage === 'object'
-    ? product.primaryImage as Record<string, unknown>
-    : null
-  const primaryImage = (primaryImageObj?.url as string) || (product.externalImageUrl as string) || undefined
+function mapProductToCard(product: ProductRow): ProductCardData {
+  const pricing = parsePricing(product.pricing)
 
   return {
-    id: product.id as string,
-    name: product.name as string,
-    slug: product.slug as string,
-    categorySlug,
-    sku: product.sku as string,
-    brand: brand ? (brand.name as string || 'Unbranded') : 'Unbranded',
-    primaryImage,
-    shortDescription: (product.shortDescription as string) || '',
+    id: product.id,
+    name: product.name,
+    slug: product.slug,
+    categorySlug: 'products',
+    sku: product.sku,
+    brand: 'Unbranded',
+    primaryImage: product.external_image_url || undefined,
+    shortDescription: product.short_description || '',
     pricing: {
-      basePrice: pricing?.basePrice as number | undefined,
-      currency: (pricing?.currency as string) || 'USD',
-      priceUnit: pricing?.priceUnit as string | undefined,
+      basePrice: pricing?.basePrice,
+      currency: pricing?.currency || 'USD',
+      priceUnit: pricing?.priceUnit,
     },
-    purchaseMode: normalizePurchaseMode(product.purchaseMode as string | null | undefined),
-    availability: (product.availability as string) || 'contact',
-    packageQty: product.packageQty as number | undefined,
-    packageUnit: product.packageUnit as string | undefined,
+    purchaseMode: normalizePurchaseMode(product.purchase_mode),
+    availability: product.availability || 'contact',
+    packageQty: product.package_qty || undefined,
+    packageUnit: product.package_unit || undefined,
   }
 }
 
@@ -373,20 +357,7 @@ async function getIndustryProducts(industrySlug: string, limit = 8): Promise<Pro
     const searchTerms = industry.name.toLowerCase().split(' ')
     const result = await searchProducts(searchTerms[0], { limit })
 
-    return result.docs.map((p) => ({
-      id: p.id,
-      name: p.name,
-      slug: p.slug,
-      categorySlug: 'products',
-      sku: p.sku,
-      brand: 'Unbranded',
-      primaryImage: p.external_image_url || undefined,
-      shortDescription: p.short_description || '',
-      pricing: { basePrice: undefined, currency: 'USD', priceUnit: undefined },
-      purchaseMode: normalizePurchaseMode(p.purchase_mode),
-      availability: p.availability || 'contact',
-      packageQty: p.package_qty || undefined,
-    }))
+    return result.docs.map(mapProductToCard)
   } catch {
     return []
   }
