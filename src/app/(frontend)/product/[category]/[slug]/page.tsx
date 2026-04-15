@@ -32,29 +32,56 @@ interface ParsedPricing {
   tieredPricing?: { minQty: number; maxQty?: number; unitPrice: number }[]
 }
 
+function parseFiniteNumber(value: unknown): number | undefined {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : undefined
+  }
+
+  if (typeof value === 'string') {
+    const parsed = Number.parseFloat(value)
+    return Number.isFinite(parsed) ? parsed : undefined
+  }
+
+  return undefined
+}
+
+function parsePricing(pricing: unknown): ParsedPricing | null {
+  if (!pricing) return null
+
+  let pricingData = pricing
+
+  if (typeof pricingData === 'string') {
+    try {
+      pricingData = JSON.parse(pricingData)
+    } catch {
+      return null
+    }
+  }
+
+  if (!pricingData || typeof pricingData !== 'object') {
+    return null
+  }
+
+  const rawPricing = pricingData as Record<string, unknown>
+
+  return {
+    basePrice: parseFiniteNumber(rawPricing.basePrice ?? rawPricing.base_price),
+    priceUnit: typeof (rawPricing.priceUnit ?? rawPricing.price_unit) === 'string'
+      ? String(rawPricing.priceUnit ?? rawPricing.price_unit)
+      : undefined,
+    currency: typeof rawPricing.currency === 'string' ? rawPricing.currency : undefined,
+    compareAtPrice: parseFiniteNumber(rawPricing.compareAtPrice ?? rawPricing.compare_at_price),
+    tieredPricing: Array.isArray(rawPricing.tieredPricing)
+      ? rawPricing.tieredPricing as ParsedPricing['tieredPricing']
+      : Array.isArray(rawPricing.tiered_pricing)
+      ? rawPricing.tiered_pricing as ParsedPricing['tieredPricing']
+      : undefined,
+  }
+}
+
 // 获取产品数据（纯数据库，无回退）
 async function getProductBySlugFromDB(slug: string) {
   return await getProductBySlug(slug)
-}
-
-// Simplified text extraction for plain text fields
-function extractPlainText(richText: unknown): string {
-  if (!richText || typeof richText !== 'object') return ''
-  const root = (richText as Record<string, unknown>).root as Record<string, unknown> | undefined
-  if (!root) return ''
-  return extractChildrenPlain(root.children as unknown[])
-}
-
-function extractChildrenPlain(children: unknown[]): string {
-  if (!Array.isArray(children)) return ''
-  return children
-    .map((node) => {
-      const n = node as Record<string, unknown>
-      if (n.type === 'text') return n.text as string
-      if (n.children) return extractChildrenPlain(n.children as unknown[])
-      return ''
-    })
-    .join('')
 }
 
 // Common section header patterns in product descriptions
@@ -211,7 +238,6 @@ interface RelatedProductData {
 async function getRelatedProductsFromDB(
   productId: string,
   categoryId: string | null,
-  basePrice: number | undefined
 ): Promise<RelatedProductData[]> {
   const MAX_PRODUCTS = 8
   const results: RelatedProductData[] = []
@@ -234,7 +260,7 @@ async function getRelatedProductsFromDB(
       
       for (const row of sameCategory.rows) {
         if (results.length >= MAX_PRODUCTS) break
-        const pricing = row.pricing as { basePrice?: number; currency?: string } | null
+        const pricing = parsePricing(row.pricing)
         const images = row.images as { url: string }[] | null
         const imageUrl = images?.[0]?.url || row.external_image_url || undefined
         results.push({
@@ -267,7 +293,7 @@ async function getRelatedProductsFromDB(
       for (const row of moreProducts.rows) {
         if (results.length >= MAX_PRODUCTS) break
         if (seenIds.has(row.id)) continue
-        const pricing = row.pricing as { basePrice?: number; currency?: string } | null
+        const pricing = parsePricing(row.pricing)
         const images = row.images as { url: string }[] | null
         const imageUrl = images?.[0]?.url || row.external_image_url || undefined
         results.push({
@@ -306,7 +332,7 @@ function generateProductFAQs(product: {
   purchase_mode?: string
 }) {
   const faqs: { question: string; answer: string }[] = []
-  const { name, brand_name, category_name, specifications, min_order_quantity, pricing, availability, lead_time } = product
+  const { name, category_name, specifications, min_order_quantity, pricing, availability, lead_time } = product
   
   // 1. Specification / Selection question
   const specsArray = specifications as { label: string; value: string }[] | null
@@ -503,7 +529,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const relatedProducts = await getRelatedProductsFromDB(
     product.id,
     product.category_id,
-    basePrice
   )
 
   // Schema.org - Enhanced Product Schema with complete offers
