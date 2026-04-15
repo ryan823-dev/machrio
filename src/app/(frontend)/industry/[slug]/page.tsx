@@ -6,6 +6,7 @@ import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 import { StructuredData } from '@/components/shared/StructuredData'
 import { FAQSchema, FAQSection } from '@/components/shared/FAQSchema'
 import { ProductGrid } from '@/components/category/ProductGrid'
+import { normalizePurchaseMode } from '@/lib/purchase-mode'
 
 // SSR: 直接查询 PostgreSQL
 export const dynamic = 'force-dynamic'
@@ -356,7 +357,7 @@ function mapProductToCard(product: Record<string, unknown>): ProductCardData {
       currency: (pricing?.currency as string) || 'USD',
       priceUnit: pricing?.priceUnit as string | undefined,
     },
-    purchaseMode: (product.purchaseMode as 'both' | 'buy-online' | 'rfq-only') || 'both',
+    purchaseMode: normalizePurchaseMode(product.purchaseMode as string | null | undefined),
     availability: (product.availability as string) || 'contact',
     packageQty: product.packageQty as number | undefined,
     packageUnit: product.packageUnit as string | undefined,
@@ -382,7 +383,7 @@ async function getIndustryProducts(industrySlug: string, limit = 8): Promise<Pro
       primaryImage: p.external_image_url || undefined,
       shortDescription: p.short_description || '',
       pricing: { basePrice: undefined, currency: 'USD', priceUnit: undefined },
-      purchaseMode: (p.purchase_mode as 'both' | 'buy-online' | 'rfq-only') || 'both',
+      purchaseMode: normalizePurchaseMode(p.purchase_mode),
       availability: p.availability || 'contact',
       packageQty: p.package_qty || undefined,
     }))

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPool, createOrder } from '@/lib/db/index'
 import Stripe from 'stripe'
 import { sendOrderConfirmationEmail } from '@/lib/email'
+import { normalizePurchaseMode } from '@/lib/purchase-mode'
 import { calculateShipping } from '@/lib/shipping/calculator'
 import { createPayPalOrder, getPayPalApprovalUrl } from '@/lib/paypal'
 
@@ -165,7 +166,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: `Product not found: ${item.sku || item.product}` }, { status: 400 })
       }
 
-      if (product.purchase_mode === 'rfq-only') {
+      if (normalizePurchaseMode(product.purchase_mode) === 'rfq-only') {
         return NextResponse.json({ error: `Product ${product.sku} is quote-only and cannot be checked out online` }, { status: 400 })
       }
 

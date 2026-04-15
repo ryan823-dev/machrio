@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
-import { getProducts } from '@/lib/db'
 import { getPool } from '@/lib/db'
+import { normalizePublicAssetUrl } from '@/lib/public-asset-url'
+import { getProductBrandQueryParts } from '@/lib/product-brand-query'
+import { normalizePurchaseMode } from '@/lib/purchase-mode'
+import { getCanonicalProductCategory } from '@/lib/seo'
 
 /**
  * Google Merchant Center XML Feed
@@ -12,14 +15,49 @@ export async function GET() {
   const pool = getPool()
   
   try {
-    // 获取所有已发布的产品（不限制数量）
-    const result = await getProducts({ 
-      limit: 10000,  // 获取足够多的产品
-      status: 'published' 
-    })
+    const { brandSelectSql, brandJoinSql } = await getProductBrandQueryParts(pool)
+    const result = await pool.query<{
+      id: string
+      name: string
+      slug: string
+      sku: string | null
+      short_description: string | null
+      pricing: unknown | null
+      images: unknown | null
+      external_image_url: string | null
+      availability: string | null
+      purchase_mode: string | null
+      category_slug: string | null
+      category_name: string | null
+      brand_name: string | null
+    }>(
+      `SELECT
+        p.id,
+        p.name,
+        p.slug,
+        p.sku,
+        p.short_description,
+        p.pricing,
+        p.images,
+        p.external_image_url,
+        p.availability,
+        p.purchase_mode,
+        c.slug as category_slug,
+        c.name as category_name,
+        ${brandSelectSql}
+       FROM products p
+       LEFT JOIN categories c ON p.primary_category_id = c.id
+       ${brandJoinSql}
+       WHERE p.status = 'published'
+       ORDER BY p.created_at DESC
+       LIMIT 10000`,
+    )
 
-    const products = result.docs
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://machrio.com'
+    const products = result.rows
+    const baseUrl =
+      process.env.NEXT_PUBLIC_SERVER_URL ||
+      process.env.NEXT_PUBLIC_SITE_URL ||
+      'https://machrio.com'
 
     // 构建 XML
     const xmlParts: string[] = []
@@ -34,15 +72,27 @@ export async function GET() {
 
     // 添加每个产品
     for (const product of products) {
-      const images = Array.isArray(product.images)
-        ? product.images
-        : typeof product.images === 'string'
-          ? JSON.parse(product.images)
-          : null
+      const images = parseProductImages(product.images)
+      const pricing = parseProductPricing(product.pricing)
+      const basePrice = parsePositivePrice(pricing?.basePrice)
+      const purchaseMode = normalizePurchaseMode(product.purchase_mode)
+      const canBuyOnline =
+        (purchaseMode === 'both' || purchaseMode === 'buy-online') &&
+        basePrice !== null
+      const imageUrl = getMerchantImageUrl(product.external_image_url, images, baseUrl)
 
-      const pricing = product.pricing && typeof product.pricing === 'string'
-        ? JSON.parse(product.pricing)
-        : product.pricing
+      if (!canBuyOnline || !imageUrl) {
+        continue
+      }
+
+      const canonicalCategory = getCanonicalProductCategory({
+        name: product.name,
+        slug: product.slug,
+        categorySlug: product.category_slug,
+        categoryName: product.category_name,
+      })
+      const productUrl = `${baseUrl}/product/${canonicalCategory.slug}/${product.slug}`
+      const currency = pricing?.currency || 'USD'
 
       xmlParts.push(`<item>`)
       
@@ -60,59 +110,22 @@ export async function GET() {
       xmlParts.push(`<g:description>${escapeXml(description)}</g:description>`)
       
       // g:link - 产品页面 URL
-      xmlParts.push(`<g:link>${baseUrl}/products/${product.slug}</g:link>`)
+      xmlParts.push(`<g:link>${escapeXml(productUrl)}</g:link>`)
       
       // g:image_link - 主产品图片 URL
-      // 优先使用 external_image_url，如果没有则尝试从 images 数组获取
-      let imageUrl = product.external_image_url
-      
-      // 如果没有 external_image_url，检查 images 字段（JSON 数组）
-      if (!imageUrl && Array.isArray(images)) {
-        const productImages = images as Array<{ url?: string }>
-        if (productImages.length > 0 && productImages[0].url) {
-          imageUrl = productImages[0].url
-        }
-      }
-      
-      if (imageUrl) {
-        xmlParts.push(`<g:image_link>${escapeXml(imageUrl)}</g:image_link>`)
-      } else {
-        // 如果没有图片，使用占位图（Google 可能不接受，但先保证格式完整）
-        // 注意：建议上传一个默认的占位图片到 /public/placeholder-product.jpg
-        xmlParts.push(`<g:image_link>${baseUrl}/placeholder-product.jpg</g:image_link>`)
-      }
+      xmlParts.push(`<g:image_link>${escapeXml(imageUrl)}</g:image_link>`)
       
       // g:availability - 库存状态
       const availability = mapAvailability(product.availability)
       xmlParts.push(`<g:availability>${availability}</g:availability>`)
       
       // g:price - 价格和货币
-      if (pricing && typeof pricing === 'object' && 'basePrice' in pricing) {
-        const productPricing = pricing as { basePrice: number; currency: string }
-        const price = `${productPricing.basePrice.toFixed(2)} ${productPricing.currency || 'USD'}`
-        xmlParts.push(`<g:price>${price}</g:price>`)
-      } else {
-        // 如果没有价格，提供默认值
-        xmlParts.push(`<g:price>0.00 USD</g:price>`)
-      }
+      xmlParts.push(`<g:price>${basePrice.toFixed(2)} ${currency}</g:price>`)
       
       // 可选但推荐的字段
       
       // g:brand - 品牌名称（查询品牌表）
-      let brandName = 'Machrio'
-      if (product.brand_id) {
-        try {
-          const brandResult = await pool.query(
-            'SELECT name FROM brands WHERE id = $1',
-            [product.brand_id]
-          )
-          if (brandResult.rows.length > 0) {
-            brandName = brandResult.rows[0].name
-          }
-        } catch (err) {
-          console.error('Error fetching brand:', err)
-        }
-      }
+      const brandName = product.brand_name || 'Machrio'
       xmlParts.push(`<g:brand>${escapeXml(brandName)}</g:brand>`)
       
       // g:condition - 产品状态（new/refurbished/used）
@@ -122,24 +135,8 @@ export async function GET() {
       xmlParts.push(`<g:target_country>US</g:target_country>`)
       
       // g:product_type - 产品类别（使用分类路径）
-      if (product.primary_category_id) {
-        try {
-          const categoryResult = await pool.query(
-            `SELECT c1.name as l1, c2.name as l2, c3.name as l3
-             FROM categories c3
-             LEFT JOIN categories c2 ON c3.parent_id = c2.id
-             LEFT JOIN categories c1 ON c2.parent_id = c1.id
-             WHERE c3.id = $1`,
-            [product.primary_category_id]
-          )
-          if (categoryResult.rows.length > 0) {
-            const cat = categoryResult.rows[0]
-            const categoryPath = [cat.l1, cat.l2, cat.l3].filter(Boolean).join(' > ')
-            xmlParts.push(`<g:product_type>${escapeXml(categoryPath)}</g:product_type>`)
-          }
-        } catch (err) {
-          console.error('Error fetching category:', err)
-        }
+      if (product.category_name) {
+        xmlParts.push(`<g:product_type>${escapeXml(product.category_name)}</g:product_type>`)
       }
       
       // g:mpn - 制造商部件号（使用 SKU）
@@ -210,10 +207,82 @@ function mapAvailability(availability: string | null): string {
   if (!availability) return 'in_stock'
   
   const status = availability.toLowerCase()
-  if (status === 'in_stock' || status === 'instock') return 'in_stock'
-  if (status === 'out_of_stock' || status === 'outofstock') return 'out_of_stock'
+  if (status === 'in_stock' || status === 'instock' || status === 'in-stock') return 'in_stock'
+  if (status === 'out_of_stock' || status === 'outofstock' || status === 'out-of-stock') return 'out_of_stock'
+  if (status === 'made-to-order') return 'preorder'
   if (status === 'backorder') return 'backorder'
-  if (status === 'preorder') return 'preorder'
+  if (status === 'preorder' || status === 'pre-order') return 'preorder'
   
   return 'in_stock'
+}
+
+function parseProductImages(images: unknown): Array<{ url?: string }> {
+  if (Array.isArray(images)) return images as Array<{ url?: string }>
+
+  if (typeof images === 'string') {
+    try {
+      const parsed = JSON.parse(images)
+      return Array.isArray(parsed) ? parsed as Array<{ url?: string }> : []
+    } catch {
+      return []
+    }
+  }
+
+  return []
+}
+
+function parseProductPricing(pricing: unknown): { basePrice?: unknown; currency?: string } | null {
+  if (!pricing) return null
+
+  if (typeof pricing === 'string') {
+    try {
+      const parsed = JSON.parse(pricing)
+      return parsed && typeof parsed === 'object'
+        ? parsed as { basePrice?: unknown; currency?: string }
+        : null
+    } catch {
+      return null
+    }
+  }
+
+  return typeof pricing === 'object'
+    ? pricing as { basePrice?: unknown; currency?: string }
+    : null
+}
+
+function parsePositivePrice(value: unknown): number | null {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) && value > 0 ? value : null
+  }
+
+  if (typeof value === 'string') {
+    const parsed = Number.parseFloat(value)
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null
+  }
+
+  return null
+}
+
+function getMerchantImageUrl(
+  externalImageUrl: string | null,
+  images: Array<{ url?: string }>,
+  baseUrl: string,
+): string | null {
+  const candidates = [
+    externalImageUrl,
+    ...images.map((image) => image?.url || null),
+  ]
+
+  for (const candidate of candidates) {
+    const normalized = normalizePublicAssetUrl(candidate, {
+      baseUrl,
+      requireHttps: true,
+    })
+
+    if (normalized) {
+      return normalized
+    }
+  }
+
+  return null
 }

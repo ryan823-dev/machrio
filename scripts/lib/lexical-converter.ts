@@ -24,6 +24,44 @@ interface LexicalRoot {
   }
 }
 
+const TEXT_FORMAT_BOLD = 1
+const TEXT_FORMAT_ITALIC = 2
+
+function createTextNode(text: string, format?: number): LexicalNode {
+  return format
+    ? { type: 'text', text, format }
+    : { type: 'text', text }
+}
+
+function processInlineMarkdown(text: string): LexicalNode[] {
+  const nodes: LexicalNode[] = []
+  const pattern = /(\*\*[^*\n]+\*\*|__[^_\n]+__|\*[^*\n]+\*|_[^_\n]+_)/g
+  let lastIndex = 0
+
+  for (const match of text.matchAll(pattern)) {
+    const token = match[0]
+    const index = match.index ?? 0
+
+    if (index > lastIndex) {
+      nodes.push(createTextNode(text.slice(lastIndex, index)))
+    }
+
+    if (token.startsWith('**') || token.startsWith('__')) {
+      nodes.push(createTextNode(token.slice(2, -2), TEXT_FORMAT_BOLD))
+    } else {
+      nodes.push(createTextNode(token.slice(1, -1), TEXT_FORMAT_ITALIC))
+    }
+
+    lastIndex = index + token.length
+  }
+
+  if (lastIndex < text.length) {
+    nodes.push(createTextNode(text.slice(lastIndex)))
+  }
+
+  return nodes.filter((node) => typeof node.text === 'string' && node.text.length > 0)
+}
+
 /**
  * Convert HTML string to Lexical JSON format
  * Supports: paragraphs, headings (h1-h6), lists (ul/ol), bold, italic, links
@@ -158,19 +196,19 @@ export function textToLexical(text: string): LexicalRoot {
       children.push({
         type: 'heading',
         tag: 'h3',
-        children: [{ type: 'text', text: lines[0].trim() }],
+        children: processInlineMarkdown(lines[0].trim()),
       })
       
       if (lines.length > 1) {
         children.push({
           type: 'paragraph',
-          children: [{ type: 'text', text: lines.slice(1).join(' ').trim() }],
+          children: processInlineMarkdown(lines.slice(1).join(' ').trim()),
         })
       }
     } else {
       children.push({
         type: 'paragraph',
-        children: [{ type: 'text', text: lines.join(' ').trim() }],
+        children: processInlineMarkdown(lines.join(' ').trim()),
       })
     }
   }
@@ -192,11 +230,11 @@ export function textToLexical(text: string): LexicalRoot {
  * Supports: # headings, **bold**, *italic*, - lists, 1. numbered lists
  */
 export function markdownToLexical(markdown: string): LexicalRoot {
-  const lines = markdown.split(/\n+/).filter(line => line.trim())
+  const lines = markdown.split(/\r?\n/)
   const children: LexicalNode[] = []
 
-  for (const line of lines) {
-    const trimmed = line.trim()
+  for (let index = 0; index < lines.length; index += 1) {
+    const trimmed = lines[index].trim()
     if (!trimmed) continue
 
     // Headings
@@ -204,7 +242,7 @@ export function markdownToLexical(markdown: string): LexicalRoot {
       children.push({
         type: 'heading',
         tag: 'h3',
-        children: [{ type: 'text', text: trimmed.slice(4) }],
+        children: processInlineMarkdown(trimmed.slice(4)),
       })
       continue
     }
@@ -213,7 +251,7 @@ export function markdownToLexical(markdown: string): LexicalRoot {
       children.push({
         type: 'heading',
         tag: 'h2',
-        children: [{ type: 'text', text: trimmed.slice(3) }],
+        children: processInlineMarkdown(trimmed.slice(3)),
       })
       continue
     }
@@ -222,7 +260,7 @@ export function markdownToLexical(markdown: string): LexicalRoot {
       children.push({
         type: 'heading',
         tag: 'h1',
-        children: [{ type: 'text', text: trimmed.slice(2) }],
+        children: processInlineMarkdown(trimmed.slice(2)),
       })
       continue
     }
@@ -230,28 +268,53 @@ export function markdownToLexical(markdown: string): LexicalRoot {
     // Unordered list items
     if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
       const listItems: LexicalNode[] = []
-      let i = lines.indexOf(line)
-      
+      let i = index
+
       while (i < lines.length && (lines[i].trim().startsWith('- ') || lines[i].trim().startsWith('* '))) {
         listItems.push({
           type: 'listitem',
-          children: [{ type: 'text', text: lines[i].trim().slice(2) }],
+          children: processInlineMarkdown(lines[i].trim().slice(2)),
         })
         i++
       }
-      
+
       children.push({
         type: 'list',
         listType: 'bullet',
         children: listItems,
       })
+
+      index = i - 1
+      continue
+    }
+
+    // Ordered list items
+    if (/^\d+\.\s/.test(trimmed)) {
+      const listItems: LexicalNode[] = []
+      let i = index
+
+      while (i < lines.length && /^\d+\.\s/.test(lines[i].trim())) {
+        listItems.push({
+          type: 'listitem',
+          children: processInlineMarkdown(lines[i].trim().replace(/^\d+\.\s+/, '')),
+        })
+        i++
+      }
+
+      children.push({
+        type: 'list',
+        listType: 'number',
+        children: listItems,
+      })
+
+      index = i - 1
       continue
     }
 
     // Default: paragraph
     children.push({
       type: 'paragraph',
-      children: [{ type: 'text', text: trimmed }],
+      children: processInlineMarkdown(trimmed),
     })
   }
 

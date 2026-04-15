@@ -2,6 +2,7 @@ import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { CompareFloatingBar } from '@/components/search/ProductCompare'
+import { getCanonicalProductCategory, withBrandSuffix } from '@/lib/seo'
 import { SearchResultsContent } from './SearchResultsContent'
 
 // SSR: Supabase is fast enough, no need for ISR
@@ -17,14 +18,17 @@ export async function generateMetadata({
 
   if (!query) {
     return {
-      title: 'Search Products | Machrio',
+      title: withBrandSuffix('Search Products'),
       description: 'Search our catalog of tools, parts, and industrial essentials.',
+      alternates: { canonical: '/search' },
+      robots: { index: false, follow: true },
     }
   }
 
   return {
-    title: `Search: ${query} | Machrio`,
+    title: withBrandSuffix(`Search: ${query}`),
     description: `Search results for "${query}" - Tools, parts, and industrial essentials.`,
+    alternates: { canonical: '/search' },
     robots: { index: false, follow: true },
   }
 }
@@ -117,15 +121,17 @@ export default async function SearchPage({
   // Map products to ProductGrid format
   const gridProducts = results?.products.map((p) => {
     const primaryCategory = p.category
-    let categorySlug = 'products'
-    if (primaryCategory) {
-      categorySlug = primaryCategory.slug
-    }
+    const canonicalCategory = getCanonicalProductCategory({
+      name: p.name,
+      slug: p.slug,
+      categorySlug: primaryCategory?.slug,
+      categoryName: primaryCategory?.name,
+    })
 
     return {
       name: p.name,
       slug: p.slug,
-      categorySlug,
+      categorySlug: canonicalCategory.slug,
       sku: p.sku,
       brand: p.brand?.name || 'Unbranded',
       primaryImage: p.externalImageUrl,

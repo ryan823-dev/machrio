@@ -4,105 +4,13 @@ import { notFound } from 'next/navigation'
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 import { StructuredData } from '@/components/shared/StructuredData'
 import { FAQSchema, FAQSection } from '@/components/shared/FAQSchema'
+import { TopicClusterLinks } from '@/components/shared/TopicClusterLinks'
 import { getAdjacentArticles, getArticleBySlug } from '@/lib/db/articles'
+import { extractHeadings, extractPlainText, lexicalToHtml } from '@/lib/lexical-utils'
+import { getArticleTopicCluster, withBrandSuffix } from '@/lib/seo'
 
 // SSR: query merged database + builtin content
 export const dynamic = 'force-dynamic'
-
-// ---------------------------------------------------------------------------
-// Lexical richText helpers
-// ---------------------------------------------------------------------------
-
-function extractChildren(children: unknown[]): string {
-  if (!Array.isArray(children)) return ''
-  return children
-    .map((node) => {
-      const n = node as Record<string, unknown>
-      if (n.type === 'text') {
-        let text = n.text as string
-        if (n.format === 1 || n.bold) text = `<strong>${text}</strong>`
-        if (n.format === 2 || n.italic) text = `<em>${text}</em>`
-        return text
-      }
-      if (n.type === 'link') {
-        const url = ((n.fields as Record<string, unknown>)?.url as string) || '#'
-        const inner = extractChildren(n.children as unknown[])
-        return `<a href="${url}" class="text-primary-600 underline hover:text-primary-800">${inner}</a>`
-      }
-      if (n.children) return extractChildren(n.children as unknown[])
-      return ''
-    })
-    .join('')
-}
-
-function lexicalToHtml(richText: unknown): string {
-  if (!richText || typeof richText !== 'object') return ''
-  const root = (richText as Record<string, unknown>).root as Record<string, unknown> | undefined
-  if (!root || !Array.isArray(root.children)) return ''
-  return (root.children as Record<string, unknown>[])
-    .map((node) => {
-      if (node.type === 'paragraph') {
-        const text = extractChildren(node.children as unknown[])
-        return text ? `<p>${text}</p>` : ''
-      }
-      if (node.type === 'heading') {
-        const tag = (node.tag as string) || 'h3'
-        const id = extractChildren(node.children as unknown[])
-          .replace(/<[^>]+>/g, '')
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-|-$/g, '')
-        const text = extractChildren(node.children as unknown[])
-        return text ? `<${tag} id="${id}">${text}</${tag}>` : ''
-      }
-      if (node.type === 'list') {
-        const tag = node.listType === 'number' ? 'ol' : 'ul'
-        const items = (node.children as Record<string, unknown>[])
-          .map((li) => `<li>${extractChildren(li.children as unknown[])}</li>`)
-          .join('')
-        return `<${tag}>${items}</${tag}>`
-      }
-      return ''
-    })
-    .filter(Boolean)
-    .join('\n')
-}
-
-function extractPlainText(richText: unknown): string {
-  if (!richText || typeof richText !== 'object') return ''
-  const root = (richText as Record<string, unknown>).root as Record<string, unknown> | undefined
-  if (!root) return ''
-  return extractChildrenPlain(root.children as unknown[])
-}
-
-function extractChildrenPlain(children: unknown[]): string {
-  if (!Array.isArray(children)) return ''
-  return children
-    .map((node) => {
-      const n = node as Record<string, unknown>
-      if (n.type === 'text') return n.text as string
-      if (n.children) return extractChildrenPlain(n.children as unknown[])
-      return ''
-    })
-    .join('')
-}
-
-function extractHeadings(richText: unknown): { id: string; text: string; level: number }[] {
-  if (!richText || typeof richText !== 'object') return []
-  const root = (richText as Record<string, unknown>).root as Record<string, unknown> | undefined
-  if (!root || !Array.isArray(root.children)) return []
-  return (root.children as Record<string, unknown>[])
-    .filter((node) => node.type === 'heading')
-    .map((node) => {
-      const text = extractChildrenPlain(node.children as unknown[])
-        .replace(/<[^>]+>/g, '')
-      const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
-      const tag = (node.tag as string) || 'h3'
-      const level = tag === 'h2' ? 2 : 3
-      return { id, text, level }
-    })
-    .filter((h) => h.text)
-}
 
 // ---------------------------------------------------------------------------
 // Category display helpers
@@ -135,10 +43,10 @@ export async function generateMetadata({
   const article = await getArticleBySlug(slug)
 
   if (!article) {
-    return { title: 'Article Not Found | Machrio' }
+    return { title: withBrandSuffix('Article Not Found') }
   }
 
-  const title = article.metaTitle || `${article.title} | Machrio`
+  const title = withBrandSuffix(article.metaTitle || article.title)
   const description = article.metaDescription || article.excerpt || ''
   const imageUrl = article.featuredImage
 
@@ -192,6 +100,7 @@ export default async function ArticlePage({
   // Tags
   const tags = article.tags || []
   const faqs = article.faq || []
+  const topicCluster = getArticleTopicCluster(slug)
 
   // Adjacent articles for navigation
   const { prev, next } = await getAdjacentArticles(slug)
@@ -314,7 +223,7 @@ export default async function ArticlePage({
                   <a
                     key={h.id}
                     href={`#${h.id}`}
-                    className={`block text-sm text-secondary-600 hover:text-primary-700 ${h.level === 3 ? 'pl-3' : ''}`}
+                    className={`block text-sm text-secondary-600 hover:text-primary-700 ${h.level > 2 ? 'pl-3' : ''}`}
                   >
                     {h.text}
                   </a>
@@ -346,6 +255,14 @@ export default async function ArticlePage({
       )}
 
       <FAQSection faqs={faqs} />
+
+      {topicCluster && (
+        <TopicClusterLinks
+          title={topicCluster.title}
+          description={topicCluster.description}
+          categories={topicCluster.categories}
+        />
+      )}
 
       {/* ── Previous / Next Navigation ── */}
       <nav className="mt-12 grid grid-cols-2 gap-4 border-t border-secondary-200 pt-6">

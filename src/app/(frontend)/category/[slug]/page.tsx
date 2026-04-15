@@ -14,6 +14,13 @@ import { HowToChoose } from '@/components/category/HowToChoose'
 import { ProductRecommendation } from '@/components/category/ProductRecommendation'
 import { EnhancedFAQ } from '@/components/category/EnhancedFAQ'
 import { SubcategoryGrid } from '@/components/category/SubcategoryGrid'
+import { CategoryLandingPanel } from '@/components/category/CategoryLandingPanel'
+import {
+  getCategorySeoOverride,
+  getGuideLinks,
+  getPrimaryGuideForCategory,
+  withBrandSuffix,
+} from '@/lib/seo'
 
 // 强制动态渲染（SSR）
 export const dynamic = 'force-dynamic'
@@ -256,19 +263,25 @@ interface CategoryPageProps {
 export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
   const { slug } = await params
   const data = await getCategoryData(slug)
-  if (!data) return { title: 'Category Not Found' }
+  if (!data) {
+    return { title: withBrandSuffix('Category Not Found') }
+  }
 
   const { category, parent, grandparent } = data
+  const seoOverride = getCategorySeoOverride(slug)
   const parentName = parent ? `${parent.name} - ` : ''
   const gpName = grandparent ? `${grandparent.name} - ` : ''
-  const title = `${category.name} | ${gpName}${parentName}Machrio Industrial Supplies`
-  const description = category.short_description || `Browse ${category.name} at Machrio.`
+  const title = seoOverride?.metaTitle || `${category.name} | ${gpName}${parentName}Machrio Industrial Supplies`
+  const description = seoOverride?.metaDescription || category.short_description || `Browse ${category.name} at Machrio.`
 
   return {
-    title,
+    title: withBrandSuffix(title),
     description,
     alternates: { canonical: `/category/${slug}` },
-    openGraph: { title, description },
+    openGraph: {
+      title: withBrandSuffix(title),
+      description,
+    },
   }
 }
 
@@ -281,6 +294,13 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   if (!data) notFound()
 
   const { category, parent, grandparent, children } = data
+  const seoOverride = getCategorySeoOverride(slug)
+  const fallbackGuide = getPrimaryGuideForCategory(slug)
+  const relatedGuides = seoOverride?.guideSlugs?.length
+    ? getGuideLinks(seoOverride.guideSlugs)
+    : fallbackGuide
+    ? [fallbackGuide]
+    : []
 
   const isL1 = !parent && !grandparent
   const isL2 = parent && !grandparent
@@ -317,12 +337,14 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   } : null
 
   // 解析 FAQ 数据
-  const faqList = Array.isArray(category.faq)
-    ? (category.faq as Array<{ question?: string; answer?: string }>).map(item => ({
-        question: item.question || '',
-        answer: item.answer || ''
-      }))
-    : []
+  const faqList = seoOverride?.faq || (
+    Array.isArray(category.faq)
+      ? (category.faq as Array<{ question?: string; answer?: string }>).map((item) => ({
+          question: item.question || '',
+          answer: item.answer || '',
+        }))
+      : []
+  )
 
   return (
     <div className="container-main pb-12">
@@ -331,7 +353,11 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
 
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-secondary-900">{category.name}</h1>
-        {category.intro_content ? (
+        {seoOverride ? (
+          <p className="mt-2 text-sm leading-relaxed text-secondary-600">
+            {seoOverride.summary}
+          </p>
+        ) : category.intro_content ? (
           <ExpandableIntro content={category.intro_content} />
         ) : hasRichTextContent(category.description) ? (
           <div className="mt-2 prose prose-sm prose-secondary max-w-none text-secondary-600" dangerouslySetInnerHTML={{ __html: lexicalToHtml(category.description) }} />
@@ -342,7 +368,15 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
         )}
       </div>
 
-      <CategoryBuyingGuide categorySlug={slug} />
+      {seoOverride ? (
+        <CategoryLandingPanel
+          categoryName={category.name}
+          content={seoOverride}
+          guides={relatedGuides}
+        />
+      ) : (
+        <CategoryBuyingGuide categorySlug={slug} />
+      )}
 
       {/* L1/L2: Show subcategories with product counts */}
       {(isL1 || isL2) && children.length > 0 && (
@@ -402,6 +436,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
             categorySlug={slug}
             categoryName={category.name}
             buyingGuideContent={category.buying_guide}
+            relatedGuides={relatedGuides}
           />
         )}
         
@@ -424,7 +459,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
         )}
         
         {/* Additional SEO Content */}
-        {hasRichTextContent(category.seo_content) && (
+        {!seoOverride && hasRichTextContent(category.seo_content) && (
           <div className="mb-10">
             <div 
               className="prose prose-sm prose-secondary max-w-none text-secondary-600"

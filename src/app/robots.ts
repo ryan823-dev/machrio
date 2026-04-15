@@ -1,69 +1,70 @@
 import type { MetadataRoute } from 'next'
 
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://machrio.com'
+const SITE_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://machrio.com'
+
+const DISALLOW_PATHS = [
+  '/admin',
+  '/admin/*',
+  '/api/*',
+  '/account',
+  '/account/*',
+  '/cart',
+  '/cart/*',
+  '/checkout',
+  '/checkout/*',
+  '/order/*',
+  '/search',
+  '/search/*',
+  '/search?*',
+]
 
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
-      // Default rules for all crawlers
       {
         userAgent: '*',
         allow: '/',
-        disallow: [
-          '/admin',
-          '/admin/*',
-          '/api/*',
-          '/account',
-          '/account/*',
-          '/cart',
-          '/checkout',
-          '/checkout/*',
-          '/order/*',
-          // SEO: Exclude search results and filtered/sorted pages from crawling
-          '/search',
-          '/search?*',
-        ],
+        disallow: DISALLOW_PATHS,
       },
-      // AI crawlers - explicitly allow for AEO (Answer Engine Optimization)
       {
         userAgent: 'GPTBot',
         allow: '/',
-        disallow: ['/admin', '/api/*', '/account', '/cart', '/checkout', '/order/*'],
+        disallow: DISALLOW_PATHS,
       },
       {
         userAgent: 'ChatGPT-User',
         allow: '/',
-        disallow: ['/admin', '/api/*', '/account', '/cart', '/checkout', '/order/*'],
+        disallow: DISALLOW_PATHS,
       },
       {
         userAgent: 'anthropic-ai',
         allow: '/',
-        disallow: ['/admin', '/api/*', '/account', '/cart', '/checkout', '/order/*'],
+        disallow: DISALLOW_PATHS,
       },
       {
         userAgent: 'Claude-Web',
         allow: '/',
-        disallow: ['/admin', '/api/*', '/account', '/cart', '/checkout', '/order/*'],
+        disallow: DISALLOW_PATHS,
       },
       {
         userAgent: 'Google-Extended',
         allow: '/',
-        disallow: ['/admin', '/api/*', '/account', '/cart', '/checkout', '/order/*'],
+        disallow: DISALLOW_PATHS,
       },
       {
         userAgent: 'PerplexityBot',
         allow: '/',
-        disallow: ['/admin', '/api/*', '/account', '/cart', '/checkout', '/order/*'],
+        disallow: DISALLOW_PATHS,
       },
       {
         userAgent: 'Amazonbot',
         allow: '/',
-        disallow: ['/admin', '/api/*', '/account', '/cart', '/checkout', '/order/*'],
+        disallow: DISALLOW_PATHS,
       },
       {
         userAgent: 'cohere-ai',
         allow: '/',
-        disallow: ['/admin', '/api/*', '/account', '/cart', '/checkout', '/order/*'],
+        disallow: DISALLOW_PATHS,
       },
     ],
     sitemap: `${SITE_URL}/sitemap.xml`,

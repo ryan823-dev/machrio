@@ -5,6 +5,7 @@
  */
 
 import { Pool } from 'pg'
+import { getProductBrandQueryParts } from '@/lib/product-brand-query'
 
 // 全局连接池 - Vercel Serverless 环境使用 globalThis 持久化
 let globalPool: Pool | null = null
@@ -280,6 +281,7 @@ export async function getProductBySlug(slug: string): Promise<{
     min_order_quantity: number | null
     package_qty: number | null
     package_unit: string | null
+    purchase_mode: string | null
     external_image_url: string | null
     category_id: string | null
     category_slug: string | null
@@ -287,6 +289,7 @@ export async function getProductBySlug(slug: string): Promise<{
     parent_category_slug: string | null
     parent_category_name: string | null
     grandparent_category_slug: string | null
+    brand_name: string | null
   } | null
 }> {
   try {
@@ -297,6 +300,7 @@ export async function getProductBySlug(slug: string): Promise<{
     }
 
     const pool = getGlobalPool()
+    const { brandSelectSql, brandJoinSql } = await getProductBrandQueryParts(pool)
 
     // 查询产品及其分类信息
     const result = await pool.query<{
@@ -315,6 +319,7 @@ export async function getProductBySlug(slug: string): Promise<{
       min_order_quantity: number | null
       package_qty: number | null
       package_unit: string | null
+      purchase_mode: string | null
       external_image_url: string | null
       category_id: string | null
       category_slug: string | null
@@ -328,11 +333,13 @@ export async function getProductBySlug(slug: string): Promise<{
         p.id, p.name, p.slug, p.sku, p.short_description, p.full_description,
         p.pricing, p.images, p.specifications, p.status,
         p.availability, p.lead_time, p.min_order_quantity,
-        p.package_qty, p.package_unit, p.external_image_url,
+        p.package_qty, p.package_unit, p.purchase_mode, p.external_image_url,
+        ${brandSelectSql},
         c.id as category_id, c.slug as category_slug, c.name as category_name,
         pc.slug as parent_category_slug, pc.name as parent_category_name,
         gc.slug as grandparent_category_slug
        FROM products p
+       ${brandJoinSql}
        LEFT JOIN categories c ON p.primary_category_id = c.id
        LEFT JOIN categories pc ON c.parent_id = pc.id
        LEFT JOIN categories gc ON pc.parent_id = gc.id

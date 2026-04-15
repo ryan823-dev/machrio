@@ -36,6 +36,7 @@ export function RelatedProducts({
       <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
         {displayProducts.map((product) => {
           const hasPrice = typeof product.price === 'number' && Number.isFinite(product.price)
+          const displayPrice = hasPrice ? product.price ?? 0 : 0
 
           return (
             <Link
@@ -57,7 +58,7 @@ export function RelatedProducts({
                 </p>
                 {hasPrice ? (
                   <p className="mt-1 text-sm font-semibold text-secondary-900">
-                    {product.currency === 'CAD' ? 'C$' : '$'}{product.price.toFixed(2)}
+                    {product.currency === 'CAD' ? 'C$' : '$'}{displayPrice.toFixed(2)}
                   </p>
                 ) : (
                   <p className="mt-1 text-xs text-amber-600">Contact for Price</p>

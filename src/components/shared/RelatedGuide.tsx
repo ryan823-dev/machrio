@@ -1,63 +1,5 @@
 import Link from 'next/link'
-
-// ---------------------------------------------------------------------------
-// Article-Category Mapping
-// Maps product categories/tags to relevant buying guide articles
-// ---------------------------------------------------------------------------
-
-interface GuideMapping {
-  articleSlug: string
-  articleTitle: string
-  articleExcerpt: string
-}
-
-// Primary mapping: category slug -> guide
-const categoryToGuide: Record<string, GuideMapping> = {
-  safety: {
-    articleSlug: 'how-to-choose-cut-resistant-gloves',
-    articleTitle: 'How to Choose Cut-Resistant Gloves',
-    articleExcerpt: 'Understand ANSI/ISEA 105 cut levels A1-A9 and match protection to your application.',
-  },
-}
-
-// Secondary mapping: product tags -> guide (more specific)
-const tagToGuide: Record<string, GuideMapping> = {
-  'cut-resistant': {
-    articleSlug: 'how-to-choose-cut-resistant-gloves',
-    articleTitle: 'How to Choose Cut-Resistant Gloves',
-    articleExcerpt: 'Understand ANSI/ISEA 105 cut levels A1-A9 and match protection to your application.',
-  },
-  gloves: {
-    articleSlug: 'how-to-choose-cut-resistant-gloves',
-    articleTitle: 'How to Choose Cut-Resistant Gloves',
-    articleExcerpt: 'Understand ANSI/ISEA 105 cut levels A1-A9 and match protection to your application.',
-  },
-  eyewear: {
-    articleSlug: 'safety-glasses-buying-guide-ansi-z87',
-    articleTitle: 'Safety Glasses Buying Guide',
-    articleExcerpt: 'Learn ANSI Z87.1 requirements, impact ratings, and lens options for your workplace.',
-  },
-  glasses: {
-    articleSlug: 'safety-glasses-buying-guide-ansi-z87',
-    articleTitle: 'Safety Glasses Buying Guide',
-    articleExcerpt: 'Learn ANSI Z87.1 requirements, impact ratings, and lens options for your workplace.',
-  },
-  'fall-protection': {
-    articleSlug: 'fall-protection-basics-osha-requirements',
-    articleTitle: 'Fall Protection Basics',
-    articleExcerpt: 'OSHA requirements, harness selection, and equipment guidelines for working at height.',
-  },
-  harness: {
-    articleSlug: 'fall-protection-basics-osha-requirements',
-    articleTitle: 'Fall Protection Basics',
-    articleExcerpt: 'OSHA requirements, harness selection, and equipment guidelines for working at height.',
-  },
-}
-
-// ---------------------------------------------------------------------------
-// RelatedGuide Component
-// Displays a contextual link to a relevant buying guide on product pages
-// ---------------------------------------------------------------------------
+import { getPrimaryGuideForCategory } from '@/lib/seo'
 
 interface RelatedGuideProps {
   categorySlug?: string
@@ -65,24 +7,8 @@ interface RelatedGuideProps {
 }
 
 export function RelatedGuide({ categorySlug, tags = [] }: RelatedGuideProps) {
-  // Try to find a matching guide: tags first (more specific), then category
-  let guide: GuideMapping | null = null
+  const guide = getPrimaryGuideForCategory(categorySlug, tags)
 
-  // Check tags first
-  for (const tag of tags) {
-    const normalizedTag = tag.toLowerCase().replace(/\s+/g, '-')
-    if (tagToGuide[normalizedTag]) {
-      guide = tagToGuide[normalizedTag]
-      break
-    }
-  }
-
-  // Fall back to category
-  if (!guide && categorySlug && categoryToGuide[categorySlug]) {
-    guide = categoryToGuide[categorySlug]
-  }
-
-  // Don't render if no matching guide
   if (!guide) return null
 
   return (
@@ -95,17 +21,17 @@ export function RelatedGuide({ categorySlug, tags = [] }: RelatedGuideProps) {
             </svg>
           </div>
           <div className="flex-1">
-            <p className="text-sm font-medium text-primary-800">Not sure if this is right for you?</p>
+            <p className="text-sm font-medium text-primary-800">Not sure if this is the right fit?</p>
             <Link
-              href={`/knowledge-center/${guide.articleSlug}`}
+              href={`/knowledge-center/${guide.slug}`}
               className="group mt-1 block"
             >
               <span className="text-base font-semibold text-secondary-900 group-hover:text-primary-700">
-                {guide.articleTitle}
+                {guide.title}
               </span>
-              <span className="ml-1 text-primary-600 transition-transform group-hover:translate-x-0.5 inline-block">→</span>
+              <span className="ml-1 inline-block text-primary-600 transition-transform group-hover:translate-x-0.5">→</span>
             </Link>
-            <p className="mt-1 text-sm text-secondary-600">{guide.articleExcerpt}</p>
+            <p className="mt-1 text-sm text-secondary-600">{guide.excerpt}</p>
           </div>
         </div>
       </div>
@@ -113,17 +39,12 @@ export function RelatedGuide({ categorySlug, tags = [] }: RelatedGuideProps) {
   )
 }
 
-// ---------------------------------------------------------------------------
-// CategoryBuyingGuide Component
-// Displays a buying guide banner at the top of category pages
-// ---------------------------------------------------------------------------
-
 interface CategoryBuyingGuideProps {
   categorySlug: string
 }
 
 export function CategoryBuyingGuide({ categorySlug }: CategoryBuyingGuideProps) {
-  const guide = categoryToGuide[categorySlug]
+  const guide = getPrimaryGuideForCategory(categorySlug)
 
   if (!guide) return null
 
@@ -138,15 +59,15 @@ export function CategoryBuyingGuide({ categorySlug }: CategoryBuyingGuideProps) 
           </div>
           <div>
             <p className="text-sm font-semibold text-secondary-900">
-              Buying Guide: {guide.articleTitle}
+              Buying Guide: {guide.title}
             </p>
-            <p className="text-sm text-secondary-600 hidden sm:block">
-              {guide.articleExcerpt}
+            <p className="hidden text-sm text-secondary-600 sm:block">
+              {guide.excerpt}
             </p>
           </div>
         </div>
         <Link
-          href={`/knowledge-center/${guide.articleSlug}`}
+          href={`/knowledge-center/${guide.slug}`}
           className="flex-shrink-0 rounded-md bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700"
         >
           Read Guide
@@ -155,10 +76,3 @@ export function CategoryBuyingGuide({ categorySlug }: CategoryBuyingGuideProps) 
     </div>
   )
 }
-
-// ---------------------------------------------------------------------------
-// Exports for easy extension
-// ---------------------------------------------------------------------------
-
-export { categoryToGuide, tagToGuide }
-export type { GuideMapping }

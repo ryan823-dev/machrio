@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import configPromise from '@/payload/payload.config'
+import { normalizePublicAssetUrl } from '@/lib/public-asset-url'
 import * as XLSX from 'xlsx'
 
 // v4 template format with 46 columns (added FAQ Question/Answer 1-3)
@@ -403,7 +404,7 @@ export async function POST(req: NextRequest) {
 
         // Find category by L1/L2/L3 path
         let categoryId: number | null = null
-        let parentCategoryIds: number[] = []
+        const parentCategoryIds: number[] = []
         const l1 = row['L1 Category']?.toLowerCase() || ''
         const l2 = row['L2 Category']?.toLowerCase() || ''
         const l3 = row['L3 Category']?.toLowerCase() || ''
@@ -488,11 +489,27 @@ export async function POST(req: NextRequest) {
         // Parse additional images
         const additionalImagesRaw = col(row as unknown as Record<string, unknown>, 'Additional Images', 'Additional Image URLs', 'Extra Images')
         const additionalImages = additionalImagesRaw
-          ? additionalImagesRaw.split(',').map(url => url.trim()).filter(Boolean)
+          ? additionalImagesRaw
+            .split(',')
+            .map((url) => normalizePublicAssetUrl(url, { requireHttps: true }))
+            .filter((url): url is string => Boolean(url))
           : []
 
         // Resolve image URL with flexible column matching
-        const imageUrl = col(row as unknown as Record<string, unknown>, 'Primary Image URL', 'Image URL', 'Image', 'Primary Image', 'Main Image URL', 'Main Image', 'Product Image', 'Product Image URL')
+        const imageUrl = normalizePublicAssetUrl(
+          col(
+            row as unknown as Record<string, unknown>,
+            'Primary Image URL',
+            'Image URL',
+            'Image',
+            'Primary Image',
+            'Main Image URL',
+            'Main Image',
+            'Product Image',
+            'Product Image URL',
+          ),
+          { requireHttps: true },
+        )
 
         // Build product data
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -561,7 +578,15 @@ export async function POST(req: NextRequest) {
         }
 
         // Add fullDescription as Lexical format if provided
-        const fullDesc = row['Full Description']
+        const fullDesc = col(
+          row as unknown as Record<string, unknown>,
+          'Full Description',
+          'Full description',
+          'FullDescription',
+          'Product Description',
+          'Detail Description',
+          'Description',
+        )
         if (fullDesc) {
           productData.fullDescription = textToLexical(String(fullDesc))
         }

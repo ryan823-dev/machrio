@@ -23,7 +23,7 @@ export async function GET(request: Request) {
     const pool = getPool()
 
     const result = await pool.query(
-      'SELECT id FROM products WHERE slug = $1 LIMIT 1',
+      "SELECT id FROM products WHERE slug = $1 AND status = 'published' LIMIT 1",
       [slug]
     )
 

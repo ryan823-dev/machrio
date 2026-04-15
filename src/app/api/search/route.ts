@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPool, getCategoryBySlug } from '@/lib/db'
+import { normalizePurchaseMode } from '@/lib/purchase-mode'
 
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams
@@ -82,7 +83,7 @@ export async function GET(request: NextRequest) {
       pricing: null,
       packageQty: p.package_qty,
       availability: p.availability,
-      purchaseMode: p.purchase_mode || 'both',
+      purchaseMode: normalizePurchaseMode(p.purchase_mode),
     }))
 
     return NextResponse.json({

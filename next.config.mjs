@@ -75,8 +75,36 @@ const nextConfig = {
         permanent: true,
       },
 
+      // ========== Legacy Product URL Redirects ==========
+      // Old recommendation cards used /product/:slug without a category segment.
+      {
+        source: '/product/:slug((?!products$)[^/]+)',
+        destination: '/product/products/:slug',
+        permanent: true,
+      },
+
       // ========== Category Redirects (88) ==========
       // These redirect old category slugs to new ones
+      {
+        source: '/category/adhesives-sealants-tape',
+        destination: '/category/adhesives-sealants-and-tape',
+        permanent: true,
+      },
+      {
+        source: '/category/water-filtration-and-purification-systems',
+        destination: '/category/water-filtration-purification-systems',
+        permanent: true,
+      },
+      {
+        source: '/category/shaft-couplings-and-universal-joints',
+        destination: '/category/shaft-couplings-universal-joints',
+        permanent: true,
+      },
+      {
+        source: '/category/sinks-wash-fountains-and-repair-parts',
+        destination: '/category/sinks-wash-fountains-repair-parts',
+        permanent: true,
+      },
       {
         source: '/category/welding-protection',
         destination: '/category/welding-protective-clothing',
@@ -223,8 +251,8 @@ const nextConfig = {
         permanent: true,
       },
       {
-        source: '/category/hand-arm-protection',
-        destination: '/category/hand-and-arm-protection',
+        source: '/category/hand-and-arm-protection',
+        destination: '/category/hand-arm-protection',
         permanent: true,
       },
       {
@@ -580,14 +608,6 @@ const nextConfig = {
         permanent: true,
       },
 
-      // ========== Fix "products" Default Category Issue ==========
-      // Redirect /product/products/[slug] to search page to help users find the product
-      // This handles products without a proper category in the database
-      {
-        source: '/product/products/:slug',
-        destination: '/search?q=:slug',
-        permanent: true,
-      },
     ]
   },
 }

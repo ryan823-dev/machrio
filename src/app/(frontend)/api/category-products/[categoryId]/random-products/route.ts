@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPool } from '@/lib/db'
+import { getCanonicalProductCategory } from '@/lib/seo'
 
 /**
  * GET /api/category-products/[categoryId]/random-products
@@ -21,9 +22,11 @@ export async function GET(
     
     // Query random products from category and child categories
     const result = await pool.query(
-      `SELECT p.id, p.name, p.slug, p.sku, p.short_description, 
-              p.pricing, p.external_image_url, p.status
+      `SELECT p.id, p.name, p.slug, p.sku, p.short_description,
+              p.pricing, p.external_image_url, p.status,
+              c.slug AS category_slug, c.name AS category_name
        FROM products p
+       LEFT JOIN categories c ON p.primary_category_id = c.id
        WHERE p.primary_category_id IN (
          -- Get category and all descendant categories (recursive)
          WITH RECURSIVE category_tree AS (
@@ -67,6 +70,12 @@ export async function GET(
         id: p.id,
         name: p.name,
         slug: p.slug,
+        categorySlug: getCanonicalProductCategory({
+          name: p.name,
+          slug: p.slug,
+          categorySlug: p.category_slug,
+          categoryName: p.category_name,
+        }).slug,
         sku: p.sku,
         primaryImage: p.external_image_url || undefined,
         pricing: {

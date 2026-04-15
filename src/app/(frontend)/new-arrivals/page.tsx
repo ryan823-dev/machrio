@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { getProducts } from '@/lib/db'
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 import { ProductGrid } from '@/components/category/ProductGrid'
+import { normalizePurchaseMode } from '@/lib/purchase-mode'
 
 // SSR: 直接查询 PostgreSQL
 export const dynamic = 'force-dynamic'
@@ -41,7 +42,7 @@ function mapProductToCard(product: {
       priceUnit: undefined,
     },
     packageQty: product.package_qty || undefined,
-    purchaseMode: (product.purchase_mode as 'both' | 'buy-online' | 'rfq-only') || 'both',
+    purchaseMode: normalizePurchaseMode(product.purchase_mode),
     availability: product.availability || 'contact',
   }
 }

@@ -1,5 +1,6 @@
 import { getPool } from '@/lib/db'
 import { builtinKnowledgeArticles, type KnowledgeArticle } from '@/content/knowledge-articles'
+import { normalizeRichTextContent } from '@/lib/lexical-utils'
 
 type ArticleRow = Record<string, any>
 
@@ -65,9 +66,10 @@ function normalizeSeoField(
 }
 
 function estimateReadingTime(content: unknown): number {
-  if (!content) return 3
+  const normalizedContent = normalizeRichTextContent(content)
+  if (!normalizedContent) return 3
 
-  const text = extractText(content)
+  const text = extractText(normalizedContent)
   const wordCount = text.split(/\s+/).filter(Boolean).length
 
   return Math.max(1, Math.ceil(wordCount / 200)) || 3
@@ -123,7 +125,7 @@ function normalizeArticle(row: ArticleRow): KnowledgeArticle | null {
     title,
     slug,
     excerpt: extractExcerpt(row),
-    content: row.content ?? null,
+    content: normalizeRichTextContent(row.content ?? null),
     category: category || 'buying-guide',
     tags: asStringArray(row.tags),
     author: asString(row.author) || 'Machrio Team',

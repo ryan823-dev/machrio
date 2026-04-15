@@ -31,7 +31,6 @@ export function BoughtTogether({ productId, maxDisplay = 4 }: BoughtTogetherProp
 
   useEffect(() => {
     if (!productId) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(false)
       return
     }
