@@ -1,10 +1,9 @@
 import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import Link from 'next/link'
 import { getPool } from '@/lib/db'
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
-import { FAQSchema, FAQSection } from '@/components/shared/FAQSchema'
+import { FAQSchema } from '@/components/shared/FAQSchema'
 import { StructuredData } from '@/components/shared/StructuredData'
 import { CategoryBuyingGuide } from '@/components/shared/RelatedGuide'
 import { ProductGrid } from '@/components/category/ProductGrid'
@@ -144,13 +143,26 @@ async function getCategoryData(slug: string) {
 
   // 获取子分类（包含产品数量）
   const childrenResult = await pool.query<ChildCategory>(
-    `SELECT c.id, c.name, c.slug, 
-            COALESCE(COUNT(p.id), 0)::int as "productCount"
-     FROM categories c
-     LEFT JOIN products p ON p.primary_category_id = c.id AND p.status = 'published'
-     WHERE c.parent_id = $1::uuid
-     GROUP BY c.id
-     ORDER BY c.display_order
+    `WITH RECURSIVE direct_children AS (
+       SELECT id, name, slug, display_order
+       FROM categories
+       WHERE parent_id = $1::uuid
+     ),
+     category_tree AS (
+       SELECT dc.id, dc.id AS root_id
+       FROM direct_children dc
+       UNION ALL
+       SELECT c.id, ct.root_id
+       FROM categories c
+       INNER JOIN category_tree ct ON c.parent_id = ct.id
+     )
+     SELECT dc.id, dc.name, dc.slug,
+            COALESCE(COUNT(p.id), 0)::int AS "productCount"
+     FROM direct_children dc
+     LEFT JOIN category_tree ct ON ct.root_id = dc.id
+     LEFT JOIN products p ON p.primary_category_id = ct.id AND p.status = 'published'
+     GROUP BY dc.id, dc.name, dc.slug, dc.display_order
+     ORDER BY dc.display_order NULLS LAST, dc.name
      LIMIT 50`,
     [category.id]
   )
@@ -187,7 +199,7 @@ async function getCategoryProducts(categoryId: string, categorySlug: string, pag
 
     const docs = productsResult.rows.map((p) => {
       // Use external_image_url directly
-      let imageUrl: string | undefined = p.external_image_url || undefined
+      const imageUrl: string | undefined = p.external_image_url || undefined
 
       // 解析 pricing（可能是 JSON 字符串或已解析的对象）
       let basePrice: number | undefined = undefined
