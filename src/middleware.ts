@@ -9,6 +9,11 @@ import type { NextRequest } from 'next/server'
  */
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+  const forwardedHost = request.headers.get('x-forwarded-host') || request.headers.get('host')
+  const forwardedProto = request.headers.get('x-forwarded-proto') || 'https'
+  const publicBaseUrl = forwardedHost
+    ? `${forwardedProto}://${forwardedHost}`
+    : process.env.NEXT_PUBLIC_SERVER_URL || request.headers.get('origin') || request.nextUrl.origin
 
   if (
     pathname.startsWith('/admin') ||
@@ -32,7 +37,7 @@ export async function middleware(request: NextRequest) {
     const slug = productMatch[2]
 
     try {
-      const checkUrl = new URL('/api/internal/check-product', request.url)
+      const checkUrl = new URL('/api/internal/check-product', publicBaseUrl)
       checkUrl.searchParams.set('category', category)
       checkUrl.searchParams.set('slug', slug)
       checkUrl.searchParams.set('pathname', pathname)
@@ -124,7 +129,7 @@ export async function middleware(request: NextRequest) {
     const slug = glossaryMatch[1]
 
     try {
-      const checkUrl = new URL('/api/internal/check-glossary', request.url)
+      const checkUrl = new URL('/api/internal/check-glossary', publicBaseUrl)
       checkUrl.searchParams.set('slug', slug)
       checkUrl.searchParams.set('pathname', pathname)
 
