@@ -23,6 +23,7 @@ import {
   supportsQuoteRequests,
 } from '@/lib/purchase-mode'
 import { normalizePublicAssetUrls } from '@/lib/public-asset-url'
+import { resolveProductPath } from '@/lib/url-resolution'
 import {
   getCanonicalProductCategory,
   getProductExactMatchToken,
@@ -538,8 +539,16 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const { category, slug } = await params
   const { product } = await getProductBySlugFromDB(slug)
   
-  // 如果数据库和静态数据都找不到产品，返回 404
-  if (!product) notFound()
+  if (!product) {
+    const legacyPath = `/product/${category}/${slug}`
+    const resolution = await resolveProductPath(legacyPath, category, slug)
+
+    if (resolution.redirectTo) {
+      permanentRedirect(resolution.redirectTo)
+    }
+
+    notFound()
+  }
 
   const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'https://machrio.com'
   const canonicalCategory = getCanonicalProductCategory({
