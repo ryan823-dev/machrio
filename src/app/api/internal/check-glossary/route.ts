@@ -1,16 +1,13 @@
 import { NextResponse } from 'next/server'
-import { resolveProductPath } from '@/lib/url-resolution'
+import { resolveGlossaryPath } from '@/lib/url-resolution'
 
 /**
- * Internal API used by middleware to determine whether a product URL should:
- * 1. render normally
- * 2. permanently redirect to a canonical replacement
- * 3. return 410 Gone
+ * Internal API used by middleware to determine whether a glossary URL should
+ * render normally or permanently redirect to a maintained replacement.
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const slug = searchParams.get('slug')
-  const category = searchParams.get('category') || ''
   const pathname = searchParams.get('pathname') || ''
 
   if (!slug) {
@@ -18,10 +15,10 @@ export async function GET(request: Request) {
   }
 
   try {
-    const resolution = await resolveProductPath(pathname, category, slug)
+    const resolution = await resolveGlossaryPath(pathname, slug)
     return NextResponse.json(resolution)
   } catch (error) {
-    console.error('[check-product] Error checking product:', error)
+    console.error('[check-glossary] Error checking glossary path:', error)
     return NextResponse.json({ exists: true, error: 'Database error' })
   }
 }

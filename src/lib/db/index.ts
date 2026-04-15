@@ -1,4 +1,5 @@
 import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg'
+import { STATIC_GLOSSARY_TERMS } from '@/lib/static-glossary-terms'
 
 // 全局连接池 - Vercel Serverless 环境使用 globalThis 持久化
 let globalPool: Pool | null = null
@@ -490,29 +491,81 @@ export interface GlossaryTermRow {
   updated_at: string
 }
 
+const STATIC_GLOSSARY_TIMESTAMP = '2026-04-15T00:00:00.000Z'
+
+function getStaticGlossaryRows(): GlossaryTermRow[] {
+  return STATIC_GLOSSARY_TERMS.map((term, index) => ({
+    id: `static-${index + 1}`,
+    term: term.term,
+    slug: term.slug,
+    full_name: term.full_name,
+    fullName: term.fullName,
+    definition: term.definition,
+    content: null,
+    category: term.category,
+    status: term.status,
+    created_at: STATIC_GLOSSARY_TIMESTAMP,
+    updated_at: STATIC_GLOSSARY_TIMESTAMP,
+  }))
+}
+
+function mergeGlossaryRows(rows: GlossaryTermRow[]): GlossaryTermRow[] {
+  const merged = new Map<string, GlossaryTermRow>()
+
+  for (const term of getStaticGlossaryRows()) {
+    merged.set(term.slug, term)
+  }
+
+  for (const term of rows) {
+    merged.set(term.slug, {
+      ...term,
+      fullName: term.fullName ?? term.full_name ?? null,
+    })
+  }
+
+  return Array.from(merged.values()).sort((a, b) => a.term.localeCompare(b.term))
+}
+
 export async function getGlossaryTerms(limit?: number): Promise<GlossaryTermRow[]> {
+  if (!process.env.DATABASE_URI) {
+    return getStaticGlossaryRows().slice(0, limit || 500)
+  }
+
   const pool = getPool()
   try {
     const result = await pool.query(
       `SELECT * FROM glossary_terms WHERE status = 'published' ORDER BY term LIMIT $1`,
       [limit || 500]
     )
-    return result.rows
+    return mergeGlossaryRows(result.rows).slice(0, limit || 500)
   } catch {
-    return []
+    return getStaticGlossaryRows().slice(0, limit || 500)
   }
 }
 
 export async function getGlossaryTermBySlug(slug: string): Promise<GlossaryTermRow | null> {
+  const staticTerm = getStaticGlossaryRows().find((term) => term.slug === slug) || null
+
+  if (!process.env.DATABASE_URI) {
+    return staticTerm
+  }
+
   const pool = getPool()
   try {
     const result = await pool.query(
       `SELECT * FROM glossary_terms WHERE slug = $1 AND status = 'published'`,
       [slug]
     )
-    return result.rows[0] || null
+    return (
+      result.rows[0]
+        ? {
+            ...result.rows[0],
+            fullName: result.rows[0].fullName ?? result.rows[0].full_name ?? null,
+          }
+        : staticTerm
+    )
   } catch {
-    return null
+    return staticTerm
   }
 }
 

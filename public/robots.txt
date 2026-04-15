@@ -7,8 +7,13 @@ Allow: /
 # Block internal API endpoints
 Disallow: /api/
 
-# Sitemap location
+# Sitemap locations
 Sitemap: https://machrio.com/sitemap.xml
+Sitemap: https://machrio.com/page-sitemap.xml
+Sitemap: https://machrio.com/category-sitemap.xml
+Sitemap: https://machrio.com/knowledge-sitemap.xml
+Sitemap: https://machrio.com/glossary-sitemap.xml
+Sitemap: https://machrio.com/product-sitemap.xml
 
 # LLM-friendly site description (llmstxt.org standard)
 # https://www.machrio.com/llms.txt

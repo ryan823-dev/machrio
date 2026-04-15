@@ -67,6 +67,13 @@ export default function robots(): MetadataRoute.Robots {
         disallow: DISALLOW_PATHS,
       },
     ],
-    sitemap: `${SITE_URL}/sitemap.xml`,
+    sitemap: [
+      `${SITE_URL}/sitemap.xml`,
+      `${SITE_URL}/page-sitemap.xml`,
+      `${SITE_URL}/category-sitemap.xml`,
+      `${SITE_URL}/knowledge-sitemap.xml`,
+      `${SITE_URL}/glossary-sitemap.xml`,
+      `${SITE_URL}/product-sitemap.xml`,
+    ],
   }
 }
