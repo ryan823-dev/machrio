@@ -62,6 +62,33 @@ export function CategoryLandingPanel({
         </div>
       </div>
 
+      {content.priorityLinks && content.priorityLinks.length > 0 && (
+        <div className="mt-8 border-t border-secondary-200 pt-6">
+          <h3 className="text-sm font-semibold text-secondary-900">
+            {content.priorityLinksHeading || 'Where Buyers Usually Go Next'}
+          </h3>
+          {content.priorityLinksDescription && (
+            <p className="mt-2 max-w-3xl text-sm leading-relaxed text-secondary-600">
+              {content.priorityLinksDescription}
+            </p>
+          )}
+          <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            {content.priorityLinks.map((link) => (
+              <Link
+                key={link.slug}
+                href={`/category/${link.slug}`}
+                className="rounded-xl border border-secondary-200 bg-white p-4 transition-colors hover:border-primary-300 hover:bg-primary-50"
+              >
+                <p className="text-sm font-semibold text-secondary-900">{link.name}</p>
+                <p className="mt-2 text-sm leading-relaxed text-secondary-600">
+                  {link.description}
+                </p>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
       {guides.length > 0 && (
         <div className="mt-8 border-t border-secondary-200 pt-6">
           <h3 className="text-sm font-semibold text-secondary-900">Related Buying Guides</h3>

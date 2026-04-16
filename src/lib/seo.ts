@@ -24,6 +24,9 @@ export interface SeoCategoryOverride {
   procurementChecklist: string[]
   faq: SeoFaq[]
   guideSlugs?: string[]
+  priorityLinksHeading?: string
+  priorityLinksDescription?: string
+  priorityLinks?: SeoCategoryLink[]
 }
 
 export interface ProductCategoryContext {
@@ -272,25 +275,25 @@ const CATEGORY_OVERRIDES: Record<string, SeoCategoryOverride> = {
     ],
   },
   'lockout-padlocks': {
-    metaTitle: 'Lockout Padlocks for OSHA LOTO Programs & Group Isolation',
+    metaTitle: 'Lockout Padlocks with Short Shackle & Nylon Bodies',
     metaDescription:
-      'Choose lockout padlocks by keyed-alike or keyed-different setup, shackle height, body material, insulation, and color coding for industrial LOTO programs.',
+      'Source lockout padlocks by keyed alike or keyed different setup, short shackle or small shackle fit, nylon body construction, and color coding for OSHA LOTO programs.',
     summary:
-      'Lockout padlocks are one of the clearest industrial search intents on Machrio right now, so the page needs to behave like a buying page, not a generic category. Buyers are usually comparing keyed-alike versus keyed-different systems, shackle geometry, body material, color control, and whether the lock fits the site LOTO procedure.',
+      'Lockout padlocks are one of the clearest purchase-intent categories on Machrio, so this page should act like a sourcing page for short shackle, small shackle, and nylon-body lockout needs instead of a generic catalog. Buyers usually want to settle keying policy, compact shackle fit, body material, and color control before they compare price.',
     buyingFactors: [
-      'Confirm lock ownership model first: keyed different, keyed alike, master key, or department color coding.',
-      'Match shackle height and diameter to hasps, breakers, valve devices, and existing lockout points before comparing price.',
-      'Choose nylon, steel, or aluminum bodies based on electrical exposure, corrosion risk, and durability requirements.',
+      'Confirm lock ownership model first: keyed different, keyed alike, or controlled master-key workflow by department or site.',
+      'Match short shackle, small shackle, and shackle diameter requirements to hasps, breakers, valve devices, and compact lockout points before comparing price.',
+      'Choose nylon or other plastic lockout lock bodies when electrical insulation and lightweight daily use matter more than all-metal construction.',
     ],
     applications: [
       'Personal lockout ownership in OSHA 1910.147 programs',
-      'Group lockout procedures using hasps and lock boxes',
-      'Electrical, mechanical, and contractor shutdown workflows',
+      'Compact lock points where a short shackle padlock fits better than a long-shackle format',
+      'Group lockout procedures using hasps, lock boxes, and department color coding',
     ],
     procurementChecklist: [
       'List keyed-alike, keyed-different, or master-key requirements by site policy.',
-      'Check shackle clearance, shackle diameter, and insulation requirements.',
-      'Confirm how many colors, users, and replacement keys the program needs.',
+      'Check short shackle clearance, shackle diameter, and any small shank limitations at the isolation point.',
+      'Confirm nylon-body preference, color assignments, user count, and replacement-key control before checkout.',
     ],
     faq: [
       {
@@ -301,7 +304,17 @@ const CATEGORY_OVERRIDES: Record<string, SeoCategoryOverride> = {
       {
         question: 'What lockout padlock specs usually drive purchasing decisions?',
         answer:
-          'For most facilities the key specs are keying method, shackle height, shackle diameter, body material, electrical insulation, and color coding.',
+          'For most facilities the key specs are keying method, shackle height, short shackle clearance, shackle diameter, body material, electrical insulation, and color coding.',
+      },
+      {
+        question: 'When should buyers choose a short shackle lockout padlock?',
+        answer:
+          'Short shackle lockout padlocks are usually preferred when the lock point is tight, the device opening is shallow, or the site wants less excess shackle movement during daily LOTO use.',
+      },
+      {
+        question: 'Are nylon or plastic lockout padlocks better for electrical work?',
+        answer:
+          'They are often preferred where electrical insulation, lightweight handling, and visible color coding matter. Buyers should still confirm the exact shackle and body specs against the site procedure and installed devices.',
       },
       {
         question: 'When is a quote better than direct checkout for lockout padlocks?',
@@ -310,6 +323,31 @@ const CATEGORY_OVERRIDES: Record<string, SeoCategoryOverride> = {
       },
     ],
     guideSlugs: ['how-to-choose-lockout-tagout-kits-buying-guide'],
+    priorityLinksHeading: 'Keep Padlocks Connected to the Full LOTO Workflow',
+    priorityLinksDescription:
+      'Buyers rarely standardize padlocks in isolation. Use these pages to keep shackle fit, hasps, and device-specific lockouts aligned.',
+    priorityLinks: [
+      {
+        slug: 'lockout-tagout',
+        name: 'Lockout Tagout',
+        description: 'Use the main LOTO hub when you need padlocks, tags, hasps, and device lockouts planned together.',
+      },
+      {
+        slug: 'lockout-hasps',
+        name: 'Lockout Hasps',
+        description: 'Pair short shackle padlocks with hasps sized to the right shackle diameter and user count.',
+      },
+      {
+        slug: 'valve-lockout-devices',
+        name: 'Valve Lockout Devices',
+        description: 'Check padlock fit against the valve lockout hardware already installed on site.',
+      },
+      {
+        slug: 'electrical-lockout-devices',
+        name: 'Electrical Lockout Devices',
+        description: 'Match insulated padlock requirements to breaker and plug lockout points.',
+      },
+    ],
   },
   'industrial-safety-pins': {
     metaTitle: 'Industrial Safety Pins by Material, Length & Wire Diameter',
@@ -468,36 +506,46 @@ const CATEGORY_OVERRIDES: Record<string, SeoCategoryOverride> = {
     ],
   },
   'mop-sinks': {
-    metaTitle: 'Mop Sinks for Janitorial Rooms & Washdown Areas',
+    metaTitle: '24x24 Stainless Steel Mop Sinks & Service Sinks',
     metaDescription:
-      'Buy mop sinks by mount style, basin size, material, drain setup, faucet compatibility, and washdown use for janitorial rooms and facility maintenance areas.',
+      'Buy mop sinks by 24x24 basin size, stainless steel construction, drain configuration, faucet compatibility, and wall or floor mount for janitorial rooms and washdown areas.',
     summary:
-      'Mop sinks are a facilities purchase with plumbing, installation, and cleaning workflow requirements attached. Buyers usually need basin format, mount style, drain arrangement, and accessory compatibility made clear before they can compare price.',
+      'Mop sink demand is behaving like a spec-led facilities purchase, especially around 24x24 stainless steel replacements, drain layout, and faucet fit. This page should help buyers confirm basin size, material, drain configuration, and accessory compatibility before they compare price.',
     buyingFactors: [
-      'Choose wall-mount or floor-mount format based on room layout, drainage, and cleaning workflow.',
-      'Check basin size, material, drain location, and faucet compatibility before ordering accessories separately.',
-      'Confirm whether the job is replacement, new build, or janitorial-room standardization across sites.',
+      'Start with basin size and replacement footprint, especially when the buyer is specifically looking for a 24x24 stainless steel mop sink.',
+      'Check drain configuration, drain location, and waste-line alignment before ordering a sink that looks right but misses the plumbing rough-in.',
+      'Confirm faucet compatibility, hose support, and whether the project is a one-off replacement or a multi-site janitorial-room standard.',
     ],
     applications: [
       'Janitorial closets, washdown rooms, and maintenance service areas',
       'Commercial buildings, healthcare, food service, and education facilities',
-      'Replacement plumbing projects where accessory compatibility matters',
+      'Replacement plumbing projects where drain position and faucet compatibility matter',
     ],
     procurementChecklist: [
-      'Specify mount style, basin size, drain location, and material.',
-      'Confirm faucet, hose, and supply-line compatibility before checkout.',
-      'List install environment, cleaning routine, and whether wall protection is needed.',
+      'Specify mount style, exact basin dimensions, material, and whether 24x24 is a hard replacement requirement.',
+      'Confirm center-drain or rear-drain layout, strainer or grate preference, and waste-line compatibility before checkout.',
+      'List faucet spacing, hose-thread needs, vacuum-breaker requirements, and whether wall protection is needed.',
     ],
     faq: [
       {
         question: 'What matters most when buying a mop sink?',
         answer:
-          'Mount style, basin size, drain setup, material, and faucet compatibility are the main selection points. Those determine whether the sink fits both the room and the cleaning workflow.',
+          'Mount style, basin size, material, drain setup, and faucet compatibility are the main selection points. Those determine whether the sink fits both the room and the cleaning workflow.',
       },
       {
-        question: 'How do buyers decide between wall-mount and floor-mount mop sinks?',
+        question: 'Is a 24x24 stainless steel mop sink a common replacement format?',
         answer:
-          'Wall-mount sinks can simplify floor cleaning and tight-room layouts, while floor-mount sinks are often chosen for heavier service and straightforward plumbing access.',
+          'Yes. Many facilities teams search for 24x24 stainless steel mop sinks because that footprint appears in janitorial-room replacements and retrofit work where floor space and rough-in locations are already fixed.',
+      },
+      {
+        question: 'How should buyers compare mop sink drain configurations?',
+        answer:
+          'The key check is whether the sink uses the same drain location and waste alignment the room is already built around. Rear-drain and center-drain layouts can change installation labor even when basin size is identical.',
+      },
+      {
+        question: 'Will an existing service sink faucet fit a new mop sink?',
+        answer:
+          'Sometimes, but buyers should confirm faucet centers, wall clearance, hose-thread requirements, and vacuum-breaker needs before assuming the existing faucet will transfer cleanly.',
       },
       {
         question: 'When should a facility request a quote for mop sinks?',
@@ -550,15 +598,15 @@ const CATEGORY_OVERRIDES: Record<string, SeoCategoryOverride> = {
     ],
   },
   'lockout-tagout': {
-    metaTitle: 'Lockout Tagout Equipment for OSHA 1910.147 Programs',
+    metaTitle: 'Lockout Tagout Equipment Hub for Padlocks & Isolation',
     metaDescription:
-      'Build a lockout tagout program around padlocks, hasps, valve devices, electrical lockout, and group lockout tools sized to your isolation workflow.',
+      'Build a lockout tagout program around padlocks, hasps, valve devices, electrical lockout, and group isolation hardware from one OSHA 1910.147 sourcing hub.',
     summary:
-      'Lockout tagout should function as a topic hub on Machrio, not as a placeholder category. Buyers often start broad and then break the purchase into padlocks, hasps, valve devices, electrical devices, and group lockout hardware. The page should guide that workflow clearly.',
+      'Lockout tagout should function as a real sourcing hub on Machrio, not as a placeholder category. Buyers often start broad and then narrow into lockout padlocks first, followed by hasps, valve devices, electrical lockout, and group-isolation hardware. The page should guide that path clearly instead of splitting intent across thin pages.',
     buyingFactors: [
       'Map energy sources first: electrical, valve, pneumatic, and multi-point mechanical isolation do not use the same devices.',
       'Separate personal lock ownership, group lockout, and contractor workflows before choosing hardware.',
-      'Confirm padlock standards, shackle fit, tags, hasps, and storage or lock-box requirements together.',
+      'Standardize padlock keying, short shackle fit, tags, hasps, and storage or lock-box requirements together instead of SKU by SKU.',
     ],
     applications: [
       'OSHA 1910.147 compliance programs and shutdown procedures',
@@ -568,7 +616,7 @@ const CATEGORY_OVERRIDES: Record<string, SeoCategoryOverride> = {
     procurementChecklist: [
       'List the energy-isolation devices currently used on site.',
       'Confirm whether the rollout covers individual users, group lockout, or both.',
-      'Set padlock keying policy, label/tag format, and replacement planning.',
+      'Set padlock keying policy, short shackle requirements, label or tag format, and replacement planning.',
     ],
     faq: [
       {
@@ -582,12 +630,42 @@ const CATEGORY_OVERRIDES: Record<string, SeoCategoryOverride> = {
           'Start by identifying the isolation point. Once the energy source is clear, buyers can move into padlocks, valve lockout, electrical lockout, or group lockout products with much less ambiguity.',
       },
       {
+        question: 'What usually gets standardized first in a lockout tagout rollout?',
+        answer:
+          'Padlock policy usually comes first because keying method, color control, and shackle fit affect nearly every other device choice in the program.',
+      },
+      {
         question: 'When is RFQ the right path for lockout tagout equipment?',
         answer:
           'RFQ is ideal for site rollouts, mixed-device programs, replacement kits, or projects that need keying control and standardized color or label rules.',
       },
     ],
     guideSlugs: ['how-to-choose-lockout-tagout-kits-buying-guide'],
+    priorityLinksHeading: 'Start with the Strongest LOTO Product Families',
+    priorityLinksDescription:
+      'These category links match the product groups buyers most often need after a broad lockout tagout search.',
+    priorityLinks: [
+      {
+        slug: 'lockout-padlocks',
+        name: 'Lockout Padlocks',
+        description: 'Begin with keyed-alike or keyed-different padlocks, short shackle fit, and body material.',
+      },
+      {
+        slug: 'lockout-hasps',
+        name: 'Lockout Hasps',
+        description: 'Support group lockout procedures with the right number of lock points and shackle clearance.',
+      },
+      {
+        slug: 'valve-lockout-devices',
+        name: 'Valve Lockout Devices',
+        description: 'Match the device to ball valves, gate valves, and shared maintenance shutdowns.',
+      },
+      {
+        slug: 'electrical-lockout-devices',
+        name: 'Electrical Lockout Devices',
+        description: 'Cover breaker, plug, and electrical isolation points that require insulated lockout hardware.',
+      },
+    ],
   },
 }
 
