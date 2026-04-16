@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { useCart } from '@/contexts/CartContext'
+import { useOptionalCart } from '@/contexts/CartContext'
 import { useAIAssistantVisibility } from '@/contexts/AIAssistantVisibilityContext'
 import { 
   generateSessionId, 
@@ -51,7 +51,15 @@ interface ConversationMessage {
   content: string
 }
 
-function HeroProductCard({ product, onAddToCart }: { product: ProductResult; onAddToCart: (p: ProductResult) => void }) {
+function HeroProductCard({
+  product,
+  onAddToCart,
+  canAddToCart,
+}: {
+  product: ProductResult
+  onAddToCart: (p: ProductResult) => void
+  canAddToCart: boolean
+}) {
   const href = product.slug && product.categorySlug
     ? `/product/${product.categorySlug}/${product.slug}`
     : null
@@ -79,7 +87,7 @@ function HeroProductCard({ product, onAddToCart }: { product: ProductResult; onA
         )}
         <div className="mt-0.5 flex items-center justify-between gap-1">
           <span className="text-xs font-semibold text-amber-300">{product.price}</span>
-          {product.rawPrice && product.rawPrice > 0 ? (
+          {product.rawPrice && product.rawPrice > 0 && canAddToCart ? (
             <button
               onClick={() => onAddToCart(product)}
               className="flex-shrink-0 rounded bg-emerald-500/40 px-1.5 py-0.5 text-[10px] font-medium text-emerald-100 hover:bg-emerald-500/60 transition-colors"
@@ -106,7 +114,8 @@ export function HeroAIChat() {
   const heroContainerRef = useRef<HTMLDivElement>(null)
   const conversationTrackerRef = useRef<ConversationTracker | null>(null)
   const { setShouldHideFloatingButton } = useAIAssistantVisibility()
-  const { addItem } = useCart()
+  const cart = useOptionalCart()
+  const canAddToCart = Boolean(cart)
 
   // Initialize conversation tracker
   useEffect(() => {
@@ -159,7 +168,9 @@ export function HeroAIChat() {
   }, [messages])
 
   function handleAddToCart(product: ProductResult) {
-    addItem({
+    if (!cart) return
+
+    cart.addItem({
       productId: product.id,
       sku: product.sku,
       name: product.name,
@@ -188,10 +199,12 @@ export function HeroAIChat() {
   // Build action buttons from tool results
   const buildActions = (toolResults: Record<string, unknown>[] | undefined, products: ProductResult[]): AIAction[] => {
     if (products.length === 0) return []
-    return [
-      { type: 'add_to_cart', label: 'Add All to Cart', data: { products } },
-      { type: 'create_rfq', label: 'Create RFQ Draft', data: { products } },
-    ]
+    const actions: AIAction[] = []
+    if (canAddToCart) {
+      actions.push({ type: 'add_to_cart', label: 'Add All to Cart', data: { products } })
+    }
+    actions.push({ type: 'create_rfq', label: 'Create RFQ Draft', data: { products } })
+    return actions
   }
   
   // Update requirement sheet from tool results
@@ -503,6 +516,7 @@ export function HeroAIChat() {
                       key={product.sku}
                       product={product}
                       onAddToCart={handleAddToCart}
+                      canAddToCart={canAddToCart}
                     />
                   ))}
                 </div>

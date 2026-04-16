@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
-import { useCart } from '@/contexts/CartContext'
+import { useOptionalCart } from '@/contexts/CartContext'
 import { useAIAssistantVisibility } from '@/contexts/AIAssistantVisibilityContext'
 import { 
   generateSessionId, 
@@ -49,7 +49,15 @@ function extractProducts(toolResults?: Record<string, unknown>[]): ProductCard[]
   return []
 }
 
-function ProductCardItem({ product, onAddToCart }: { product: ProductCard; onAddToCart: (p: ProductCard) => void }) {
+function ProductCardItem({
+  product,
+  onAddToCart,
+  canAddToCart,
+}: {
+  product: ProductCard
+  onAddToCart: (p: ProductCard) => void
+  canAddToCart: boolean
+}) {
   const href = product.slug && product.categorySlug
     ? `/product/${product.categorySlug}/${product.slug}`
     : null
@@ -77,7 +85,7 @@ function ProductCardItem({ product, onAddToCart }: { product: ProductCard; onAdd
         )}
         <div className="mt-0.5 flex items-center justify-between">
           <span className="text-xs font-semibold text-secondary-900">{product.price}</span>
-          {product.rawPrice && product.rawPrice > 0 && (
+          {product.rawPrice && product.rawPrice > 0 && canAddToCart && (
             <button
               onClick={() => onAddToCart(product)}
               className="rounded bg-primary-700 px-2 py-0.5 text-[10px] font-medium text-white hover:bg-primary-800"
@@ -99,7 +107,8 @@ export function AIAssistant() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const conversationTrackerRef = useRef<ConversationTracker | null>(null)
-  const { addItem } = useCart()
+  const cart = useOptionalCart()
+  const canAddToCart = Boolean(cart)
   const { shouldHideFloatingButton } = useAIAssistantVisibility()
 
   // Hide both button and panel when hero chat is visible (unless panel is already open)
@@ -129,7 +138,9 @@ export function AIAssistant() {
   }, [messages])
 
   function handleAddToCart(product: ProductCard) {
-    addItem({
+    if (!cart) return
+
+    cart.addItem({
       productId: product.id,
       sku: product.sku,
       name: product.name,
@@ -273,6 +284,7 @@ export function AIAssistant() {
                         key={product.sku}
                         product={product}
                         onAddToCart={handleAddToCart}
+                        canAddToCart={canAddToCart}
                       />
                     ))}
                   </div>

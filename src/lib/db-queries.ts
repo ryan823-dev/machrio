@@ -223,42 +223,41 @@ export async function getL1CategoriesWithCounts(): Promise<Array<{
   productCount: number
 }>> {
   const pool = getGlobalPool()
-  
-  // 获取所有 L1 分类
-  const l1Result = await pool.query<DbCategory>(
-    'SELECT * FROM categories WHERE parent_id IS NULL ORDER BY display_order NULLS LAST, name'
-  )
-  
-  const result: Array<{
+
+  const result = await pool.query<{
     id: string
     name: string
     slug: string
     productCount: number
-  }> = []
-  
-  for (const cat of l1Result.rows) {
-    // 获取该 L1 下所有产品的总数
-    const childIds = await getCategoryAndDescendantIds(cat.id)
-    let count = 0
-    
-    if (childIds.length > 0) {
-      const countResult = await pool.query<{ count: string }>(
-        `SELECT COUNT(*) as count FROM products 
-         WHERE primary_category_id = ANY($1) AND status = 'published'`,
-        [childIds]
-      )
-      count = parseInt(countResult.rows[0].count)
-    }
-    
-    result.push({
-      id: cat.id,
-      name: cat.name,
-      slug: cat.slug,
-      productCount: count,
-    })
-  }
-  
-  return result
+  }>(
+    `WITH RECURSIVE l1_categories AS (
+       SELECT id, name, slug, display_order
+       FROM categories
+       WHERE parent_id IS NULL
+     ),
+     category_tree AS (
+       SELECT id AS root_id, id AS category_id
+       FROM l1_categories
+       UNION ALL
+       SELECT ct.root_id, c.id AS category_id
+       FROM categories c
+       INNER JOIN category_tree ct ON c.parent_id = ct.category_id
+     )
+     SELECT
+       l1.id,
+       l1.name,
+       l1.slug,
+       COALESCE(COUNT(p.id), 0)::int AS "productCount"
+     FROM l1_categories l1
+     LEFT JOIN category_tree ct ON ct.root_id = l1.id
+     LEFT JOIN products p
+       ON p.primary_category_id = ct.category_id
+      AND p.status = 'published'
+     GROUP BY l1.id, l1.name, l1.slug, l1.display_order
+     ORDER BY l1.display_order NULLS LAST, l1.name`
+  )
+
+  return result.rows
 }
 
 /**
