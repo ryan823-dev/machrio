@@ -1,10 +1,15 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createRFQSubmission } from '@/lib/db'
 import { sendRFQConfirmationEmail, sendRFQNotificationEmail } from '@/lib/email'
+import {
+  attachPartnerAttributionToRfq,
+  ensurePartnerProgramTables,
+} from '@/lib/partner-program'
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
+    await ensurePartnerProgramTables()
 
     // Honeypot check
     if (data.website_url) {
@@ -37,7 +42,7 @@ export async function POST(request: Request) {
 
     // Store in database
     try {
-      await createRFQSubmission({
+      const submission = await createRFQSubmission({
         customerName: data.name,
         customerEmail: data.email,
         customerPhone: data.phone,
@@ -45,6 +50,16 @@ export async function POST(request: Request) {
         message: fullMessage,
         sourcePage: data.sourcePage,
       })
+
+      if (submission?.id) {
+        await attachPartnerAttributionToRfq({
+          headers: request.headers,
+          rfqId: submission.id,
+          customerEmail: data.email,
+          customerCompany: data.company,
+          sourcePage: data.sourcePage,
+        })
+      }
     } catch (dbError) {
       console.error('Failed to store RFQ submission:', dbError)
       // Continue even if DB storage fails - email is more important

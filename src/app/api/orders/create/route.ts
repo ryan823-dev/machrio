@@ -5,6 +5,10 @@ import { sendOrderConfirmationEmail } from '@/lib/email'
 import { normalizePurchaseMode } from '@/lib/purchase-mode'
 import { calculateShipping } from '@/lib/shipping/calculator'
 import { createPayPalOrder, getPayPalApprovalUrl } from '@/lib/paypal'
+import {
+  attachPartnerAttributionToOrder,
+  ensurePartnerProgramTables,
+} from '@/lib/partner-program'
 
 const ALLOWED_CURRENCIES = new Set(['USD', 'HKD', 'EUR', 'GBP', 'CAD', 'CNY'])
 
@@ -112,6 +116,7 @@ export async function POST(req: NextRequest) {
       await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_customer_email ON orders(customer_email)`)
       await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)`)
       await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders(created_at)`)
+      await ensurePartnerProgramTables()
     } catch (tableError) {
       console.error('Error creating orders table:', tableError)
       // Continue anyway - table might already exist
@@ -434,6 +439,16 @@ export async function POST(req: NextRequest) {
        WHERE id = $2`,
       [JSON.stringify(paymentInfoUpdate), order.id]
     )
+
+    await attachPartnerAttributionToOrder({
+      headers: req.headers,
+      orderId: order.id,
+      orderNumber,
+      subtotal,
+      currency: orderCurrency,
+      orderStatus: 'pending',
+      paymentStatus: 'unpaid',
+    })
 
     // Send confirmation emails only after payment initialization succeeds
     sendOrderConfirmationEmail({

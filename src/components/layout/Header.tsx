@@ -51,6 +51,7 @@ const mainNav = [
   { label: 'New Arrivals', href: '/new-arrivals' },
   { label: 'Volume Pricing', href: '/deals' },
   { label: 'Knowledge Center', href: '/knowledge-center' },
+  { label: 'Partner Program', href: '/partner-program' },
   { label: 'Request a Quote', href: '/rfq' },
 ]
 

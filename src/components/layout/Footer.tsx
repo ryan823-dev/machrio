@@ -4,7 +4,7 @@ const footerLinks = {
   company: [
     { label: 'About Us', href: '/about' },
     { label: 'Contact Us', href: '/contact' },
-    { label: 'Write for Us', href: '/write-for-us' },
+    { label: 'Partner Program', href: '/partner-program' },
     { label: 'Clearance & Duties', href: '/clearance-duties' },
   ],
   industries: [
@@ -26,6 +26,7 @@ const footerLinks = {
     { label: 'Request a Quote', href: '/rfq' },
     { label: 'Browse Products', href: '/category' },
     { label: 'Knowledge Center', href: '/knowledge-center' },
+    { label: 'Partner Dashboard', href: '/partner/dashboard' },
   ],
   legal: [
     { label: 'Terms & Conditions', href: '/terms' },

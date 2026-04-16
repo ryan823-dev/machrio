@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { getOrderById, getPool } from '@/lib/db'
+import { syncPartnerCommissionForOrderId } from '@/lib/partner-program'
 
 function getStripe() {
   const key = process.env.STRIPE_SECRET_KEY
@@ -96,6 +97,8 @@ export async function POST(req: NextRequest) {
           ]
         )
 
+        await syncPartnerCommissionForOrderId(orderId)
+
         console.log(`Order ${orderNumber} marked as paid via Stripe Checkout Session`)
       } catch (err) {
         console.error(`Failed to update order ${orderNumber}:`, err)
@@ -158,6 +161,8 @@ export async function POST(req: NextRequest) {
             orderId
           ]
         )
+
+        await syncPartnerCommissionForOrderId(orderId)
 
         console.log(`Order ${orderNumber} marked as paid via Stripe PaymentIntent (embedded)`)
       } catch (err) {

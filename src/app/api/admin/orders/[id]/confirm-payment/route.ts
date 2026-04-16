@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { sendEmail } from '@/lib/email'
+import { syncPartnerCommissionForOrderId } from '@/lib/partner-program'
 
 export async function POST(
   req: NextRequest,
@@ -39,6 +40,8 @@ export async function POST(
         status: 'confirmed',
       },
     })
+
+    await syncPartnerCommissionForOrderId(id)
 
     const orderNumber = order.orderNumber as string
     const customer = order.customer as Record<string, unknown>

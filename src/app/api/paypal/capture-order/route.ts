@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPool, getOrderByNumber } from '@/lib/db'
 import { capturePayPalOrder, getPayPalOrder } from '@/lib/paypal'
 import { sendOrderConfirmationEmail } from '@/lib/email'
+import { syncPartnerCommissionForOrderId } from '@/lib/partner-program'
 
 function formatAmount(value: unknown): string {
   const numericValue = typeof value === 'number' ? value : Number(value)
@@ -123,6 +124,8 @@ export async function POST(req: NextRequest) {
         orderNumber
       ]
     )
+
+    await syncPartnerCommissionForOrderId(order.id)
 
     // Send payment confirmation email
     if (order.customer_email) {

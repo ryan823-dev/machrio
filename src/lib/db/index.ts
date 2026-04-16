@@ -677,24 +677,25 @@ export async function createRFQSubmission(data: {
   customerCompany: string
   message: string
   sourcePage?: string
-}): Promise<boolean> {
+}): Promise<{ id: string } | null> {
   const pool = getPool()
   try {
-    await pool.query(
+    const result = await pool.query(
       `INSERT INTO rfq_submissions (
         customer_name, customer_email, customer_phone, customer_company,
         message, source_page, status, submitted_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING id::text AS id`,
       [
         data.customerName, data.customerEmail, data.customerPhone || null,
         data.customerCompany, data.message, data.sourcePage || '/rfq',
         'new', new Date().toISOString()
       ]
     )
-    return true
+    return result.rows[0] || null
   } catch (error) {
     console.error('createRFQSubmission error:', error)
-    return false
+    return null
   }
 }
 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getPool } from '@/lib/db'
+import { createOrUpdatePartnerApplication } from '@/lib/partner-program'
 
 export const dynamic = 'force-dynamic'
 
@@ -31,31 +31,18 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    const pool = getPool()
-    
-    // Insert into database
-    const result = await pool.query(
-      `INSERT INTO content_partners (
-        name, email, website, expertise, topic, message, status
-      ) VALUES ($1, $2, $3, $4, $5, $6, 'pending')
-      RETURNING id, name, email, created_at`,
-      [
-        name,
-        email,
-        website || null,
-        expertise,
-        topic,
-        message || null,
-      ]
-    )
+    const partner = await createOrUpdatePartnerApplication({
+      name,
+      email,
+      website,
+      expertise,
+      topicPitch: topic,
+      message,
+    })
 
-    const partner = result.rows[0]
-
-    // TODO: Send email notification to admin and applicant
-    // For now, just log
     console.log('[Content Partner] New application:', {
       id: partner.id,
-      name: partner.name,
+      name: partner.full_name,
       email: partner.email,
       topic,
       expertise,
@@ -65,6 +52,7 @@ export async function POST(req: NextRequest) {
       success: true,
       message: 'Application submitted successfully! We will review your submission and get back to you within 3-5 business days.',
       partnerId: partner.id,
+      partnerCode: partner.partner_code,
     })
   } catch (error) {
     console.error('[Content Partner] Error:', error)
