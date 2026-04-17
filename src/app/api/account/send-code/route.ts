@@ -1,3 +1,4 @@
+import crypto from 'crypto'
 import { NextResponse } from 'next/server'
 import { getPool } from '@/lib/db'
 import { sendVerificationCodeEmail } from '@/lib/email'
@@ -48,23 +49,20 @@ export async function POST(request: Request) {
     // Generate 6-digit code
     const code = String(Math.floor(100000 + Math.random() * 900000))
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000).toISOString()
+    const verificationId = crypto.randomUUID()
 
     // Store in database
-    const insertResult = await pool.query(
+    await pool.query(
       `INSERT INTO verification_codes (id, email, code, expires_at, created_at)
-       VALUES (gen_random_uuid(), $1, $2, $3, NOW())
-       RETURNING id`,
-      [normalizedEmail, code, expiresAt]
+       VALUES ($1, $2, $3, $4, NOW())`,
+      [verificationId, normalizedEmail, code, expiresAt]
     )
-    const verificationId = insertResult.rows[0]?.id
 
     // Send email
     const emailResult = await sendVerificationCodeEmail(normalizedEmail, code)
 
     if (!emailResult.success) {
-      if (verificationId) {
-        await pool.query(`DELETE FROM verification_codes WHERE id = $1`, [verificationId])
-      }
+      await pool.query(`DELETE FROM verification_codes WHERE id = $1`, [verificationId])
 
       const isEmailServiceUnavailable = emailResult.error === 'Resend not configured'
 

@@ -31,7 +31,7 @@ export async function ensureAccountAuthTables() {
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS verification_codes (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      id UUID PRIMARY KEY,
       email TEXT NOT NULL,
       code TEXT NOT NULL,
       attempts INTEGER NOT NULL DEFAULT 0,
@@ -43,7 +43,7 @@ export async function ensureAccountAuthTables() {
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS account_sessions (
-      id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+      id UUID PRIMARY KEY,
       email TEXT NOT NULL,
       token TEXT UNIQUE,
       verification_code TEXT,
@@ -81,6 +81,7 @@ export async function ensureAccountAuthTables() {
 export async function createAccountSession(email: string): Promise<AccountSession> {
   await ensureAccountAuthTables()
 
+  const sessionId = crypto.randomUUID()
   const token = crypto.randomBytes(32).toString('hex')
   const normalizedEmail = normalizeEmail(email)
   const expiresAt = new Date(Date.now() + SESSION_TTL_MS).toISOString()
@@ -88,8 +89,8 @@ export async function createAccountSession(email: string): Promise<AccountSessio
 
   await pool.query(
     `INSERT INTO account_sessions (id, email, token, expires_at, created_at)
-     VALUES (gen_random_uuid(), $1, $2, $3, NOW())`,
-    [normalizedEmail, token, expiresAt],
+     VALUES ($1, $2, $3, $4, NOW())`,
+    [sessionId, normalizedEmail, token, expiresAt],
   )
 
   return {

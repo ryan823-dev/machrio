@@ -340,38 +340,28 @@ export async function sendContactNotificationEmail(data: ContactEmailData) {
 }
 
 export async function sendVerificationCodeEmail(email: string, code: string) {
-  if (!resend) {
-    console.warn('Resend not configured, skipping verification code email')
-    return
-  }
-
-  try {
-    await resend.emails.send({
-      from: FROM_EMAIL,
-      to: email,
-      subject: `Your Machrio verification code: ${code}`,
-      html: `
-        <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#1e293b">
-          <div style="background:#1a3c6e;padding:20px 24px;border-radius:8px 8px 0 0">
-            <h1 style="margin:0;color:#fff;font-size:20px">Mach<span style="color:#f59e0b">rio</span></h1>
-          </div>
-          <div style="padding:24px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 8px 8px">
-            <h2 style="margin:0 0 16px;color:#1e293b;font-size:18px">Your Verification Code</h2>
-            <p style="margin:0 0 16px;color:#475569">Use the code below to access your account:</p>
-            <div style="background:#f8fafc;border:2px solid #1a3c6e;border-radius:8px;padding:24px;margin:0 0 16px;text-align:center">
-              <span style="font-size:36px;font-weight:700;letter-spacing:8px;color:#1a3c6e">${code}</span>
-            </div>
-            <p style="margin:0 0 16px;color:#94a3b8;font-size:13px">This code expires in 5 minutes.</p>
-            <p style="margin:0;color:#94a3b8;font-size:12px">
-              If you didn&apos;t request this code, you can safely ignore this email.
-            </p>
-          </div>
+  return sendEmail({
+    to: email,
+    subject: `Your Machrio verification code: ${code}`,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#1e293b">
+        <div style="background:#1a3c6e;padding:20px 24px;border-radius:8px 8px 0 0">
+          <h1 style="margin:0;color:#fff;font-size:20px">Mach<span style="color:#f59e0b">rio</span></h1>
         </div>
-      `,
-    })
-  } catch (err) {
-    console.error('Failed to send verification code email:', err)
-  }
+        <div style="padding:24px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 8px 8px">
+          <h2 style="margin:0 0 16px;color:#1e293b;font-size:18px">Your Verification Code</h2>
+          <p style="margin:0 0 16px;color:#475569">Use the code below to access your account:</p>
+          <div style="background:#f8fafc;border:2px solid #1a3c6e;border-radius:8px;padding:24px;margin:0 0 16px;text-align:center">
+            <span style="font-size:36px;font-weight:700;letter-spacing:8px;color:#1a3c6e">${code}</span>
+          </div>
+          <p style="margin:0 0 16px;color:#94a3b8;font-size:13px">This code expires in 5 minutes.</p>
+          <p style="margin:0;color:#94a3b8;font-size:12px">
+            If you didn&apos;t request this code, you can safely ignore this email.
+          </p>
+        </div>
+      </div>
+    `,
+  })
 }
 
 // ==================== 外联邮件 (支持附件) ====================
