@@ -41,6 +41,11 @@ export interface ShippingCalculationResult {
   error?: string
 }
 
+function toNumber(value: unknown): number {
+  const parsed = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(parsed) ? parsed : 0
+}
+
 function addDays(date: Date, days: number): Date {
   const result = new Date(date)
   result.setDate(result.getDate() + days)
@@ -133,10 +138,10 @@ export async function calculateShipping(
         continue
       }
 
-      const baseWeight = rate.base_weight || 0
-      const baseRate = rate.base_rate || 0
-      const additionalRate = rate.additional_rate || 0
-      const handlingFee = rate.handling_fee || 0
+      const baseWeight = toNumber(rate.base_weight)
+      const baseRate = toNumber(rate.base_rate)
+      const additionalRate = toNumber(rate.additional_rate)
+      const handlingFee = toNumber(rate.handling_fee)
 
       const overageWeight = Math.max(0, totalWeight - baseWeight)
       const overageCost = overageWeight * additionalRate
@@ -156,7 +161,7 @@ export async function calculateShipping(
       )
 
       if (matchingRule) {
-        const threshold = matchingRule.minimum_amount
+        const threshold = toNumber(matchingRule.minimum_amount)
         freeShippingThreshold = threshold
         if (subtotal >= threshold) {
           isFreeShipping = true
