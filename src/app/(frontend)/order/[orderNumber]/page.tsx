@@ -1,8 +1,8 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { getOrderByNumber } from '@/lib/db'
 import { getOrderEventDescription, getOrderEventTitle, listOrderEvents } from '@/lib/order-events'
-import { authorizeOrderAccess } from '@/lib/order-access'
+import { authorizeOrderAccess, createOrderAccessToken } from '@/lib/order-access'
 import { buildInvoicePath, buildOrderPath } from '@/lib/order-access-links'
 import { isPayPalConfigured } from '@/lib/paypal'
 import { OrderPaymentFailureReporter } from '@/components/order/OrderPaymentFailureReporter'
@@ -21,7 +21,13 @@ function isStripeConfigured() {
 
 interface OrderPageProps {
   params: Promise<{ orderNumber: string }>
-  searchParams: Promise<{ payment?: string; access?: string | string[] }>
+  searchParams: Promise<{
+    payment?: string | string[]
+    access?: string | string[]
+    provider?: string | string[]
+    token?: string | string[]
+    PayerID?: string | string[]
+  }>
 }
 
 function toDisplayAmount(value: unknown): number {
@@ -29,18 +35,56 @@ function toDisplayAmount(value: unknown): number {
   return Number.isFinite(numericValue) ? numericValue : 0
 }
 
+function getQueryValue(value: string | string[] | undefined): string | undefined {
+  return Array.isArray(value) ? value[0] : value
+}
+
+function getStoredPayPalOrderId(order: NonNullable<Awaited<ReturnType<typeof getOrderByNumber>>>) {
+  const paymentInfo = (order.payment_info || {}) as {
+    paypalOrderId?: string
+    paypal?: {
+      paypalOrderId?: string
+    }
+  }
+
+  return paymentInfo.paypal?.paypalOrderId || paymentInfo.paypalOrderId
+}
+
 export default async function OrderConfirmationPage({ params, searchParams }: OrderPageProps) {
   const { orderNumber } = await params
-  const { payment, access } = await searchParams
+  const { payment, access, provider, token, PayerID } = await searchParams
   const order = await getOrderByNumber(orderNumber)
   if (!order) notFound()
   const canonicalOrderNumber = order.order_number
 
-  const accessToken = Array.isArray(access) ? access[0] : access
-  const accessResult = await authorizeOrderAccess({
+  let accessToken = getQueryValue(access)
+  const paymentState = getQueryValue(payment)
+  const paymentProvider = getQueryValue(provider)
+  const paypalReturnToken = getQueryValue(token)
+  const payerId = getQueryValue(PayerID)
+
+  let accessResult = await authorizeOrderAccess({
     order,
     accessToken,
   })
+
+  if (!accessResult && paymentProvider === 'paypal' && paypalReturnToken) {
+    const storedPayPalOrderId = getStoredPayPalOrderId(order)
+
+    if (storedPayPalOrderId === paypalReturnToken && order.customer_email) {
+      accessToken = (await createOrderAccessToken({
+        orderNumber: canonicalOrderNumber,
+        email: order.customer_email,
+      })).token
+
+      redirect(buildOrderPath(canonicalOrderNumber, accessToken, {
+        payment: paymentState,
+        provider: paymentProvider,
+        token: paypalReturnToken,
+        PayerID: payerId,
+      }))
+    }
+  }
 
   if (!accessResult) {
     return <OrderAccessRequired />
@@ -85,7 +129,7 @@ export default async function OrderConfirmationPage({ params, searchParams }: Or
   const canManageUnpaidPayment = !isPaid
     && Boolean(retryPaymentMethod)
     && availablePaymentMethods.length > 0
-  const paymentSuccess = payment === 'success'
+  const paymentSuccess = paymentState === 'success'
   const paymentMethodLabel = paymentMethod === 'paypal'
     ? 'PayPal'
     : isBankTransfer
@@ -112,7 +156,7 @@ export default async function OrderConfirmationPage({ params, searchParams }: Or
         </div>
       )}
 
-      {payment === 'cancelled' && (
+      {paymentState === 'cancelled' && (
         <div className="mb-6 rounded-lg bg-amber-50 border border-amber-200 p-4">
           <div className="flex items-center gap-2">
             <svg className="h-5 w-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -124,7 +168,7 @@ export default async function OrderConfirmationPage({ params, searchParams }: Or
         </div>
       )}
 
-      {payment === 'processing' && (
+      {paymentState === 'processing' && (
         <div className="mb-6 rounded-lg bg-blue-50 border border-blue-200 p-4">
           <div className="flex items-center gap-2">
             <svg className="h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
