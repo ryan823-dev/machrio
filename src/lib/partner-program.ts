@@ -201,9 +201,18 @@ function hashValue(value: string): string | null {
 
 function getSessionToken(headers: Headers): string | null {
   const authHeader = headers.get('authorization')
-  if (!authHeader?.startsWith('Bearer ')) return null
-  const token = authHeader.slice(7)
-  return token.length === 64 ? token : null
+  if (authHeader?.startsWith('Bearer ')) {
+    const bearerToken = authHeader.slice(7)
+    if (bearerToken.length === 64) return bearerToken
+  }
+
+  const cookieHeader = headers.get('cookie')
+  if (!cookieHeader) return null
+
+  const cookieMatch = cookieHeader.match(/(?:^|;\s*)machrio_account_session=([^;]+)/)
+  const cookieToken = cookieMatch?.[1]
+
+  return cookieToken && cookieToken.length === 64 ? cookieToken : null
 }
 
 function normalizeExternalUrl(value?: string | null): string | null {
@@ -1323,10 +1332,10 @@ export async function attachPartnerAttributionToOrder(input: {
   orderStatus: string
   paymentStatus: string
 }): Promise<void> {
-  await ensurePartnerProgramTables()
-
   const attribution = getPartnerAttributionFromHeaders(input.headers)
   if (!attribution) return
+
+  await ensurePartnerProgramTables()
 
   const pool = getPool()
   const commissionAmount = roundCurrency(input.subtotal * PARTNER_COMMISSION_RATE)

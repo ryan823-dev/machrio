@@ -4,6 +4,9 @@ import config from '@payload-config'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { v4 as uuidv4 } from 'uuid'
+import { getOrderByNumber } from '@/lib/db'
+import { authorizeOrderAccess } from '@/lib/order-access'
+import { recordOrderEvent } from '@/lib/order-events'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,6 +29,28 @@ export async function POST(
   const { orderNumber } = await params
 
   try {
+    const orderRecord = await getOrderByNumber(orderNumber)
+    if (!orderRecord) {
+      return NextResponse.json(
+        { error: 'Order not found' },
+        { status: 404 },
+      )
+    }
+
+    const hasAccess = await authorizeOrderAccess({
+      order: orderRecord,
+      request: req,
+      accessToken: req.nextUrl.searchParams.get('access'),
+      allowedPurposes: ['order-access', 'receipt-upload'],
+    })
+
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 403 },
+      )
+    }
+
     const formData = await req.formData()
     const file = formData.get('receipt') as File
 
@@ -61,11 +86,12 @@ export async function POST(
     }
 
     const payload = await getPayload({ config })
+    const canonicalOrderNumber = orderRecord.order_number
 
     // Get the order
     const orderResult = await payload.find({
       collection: 'orders',
-      where: { orderNumber: { equals: orderNumber } },
+      where: { orderNumber: { equals: canonicalOrderNumber } },
       limit: 1,
     })
 
@@ -90,7 +116,7 @@ export async function POST(
     const fileExtension = file.type === 'application/pdf' ? 'pdf' : 
                          file.type === 'image/png' ? 'png' :
                          file.type === 'image/gif' ? 'gif' : 'jpg'
-    const filename = `receipt-${orderNumber}-${uuidv4()}.${fileExtension}`
+    const filename = `receipt-${canonicalOrderNumber}-${uuidv4()}.${fileExtension}`
     const filepath = join(uploadDir, filename)
 
     // Save file
@@ -101,7 +127,7 @@ export async function POST(
       collection: 'payment-receipts',
       data: {
         filename: filename,
-        orderNumber: orderNumber,
+        orderNumber: canonicalOrderNumber,
         orderId: order.id,
         uploadedBy: (order.customer as Record<string, unknown>)?.email as string || 'unknown',
         fileSize: file.size,
@@ -122,6 +148,18 @@ export async function POST(
           receiptUploadDate: new Date().toISOString(),
         },
       },
+    })
+
+    await recordOrderEvent({
+      orderNumber: canonicalOrderNumber,
+      orderId: orderRecord.id,
+      type: 'receipt.uploaded',
+      data: {
+        filename,
+        fileType: file.type,
+      },
+    }).catch((orderEventError) => {
+      console.error(`Failed to record receipt upload event for order ${canonicalOrderNumber}:`, orderEventError)
     })
 
     return NextResponse.json({

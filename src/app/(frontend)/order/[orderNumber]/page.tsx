@@ -1,22 +1,49 @@
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { getOrderByNumber } from '@/lib/db'
+import { getOrderEventDescription, getOrderEventTitle, listOrderEvents } from '@/lib/order-events'
+import { authorizeOrderAccess } from '@/lib/order-access'
+import { buildInvoicePath, buildOrderPath } from '@/lib/order-access-links'
+import { isPayPalConfigured } from '@/lib/paypal'
+import { OrderPaymentFailureReporter } from '@/components/order/OrderPaymentFailureReporter'
 import { PayPalCaptureHandler } from '@/components/payment/PayPalCaptureHandler'
 import { StripeReturnHandler } from '@/components/payment/StripeReturnHandler'
+import { OrderAccessRequired } from '@/components/order/OrderAccessRequired'
+import { OrderPaymentRetry } from '@/components/order/OrderPaymentRetry'
 import { PaymentReceiptUpload } from '@/components/order/PaymentReceiptUpload'
 
 export const dynamic = 'force-dynamic'
 
 interface OrderPageProps {
   params: Promise<{ orderNumber: string }>
-  searchParams: Promise<{ payment?: string }>
+  searchParams: Promise<{ payment?: string; access?: string | string[] }>
+}
+
+function toDisplayAmount(value: unknown): number {
+  const numericValue = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(numericValue) ? numericValue : 0
 }
 
 export default async function OrderConfirmationPage({ params, searchParams }: OrderPageProps) {
   const { orderNumber } = await params
-  const { payment } = await searchParams
+  const { payment, access } = await searchParams
   const order = await getOrderByNumber(orderNumber)
   if (!order) notFound()
+  const canonicalOrderNumber = order.order_number
+
+  const accessToken = Array.isArray(access) ? access[0] : access
+  const accessResult = await authorizeOrderAccess({
+    order,
+    accessToken,
+  })
+
+  if (!accessResult) {
+    return <OrderAccessRequired />
+  }
+
+  const orderPath = buildOrderPath(canonicalOrderNumber, accessResult.via === 'token' ? accessToken : undefined)
+  const invoicePath = buildInvoicePath(canonicalOrderNumber, accessResult.via === 'token' ? accessToken : undefined)
+  const orderEvents = await listOrderEvents(canonicalOrderNumber)
 
   const customer = {
     name: order.customer_name,
@@ -31,12 +58,22 @@ export default async function OrderConfirmationPage({ params, searchParams }: Or
     stripe?: unknown
   }
   const items = (order.items as Record<string, unknown>[]) || []
+  const subtotalAmount = toDisplayAmount(order.subtotal)
+  const shippingAmount = toDisplayAmount(order.shipping_cost)
+  const totalAmount = toDisplayAmount(order.total)
   const paymentMethod = order.payment_method
     || paymentInfo.method
     || (paymentInfo.paypal ? 'paypal' : paymentInfo.stripe ? 'stripe' : 'bank-transfer')
   const currency = order.currency || 'USD'
+  const paypalAvailable = isPayPalConfigured()
   const isBankTransfer = paymentMethod === 'bank-transfer'
   const isPaid = order.payment_status === 'paid'
+  const retryPaymentMethod = paymentMethod === 'stripe' || paymentMethod === 'paypal'
+    ? paymentMethod
+    : null
+  const canRetryOnlinePayment = !isPaid
+    && Boolean(retryPaymentMethod)
+    && (retryPaymentMethod !== 'paypal' || paypalAvailable)
   const paymentSuccess = payment === 'success'
   const paymentMethodLabel = paymentMethod === 'paypal'
     ? 'PayPal'
@@ -47,8 +84,9 @@ export default async function OrderConfirmationPage({ params, searchParams }: Or
   return (
     <div className="container-main py-8">
       {/* PayPal Capture Handler */}
-      <PayPalCaptureHandler orderNumber={orderNumber} />
-      <StripeReturnHandler orderNumber={orderNumber} />
+      <PayPalCaptureHandler orderNumber={canonicalOrderNumber} accessToken={accessResult.via === 'token' ? accessToken : undefined} />
+      <OrderPaymentFailureReporter orderNumber={canonicalOrderNumber} accessToken={accessResult.via === 'token' ? accessToken : undefined} />
+      <StripeReturnHandler orderPath={orderPath} />
       
       {/* Status banner */}
       {paymentSuccess && paymentMethod !== 'paypal' && (
@@ -91,7 +129,7 @@ export default async function OrderConfirmationPage({ params, searchParams }: Or
         <div>
           <h1 className="text-2xl font-bold text-secondary-900">Order Confirmation</h1>
           <p className="mt-1 text-secondary-500">
-            Order <span className="font-mono font-semibold text-secondary-800">{orderNumber}</span>
+            Order <span className="font-mono font-semibold text-secondary-800">{canonicalOrderNumber}</span>
           </p>
         </div>
         <div className="flex gap-2">
@@ -124,22 +162,22 @@ export default async function OrderConfirmationPage({ params, searchParams }: Or
                     <p className="font-medium text-secondary-800">{item.productName as string}</p>
                     <p className="text-xs text-secondary-500">SKU: {item.sku as string} | Qty: {item.quantity as number}</p>
                   </div>
-                  <span className="font-semibold text-secondary-800">${(item.lineTotal as number).toFixed(2)}</span>
+                  <span className="font-semibold text-secondary-800">${toDisplayAmount(item.lineTotal).toFixed(2)}</span>
                 </div>
               ))}
             </div>
             <div className="mt-4 border-t border-secondary-200 pt-4 space-y-1 text-sm">
               <div className="flex justify-between text-secondary-600">
                 <span>Subtotal</span>
-                <span>${order.subtotal.toFixed(2)}</span>
+                <span>${subtotalAmount.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-secondary-600">
                 <span>Shipping</span>
-                <span>{order.shipping_cost === 0 ? 'FREE' : `$${order.shipping_cost.toFixed(2)}`}</span>
+                <span>{shippingAmount === 0 ? 'FREE' : `$${shippingAmount.toFixed(2)}`}</span>
               </div>
               <div className="flex justify-between font-bold text-secondary-900 pt-1 border-t border-secondary-100">
                 <span>Total</span>
-                <span>${order.total.toFixed(2)} {currency}</span>
+                <span>${totalAmount.toFixed(2)} {currency}</span>
               </div>
             </div>
           </section>
@@ -154,6 +192,42 @@ export default async function OrderConfirmationPage({ params, searchParams }: Or
               <p>{shipping.city as string}, {shipping.state as string} {shipping.postalCode as string}</p>
               <p>{shipping.country as string}</p>
             </div>
+          </section>
+
+          <section className="rounded-lg border border-secondary-200 bg-white p-6">
+            <h2 className="text-lg font-bold text-secondary-900">Order Timeline</h2>
+            {orderEvents.length === 0 ? (
+              <p className="mt-3 text-sm text-secondary-500">
+                Timeline updates will appear here as payment and fulfillment events happen.
+              </p>
+            ) : (
+              <div className="mt-4 space-y-4">
+                {orderEvents.map((event, index) => (
+                  <div key={event.id} className="relative pl-6">
+                    <span className="absolute left-0 top-1.5 h-2.5 w-2.5 rounded-full bg-primary-600" />
+                    {index < orderEvents.length - 1 && (
+                      <span className="absolute left-[4px] top-4 h-[calc(100%+0.75rem)] w-px bg-secondary-200" />
+                    )}
+                    <div className="flex flex-col gap-1">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <p className="text-sm font-semibold text-secondary-900">
+                          {getOrderEventTitle(event.event_type)}
+                        </p>
+                        <p className="text-xs text-secondary-500">
+                          {new Date(event.created_at).toLocaleString('en-US', {
+                            dateStyle: 'medium',
+                            timeStyle: 'short',
+                          })}
+                        </p>
+                      </div>
+                      <p className="text-sm text-secondary-600">
+                        {getOrderEventDescription(event)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </section>
         </div>
 
@@ -174,10 +248,22 @@ export default async function OrderConfirmationPage({ params, searchParams }: Or
 
           {/* Actions */}
           <section className="rounded-lg border border-secondary-200 bg-white p-6 space-y-3">
+            {canRetryOnlinePayment && (
+              <OrderPaymentRetry
+                orderId={order.id}
+                orderNumber={canonicalOrderNumber}
+                orderPath={orderPath}
+                accessToken={accessResult.via === 'token' ? accessToken : undefined}
+                paymentMethod={retryPaymentMethod!}
+                amount={totalAmount}
+                currency={currency}
+              />
+            )}
+
             {isBankTransfer && !isPaid && (
               <>
                 <Link
-                  href={`/order/${orderNumber}/invoice`}
+                  href={invoicePath}
                   className="btn-accent w-full text-center block"
                 >
                   View Proforma Invoice
@@ -185,10 +271,14 @@ export default async function OrderConfirmationPage({ params, searchParams }: Or
                 
                 {/* Payment Receipt Upload */}
                 <div className="pt-3 border-t border-secondary-200">
-                  <PaymentReceiptUpload orderNumber={orderNumber} />
+                  <PaymentReceiptUpload
+                    orderNumber={canonicalOrderNumber}
+                    accessToken={accessResult.via === 'token' ? accessToken : undefined}
+                  />
                 </div>
               </>
             )}
+
             {!isBankTransfer && (
               <Link href="/category" className="btn-secondary w-full text-center block">
                 Continue Shopping

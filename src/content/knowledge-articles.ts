@@ -23,6 +23,7 @@ export interface KnowledgeArticle {
   featuredImage?: string | null
   readingTime?: number
   source?: 'builtin' | 'database'
+  relatedCategorySlugs?: string[]
 }
 
 type TextSegment = string | { text: string; bold?: boolean }
@@ -407,6 +408,449 @@ export const builtinKnowledgeArticles: KnowledgeArticle[] = [
       ]),
       paragraph(
         'The best route is the one that matches the business need behind the purchase, not just the delivery promise shown on the first screen.'
+      )
+    ),
+    source: 'builtin',
+  },
+  {
+    id: 'builtin-how-to-choose-lockout-tagout-kits-buying-guide',
+    title: 'How to Choose Lockout Tagout Kits for Real Facility Workflows',
+    slug: 'how-to-choose-lockout-tagout-kits-buying-guide',
+    excerpt:
+      'Choose lockout tagout kits by energy source, crew size, lock ownership model, device mix, and OSHA 1910.147 workflow instead of buying a generic assortment.',
+    category: 'buying-guide',
+    tags: ['lockout tagout', 'loto kits', 'osha 1910.147', 'lockout padlocks', 'buying guide'],
+    author: 'Machrio Team',
+    status: 'published',
+    publishedAt: '2026-04-15T02:00:00.000Z',
+    createdAt: '2026-04-15T02:00:00.000Z',
+    updatedAt: '2026-04-15T02:00:00.000Z',
+    metaTitle: 'How to Choose Lockout Tagout Kits | Machrio',
+    metaDescription:
+      'Compare lockout tagout kits by energy source, device mix, group lockout needs, and OSHA 1910.147 workflow before you buy.',
+    quickAnswer:
+      'The right lockout tagout kit depends on the isolation points in the facility, the number of authorized users, and whether the program is personal lock ownership, group lockout, or a mixed rollout.',
+    faq: [
+      {
+        question: 'What should a buyer check before ordering a lockout tagout kit?',
+        answer:
+          'Start with the actual energy sources on site, then confirm how many authorized users the kit must support, which lockout device families are required, and whether padlocks, hasps, tags, and lock boxes need to be standardized together.',
+      },
+      {
+        question: 'When is a premade LOTO kit enough and when is a custom kit better?',
+        answer:
+          'A premade kit works when the equipment mix is narrow and the procedure is already standardized. A custom kit is better when the facility uses several isolation types or is rolling out one program across multiple departments.',
+      },
+      {
+        question: 'Do lockout tagout kits need to match an existing padlock policy?',
+        answer:
+          'Yes. Keying policy, shackle size, color coding, and label format should all match the facility program so the kit supports the actual procedure instead of introducing new exceptions.',
+      },
+    ],
+    relatedCategorySlugs: ['lockout-tagout', 'lockout-padlocks', 'valve-lockout-devices', 'electrical-lockout-devices'],
+    content: richText(
+      paragraph(
+        'Buyers usually discover lockout tagout kits through a broad search, but the purchase decision is rarely broad. A real LOTO kit has to match the energy sources on site, the number of users involved, and the way the facility assigns lock ownership during maintenance.'
+      ),
+      paragraph(
+        'That is why the best first step is not comparing kit price. It is mapping the isolation workflow. Once that is clear, the correct kit structure becomes much easier to define.'
+      ),
+      heading('h2', 'Start with the Isolation Points'),
+      paragraph(
+        'A useful lockout tagout kit should reflect the actual mix of electrical breakers, plugs, valves, pneumatic isolation points, and group lockout procedures in the plant. Buyers who skip this step often end up with a kit that looks complete on paper but cannot lock out the equipment that matters most.'
+      ),
+      heading('h2', 'What a Strong LOTO Kit Usually Includes'),
+      bulletList([
+        'Lockout padlocks sized to the site keying and color-coding policy',
+        'Hasps for shared lock ownership and group isolation',
+        'Device-specific lockouts for breakers, plugs, and valves',
+        'Tags or label materials that match the written procedure',
+        'A bag, box, or cabinet format that fits how technicians actually work',
+      ]),
+      heading('h2', 'Choose the Kit by Workflow, Not by SKU Count'),
+      paragraph(
+        'A 30-piece kit is not automatically better than a 12-piece kit. If most of the extra items do not match the installed isolation points, they only create clutter. Buyers should compare kits by how cleanly they support the maintenance workflow, not by how many miscellaneous pieces are packed inside.'
+      ),
+      paragraph(
+        'This matters even more for contractor shutdowns and group lockout situations, where padlocks, hasps, tags, and lock boxes need to work together rather than being bought as isolated line items.'
+      ),
+      heading('h2', 'When to Use RFQ'),
+      paragraph(
+        'RFQ is the better path when a site is standardizing several departments, replacing mixed legacy devices, or needs help aligning keyed-alike versus keyed-different padlocks to the written policy. In those cases the real risk is not unit price. It is buying a kit that does not support the procedure consistently.'
+      )
+    ),
+    source: 'builtin',
+  },
+  {
+    id: 'builtin-how-to-choose-respiratory-protection-buying-guide',
+    title: 'How to Choose Respiratory Protection by Hazard, APF, and Fit',
+    slug: 'how-to-choose-respiratory-protection-buying-guide',
+    excerpt:
+      'Compare respiratory protection by hazard type, respirator class, APF, cartridge family, and fit-testing requirements before you buy.',
+    category: 'buying-guide',
+    tags: ['respiratory protection', 'respirator buying guide', 'apf', 'fit testing', 'niosh'],
+    author: 'Machrio Team',
+    status: 'published',
+    publishedAt: '2026-04-15T01:00:00.000Z',
+    createdAt: '2026-04-15T01:00:00.000Z',
+    updatedAt: '2026-04-15T01:00:00.000Z',
+    metaTitle: 'How to Choose Respiratory Protection | Machrio',
+    metaDescription:
+      'Use hazard type, APF, fit, and cartridge compatibility to compare respiratory protection for industrial buying and compliance.',
+    quickAnswer:
+      'Respiratory protection should be chosen by contaminant type, required protection factor, respirator class, and fit, because filter efficiency alone does not solve the exposure problem.',
+    faq: [
+      {
+        question: 'What should buyers compare first when sourcing respiratory protection?',
+        answer:
+          'Start with the contaminant and exposure level. That determines whether you are comparing disposable respirators, elastomeric half-face units, full-face respirators, PAPRs, or supplied-air systems.',
+      },
+      {
+        question: 'Why does fit matter as much as the filter rating?',
+        answer:
+          'A high-performing filter does not help if the face seal leaks. Fit, size range, and fit-testing support are core buying criteria for any tight-fitting respirator.',
+      },
+      {
+        question: 'When is RFQ the better path for respiratory protection?',
+        answer:
+          'Use RFQ when hazards are mixed, the site is standardizing a respiratory program, or the order needs help choosing cartridges, accessories, and fit-testing support together.',
+      },
+    ],
+    relatedCategorySlugs: ['respiratory-protection', 'respirator-fit-testing'],
+    content: richText(
+      paragraph(
+        'Respiratory protection is often treated like a product search when it is really a decision process. Buyers are not just choosing a mask. They are choosing a protection method that must match the contaminant, the exposure level, the work pattern, and the user fit requirements.'
+      ),
+      heading('h2', 'Begin with the Hazard'),
+      paragraph(
+        'Particulates, welding fumes, solvent vapors, mixed chemical hazards, and oxygen-deficient spaces do not belong in the same product shortlist. The hazard determines the respirator class first, then the filter or cartridge family second.'
+      ),
+      heading('h2', 'Compare the Respirator Class Before the Brand'),
+      bulletList([
+        'Disposable filtering facepieces for lower-complexity particulate jobs',
+        'Half-face respirators for repeat use with interchangeable cartridges',
+        'Full-face respirators when eye protection and stronger sealing matter',
+        'PAPRs when comfort, higher protection, or longer shifts change the buying decision',
+      ]),
+      heading('h2', 'Use APF and Fit to Narrow the Real Options'),
+      paragraph(
+        'Assigned Protection Factor and fit-testing requirements are what move the decision from a broad search into a compliant shortlist. Buyers who compare respirators only by price often miss the fact that the wrong facepiece class fails before cartridge performance even becomes relevant.'
+      ),
+      heading('h2', 'Do Not Separate the Cartridge Decision from the Facepiece Decision'),
+      paragraph(
+        'A respirator program usually succeeds or fails on compatibility details: cartridge family, replacement workflow, accessory availability, training, and whether the chosen facepiece integrates with safety glasses, hearing protection, or welding PPE.'
+      ),
+      heading('h2', 'When to Ask for Help'),
+      paragraph(
+        'RFQ or application support is the right next step when the site is standardizing across several crews, comparing several hazard types, or trying to balance direct checkout with program-level compliance needs.'
+      )
+    ),
+    source: 'builtin',
+  },
+  {
+    id: 'builtin-how-to-choose-respirator-for-your-job',
+    title: 'How to Choose the Right Respirator for Your Job',
+    slug: 'how-to-choose-respirator-for-your-job',
+    excerpt:
+      'Match the respirator to the job by looking at dust, fumes, vapors, shift length, comfort, and the surrounding PPE stack before you buy.',
+    category: 'how-to',
+    tags: ['choose respirator', 'jobsite respirator', 'respiratory protection', 'ppe'],
+    author: 'Machrio Team',
+    status: 'published',
+    publishedAt: '2026-04-15T00:30:00.000Z',
+    createdAt: '2026-04-15T00:30:00.000Z',
+    updatedAt: '2026-04-15T00:30:00.000Z',
+    metaTitle: 'How to Choose the Right Respirator for Your Job | Machrio',
+    metaDescription:
+      'Use job hazard, APF, filter type, fit, and shift comfort to choose the right respirator for industrial work.',
+    quickAnswer:
+      'The right respirator for the job depends on the specific hazard and work pattern, not just the industry label. Dust, fumes, vapors, and long-shift use all change the best choice.',
+    faq: [
+      {
+        question: 'Can one respirator work for every job in the same facility?',
+        answer:
+          'Sometimes, but only if the hazards and required protection factors are similar. Many sites need several respirator families because welding, painting, grinding, and chemical handling do not create the same exposure profile.',
+      },
+      {
+        question: 'When should a buyer move from disposable respirators to reusable respirators?',
+        answer:
+          'Reusable respirators make more sense when the job is frequent, the hazard is more complex, or cartridge flexibility and long-shift comfort matter more than the lowest unit cost.',
+      },
+      {
+        question: 'What is the biggest buying mistake with job-specific respirator selection?',
+        answer:
+          'Treating a respirator like a generic PPE item instead of a hazard-specific control. That usually leads to the wrong class, the wrong cartridge family, or poor user acceptance.',
+      },
+    ],
+    relatedCategorySlugs: ['respiratory-protection', 'respirator-fit-testing'],
+    content: richText(
+      paragraph(
+        'Choosing a respirator by job title alone is risky because the same job can create different exposures depending on the process, material, and environment. A better method is to start with what the worker is breathing, then compare the respirator options that actually solve that hazard.'
+      ),
+      heading('h2', 'Dust and Silica Work'),
+      paragraph(
+        'Grinding, cutting, sanding, and demolition often begin as particulate protection decisions. In these jobs buyers should focus on filter class, fit, and whether the mask will still be worn correctly after several hours of physical work.'
+      ),
+      heading('h2', 'Welding, Painting, and Mixed-Shop Work'),
+      paragraph(
+        'As soon as fumes or vapors enter the picture, the shortlist changes. Buyers usually need to compare reusable facepieces, cartridge systems, and whether the respirator still works alongside eye, face, or hearing protection already used in the task.'
+      ),
+      heading('h2', 'Chemical Handling and Process Work'),
+      paragraph(
+        'Chemical tasks should be matched against the relevant cartridge family and site procedure, not guessed from the product label. The substance, concentration, duration, and replacement plan all matter before the respirator can be approved for the work.'
+      ),
+      heading('h2', 'A Practical Decision Rule'),
+      bulletList([
+        'Start with the hazard, not the product style',
+        'Check the required protection factor and face-seal needs',
+        'Confirm filter or cartridge availability for repeat use',
+        'Evaluate comfort and PPE compatibility for the actual shift',
+      ]),
+      paragraph(
+        'When buyers follow that order, respirator selection becomes much clearer and the shortlist moves from generic PPE browsing into products that fit the real work.'
+      )
+    ),
+    source: 'builtin',
+  },
+  {
+    id: 'builtin-how-to-choose-hot-melt-adhesives-for-packaging-assembly-and-rework',
+    title: 'How to Choose Hot Melt Adhesives for Packaging, Assembly, and Rework',
+    slug: 'how-to-choose-hot-melt-adhesives-for-packaging-assembly-and-rework',
+    excerpt:
+      'Choose hot melt adhesives by substrate pair, open time, application temperature, viscosity, and line speed instead of comparing glue sticks by price alone.',
+    category: 'buying-guide',
+    tags: ['hot melt adhesives', 'glue sticks', 'packaging adhesives', 'assembly adhesives'],
+    author: 'Machrio Team',
+    status: 'published',
+    publishedAt: '2026-04-14T03:00:00.000Z',
+    createdAt: '2026-04-14T03:00:00.000Z',
+    updatedAt: '2026-04-14T03:00:00.000Z',
+    metaTitle: 'How to Choose Hot Melt Adhesives | Machrio',
+    metaDescription:
+      'Compare hot melt adhesives by substrate, open time, temperature, viscosity, and applicator fit for packaging and assembly work.',
+    quickAnswer:
+      'The right hot melt adhesive depends on substrate compatibility, open time, application temperature, and how the adhesive behaves at the actual line speed.',
+    faq: [
+      {
+        question: 'What should buyers compare first when sourcing hot melt adhesives?',
+        answer:
+          'Start with the substrate pair and service environment, then compare open time, set speed, viscosity, and applicator compatibility. Those checks prevent most line-fit problems.',
+      },
+      {
+        question: 'Why is open time so important for hot melt adhesive selection?',
+        answer:
+          'Because open time determines whether operators can place and align parts before the adhesive sets. A formulation that is too fast or too slow creates rework even if the bond is technically strong enough.',
+      },
+      {
+        question: 'When is RFQ the better path for hot melt adhesives?',
+        answer:
+          'Use RFQ for repeat-volume packaging lines, multiple substrate types, or any case where process fit matters more than the lowest one-time unit price.',
+      },
+    ],
+    relatedCategorySlugs: ['hot-melt-adhesives', 'construction-adhesives', 'caulks-and-sealants'],
+    content: richText(
+      paragraph(
+        'Hot melt adhesives are often bought too late in the decision process, after the applicator is already chosen and the line is already tuned. In reality, the adhesive itself is a process variable, and buyers get better results when they compare chemistry, open time, and viscosity before the first carton or assembly part reaches the station.'
+      ),
+      heading('h2', 'Start with the Substrate Pair'),
+      paragraph(
+        'Paperboard, corrugate, foam, plastic, wood, and mixed-material assemblies do not behave the same way under heat and pressure. A hot melt adhesive that performs well in carton closing may be the wrong choice for light assembly or maintenance bonding.'
+      ),
+      heading('h2', 'Open Time and Set Speed Drive Real Throughput'),
+      paragraph(
+        'If operators need extra alignment time, a very fast adhesive can create defects. If the product must move immediately, an adhesive with too much open time can create shifting and weak placement. That is why line speed and handling time should be part of the buying brief.'
+      ),
+      heading('h2', 'Check Applicator and Format Compatibility'),
+      bulletList([
+        'Glue-stick diameter and length',
+        'Application temperature range',
+        'Viscosity and bead-control behavior',
+        'Expected daily consumption and replenishment format',
+      ]),
+      heading('h2', 'Buy for Process Fit, Not Just Unit Cost'),
+      paragraph(
+        'The cheapest glue stick is expensive if it strings excessively, clogs the gun, or drives rework on the line. Industrial buyers usually get better economics by purchasing the adhesive that fits the process cleanly and reduces waste downstream.'
+      )
+    ),
+    source: 'builtin',
+  },
+  {
+    id: 'builtin-how-to-buy-plastic-perforated-sheets-for-guards-panels-and-fabrication',
+    title: 'How to Buy Plastic Perforated Sheets for Guards, Panels, and Fabrication',
+    slug: 'how-to-buy-plastic-perforated-sheets-for-guards-panels-and-fabrication',
+    excerpt:
+      'Compare plastic perforated sheets by resin, thickness, hole pattern, open area, and fabrication needs before you request a quote.',
+    category: 'buying-guide',
+    tags: ['plastic perforated sheets', 'perforated plastic', 'machine guards', 'fabrication materials'],
+    author: 'Machrio Team',
+    status: 'published',
+    publishedAt: '2026-04-14T02:30:00.000Z',
+    createdAt: '2026-04-14T02:30:00.000Z',
+    updatedAt: '2026-04-14T02:30:00.000Z',
+    metaTitle: 'How to Buy Plastic Perforated Sheets | Machrio',
+    metaDescription:
+      'Use resin, thickness, open area, hole pattern, and fabrication requirements to compare plastic perforated sheets.',
+    quickAnswer:
+      'Plastic perforated sheets should be chosen by resin performance and the functional role of the perforation pattern, not by sheet size alone.',
+    faq: [
+      {
+        question: 'What specs matter most when buying plastic perforated sheets?',
+        answer:
+          'Resin, thickness, hole pattern, open area, sheet size, and service environment are the main checkpoints because they affect stiffness, airflow, drainage, fabrication, and durability.',
+      },
+      {
+        question: 'Why does open area matter for perforated sheet selection?',
+        answer:
+          'Open area changes airflow, visibility, drainage, and structural feel. Buyers should treat it as a functional specification rather than a cosmetic detail.',
+      },
+      {
+        question: 'When should a buyer use RFQ for perforated sheets?',
+        answer:
+          'RFQ is best for cut-to-size work, repeated fabrication runs, unusual resin requirements, or projects where freight and packaging materially affect total cost.',
+      },
+    ],
+    relatedCategorySlugs: ['plastic-perforated-sheets'],
+    content: richText(
+      paragraph(
+        'Plastic perforated sheets can look similar in a grid or spec table, but their real performance depends on a few choices that buyers should define early: resin, thickness, perforation pattern, open area, and how the sheet will be fabricated after purchase.'
+      ),
+      heading('h2', 'Choose the Resin Before the Pattern'),
+      paragraph(
+        'Impact resistance, chemical exposure, washdown conditions, UV exposure, and food-contact proximity all influence resin choice. Buyers who start with hole pattern but skip the environment often receive a sheet that machines well but fails in service.'
+      ),
+      heading('h2', 'Pattern and Open Area Are Functional Specs'),
+      paragraph(
+        'Perforation pattern affects airflow, drainage, stiffness, weight, and sightlines. That means the hole design should be selected against the job: guarding, panel infill, ventilation, display, or light process separation.'
+      ),
+      heading('h2', 'Define the Fabrication Workflow'),
+      bulletList([
+        'Required sheet dimensions and thickness',
+        'Whether the sheets will be cut, bent, drilled, or framed',
+        'Tolerance requirements for repeated builds',
+        'Indoor, outdoor, washdown, or chemical exposure conditions',
+      ]),
+      paragraph(
+        'The more clearly those inputs are written into the RFQ, the easier it becomes to compare sheet options that are commercially realistic instead of only dimensionally close.'
+      )
+    ),
+    source: 'builtin',
+  },
+  {
+    id: 'builtin-how-to-specify-shaft-grounding-rings-for-vfd-motors',
+    title: 'How to Specify Shaft Grounding Rings for VFD Motors',
+    slug: 'how-to-specify-shaft-grounding-rings-for-vfd-motors',
+    excerpt:
+      'Specify shaft grounding rings by shaft diameter, motor frame, mounting space, contamination exposure, and retrofit needs to reduce bearing-current failures.',
+    category: 'buying-guide',
+    tags: ['shaft grounding rings', 'vfd motors', 'bearing fluting', 'motor reliability'],
+    author: 'Machrio Team',
+    status: 'published',
+    publishedAt: '2026-04-14T02:00:00.000Z',
+    createdAt: '2026-04-14T02:00:00.000Z',
+    updatedAt: '2026-04-14T02:00:00.000Z',
+    metaTitle: 'How to Specify Shaft Grounding Rings | Machrio',
+    metaDescription:
+      'Match shaft grounding rings to shaft size, frame, mounting style, and environment on VFD-driven motors.',
+    quickAnswer:
+      'Shaft grounding rings should be specified by shaft diameter, mounting arrangement, environment, and motor/VFD duty so the ring actually fits and survives in service.',
+    faq: [
+      {
+        question: 'Why do buyers install shaft grounding rings on VFD-driven motors?',
+        answer:
+          'They are used to divert shaft voltage away from the bearings and reduce electrical damage such as fluting, premature bearing failure, and repeat maintenance events.',
+      },
+      {
+        question: 'What should buyers measure before ordering a shaft grounding ring?',
+        answer:
+          'At minimum, measure shaft diameter, available mounting clearance, and the motor frame or end-bracket arrangement. Those checks determine whether the chosen ring can be installed cleanly.',
+      },
+      {
+        question: 'When is RFQ useful for shaft grounding rings?',
+        answer:
+          'RFQ is best for retrofit projects, aggressive environments, or cases where the team is trying to confirm the root cause of bearing damage before standardizing a solution.',
+      },
+    ],
+    relatedCategorySlugs: ['shaft-grounding-rings', 'plain-bearings'],
+    content: richText(
+      paragraph(
+        'Shaft grounding rings are usually purchased after a reliability problem appears: repeated bearing failures, evidence of fluting, or concern about VFD-induced shaft voltage. That means the buyer often needs more than a product list. They need a clean way to compare fit, mounting style, and durability.'
+      ),
+      heading('h2', 'Confirm the Failure Context'),
+      paragraph(
+        'Shaft grounding rings belong in a bearing-current conversation, not a generic motor-parts conversation. If the motor is VFD-driven, operating continuously, and showing electrical bearing damage, the grounding ring becomes part of a system-level fix rather than a standalone accessory.'
+      ),
+      heading('h2', 'Measure Fit Before Comparing Features'),
+      paragraph(
+        'Shaft diameter, motor frame, mounting clearance, and the installation surface all need to be captured early. A ring that is electrically suitable but mechanically awkward to install often gets delayed or improvised in the field.'
+      ),
+      heading('h2', 'Environment Changes the Best Option'),
+      bulletList([
+        'Dust, washdown, or oil mist can change service life',
+        'Retrofit access affects whether inboard or outboard mounting is practical',
+        'Continuous-duty motors need durability checks beyond initial fit',
+      ]),
+      paragraph(
+        'When buyers write those conditions into the RFQ, they move from a generic anti-fluting search into a selection that is far more likely to work on the first installation.'
+      )
+    ),
+    source: 'builtin',
+  },
+  {
+    id: 'builtin-how-to-choose-oil-seals-for-rotating-equipment',
+    title: 'How to Choose Oil Seals for Rotating Equipment',
+    slug: 'how-to-choose-oil-seals-for-rotating-equipment',
+    excerpt:
+      'Choose oil seals by shaft size, housing bore, lip design, elastomer, pressure, and contamination exposure for pumps, motors, and gearboxes.',
+    category: 'buying-guide',
+    tags: ['oil seals', 'radial shaft seals', 'rotating equipment', 'maintenance parts'],
+    author: 'Machrio Team',
+    status: 'published',
+    publishedAt: '2026-04-14T01:30:00.000Z',
+    createdAt: '2026-04-14T01:30:00.000Z',
+    updatedAt: '2026-04-14T01:30:00.000Z',
+    metaTitle: 'How to Choose Oil Seals | Machrio',
+    metaDescription:
+      'Use shaft size, lip design, elastomer, and operating environment to compare oil seals for industrial rotating equipment.',
+    quickAnswer:
+      'Oil seals should be chosen by fit and operating environment together, because correct dimensions alone do not guarantee sealing performance or service life.',
+    faq: [
+      {
+        question: 'What should a buyer confirm before ordering an oil seal?',
+        answer:
+          'Confirm shaft diameter, housing bore, seal width, lip design, elastomer, lubricant, temperature, and contamination conditions before purchase.',
+      },
+      {
+        question: 'How should buyers compare NBR and FKM oil seals?',
+        answer:
+          'NBR is common for general-duty oil sealing, while FKM is typically selected for higher temperatures and stronger chemical resistance. Material choice should follow the real operating environment rather than a generic preference.',
+      },
+      {
+        question: 'When is RFQ the better path for oil seals?',
+        answer:
+          'Use RFQ when dimensions must be cross-referenced, several machines are being restocked at once, or the application environment makes material selection less straightforward.',
+      },
+    ],
+    relatedCategorySlugs: ['plain-bearings'],
+    content: richText(
+      paragraph(
+        'Industrial buyers usually reach oil seal pages with a specific problem in mind: a leaking gearbox, a contaminated motor, or a maintenance team trying to standardize spares for rotating equipment. That is why oil seal purchasing works best when dimensions, lip design, and material are evaluated together instead of in isolation.'
+      ),
+      heading('h2', 'Fit Still Comes First'),
+      paragraph(
+        'Shaft diameter, housing bore, and seal width are the first checks because they determine basic compatibility. But an oil seal that fits dimensionally can still underperform if lip geometry or material does not match the service conditions.'
+      ),
+      heading('h2', 'Choose the Lip Design by Duty'),
+      paragraph(
+        'Single-lip, dual-lip, and spring-loaded designs solve different sealing problems. Buyers should compare them against contamination risk, lubricant retention needs, shaft finish, and whether dust exclusion matters as much as oil containment.'
+      ),
+      heading('h2', 'Elastomer Selection Changes Service Life'),
+      bulletList([
+        'NBR for broad general-duty oil service',
+        'FKM when higher temperature or chemical resistance matters',
+        'PU where abrasion resistance or edge durability changes the choice',
+      ]),
+      paragraph(
+        'The more clearly the operating temperature, lubricant, shaft speed, and contamination exposure are written into the order brief, the easier it becomes to shortlist seals that work commercially and mechanically.'
       )
     ),
     source: 'builtin',

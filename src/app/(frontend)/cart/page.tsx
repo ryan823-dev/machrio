@@ -24,15 +24,31 @@ const COUNTRIES = [
 
 export default function CartPage() {
   const {
-    items, selectedItems, itemCount, subtotal, shippingCost, total,
+    items, selectedItems, itemCount, subtotal, total,
     shippingCountry, shippingMethodCode, shippingQuotes, shippingLoading, estimatedShipDate,
     removeItem, updateQuantity, clearCart,
     toggleItem, selectAll, deselectAll,
-    setShippingCountry, setShippingMethod,
+    setShippingCountry, setShippingMethod, hasLiveShippingQuote,
   } = useCart()
 
   const allSelected = items.length > 0 && items.every(i => selectedItems.has(i.productId))
   const noneSelected = selectedItems.size === 0
+  const selectedQuote = shippingQuotes.find(q => q.code === shippingMethodCode)
+  const canProceedToCheckout = !noneSelected && hasLiveShippingQuote
+  const shippingDisplay = noneSelected
+    ? '—'
+    : selectedQuote
+      ? (selectedQuote.isFreeShipping ? 'FREE' : `$${selectedQuote.cost.toFixed(2)}`)
+      : shippingLoading
+        ? 'Updating...'
+        : 'Quote required'
+  const totalDisplay = noneSelected
+    ? '$0.00'
+    : hasLiveShippingQuote
+      ? `$${total.toFixed(2)}`
+      : shippingLoading
+        ? 'Updating...'
+        : 'Awaiting quote'
 
   if (items.length === 0) {
     return (
@@ -243,7 +259,7 @@ export default function CartPage() {
                         </p>
                         {q.gapToFreeShipping && q.gapToFreeShipping > 0 && (
                           <p className="mt-1 text-xs text-amber-600">
-                            Add ${q.gapToFreeShipping.toFixed(2)} more for free shipping
+                            Add ${q.gapToFreeShipping.toFixed(2)} more to unlock free shipping on this method
                           </p>
                         )}
                       </div>
@@ -252,7 +268,12 @@ export default function CartPage() {
                 </div>
               </div>
             ) : !noneSelected ? (
-              <p className="text-xs text-secondary-500">No shipping options available for this destination.</p>
+              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700">
+                <p className="font-medium">We do not have a live shipping rate for this destination yet.</p>
+                <p className="mt-1">
+                  Select another shipping country, request an RFQ, or contact <a href="mailto:sales@machrio.com" className="underline">sales@machrio.com</a> for manual freight confirmation.
+                </p>
+              </div>
             ) : null}
 
             {/* Ship date */}
@@ -270,19 +291,21 @@ export default function CartPage() {
               </div>
               <div className="flex justify-between text-secondary-600">
                 <span>Shipping</span>
-                <span>{shippingCost === 0 ? 'FREE' : `$${shippingCost.toFixed(2)}`}</span>
+                <span>{shippingDisplay}</span>
               </div>
               <div className="border-t border-secondary-200 pt-2 flex justify-between font-bold text-secondary-900">
                 <span>Total</span>
-                <span>${total.toFixed(2)}</span>
+                <span>{totalDisplay}</span>
               </div>
             </div>
 
             <Link
-              href={noneSelected ? '#' : '/checkout'}
-              className={`btn-primary w-full text-center block ${noneSelected ? 'opacity-50 pointer-events-none' : ''}`}
+              href={canProceedToCheckout ? '/checkout' : '#'}
+              className={`btn-primary w-full text-center block ${
+                canProceedToCheckout ? '' : 'opacity-50 pointer-events-none'
+              }`}
             >
-              Proceed to Checkout
+              {canProceedToCheckout ? 'Proceed to Checkout' : 'Shipping Quote Required'}
             </Link>
             <Link href="/category" className="block text-center text-sm text-secondary-500 hover:text-primary-700">
               Continue Shopping

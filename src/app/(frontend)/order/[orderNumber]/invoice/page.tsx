@@ -1,20 +1,43 @@
 import { notFound } from 'next/navigation'
 import { getOrderByNumber, getBankAccounts } from '@/lib/db'
+import { authorizeOrderAccess } from '@/lib/order-access'
+import { buildOrderPath } from '@/lib/order-access-links'
+import { OrderAccessRequired } from '@/components/order/OrderAccessRequired'
 import { PrintButton } from '@/components/shared/PrintButton'
 
 export const dynamic = 'force-dynamic'
 
 interface InvoicePageProps {
   params: Promise<{ orderNumber: string }>
+  searchParams: Promise<{ access?: string | string[] }>
 }
 
-export default async function InvoicePage({ params }: InvoicePageProps) {
+function toDisplayAmount(value: unknown): number {
+  const numericValue = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(numericValue) ? numericValue : 0
+}
+
+export default async function InvoicePage({ params, searchParams }: InvoicePageProps) {
   const { orderNumber } = await params
+  const { access } = await searchParams
   const [order, bankAccounts] = await Promise.all([
     getOrderByNumber(orderNumber),
     getBankAccounts(),
   ])
   if (!order) notFound()
+
+  const accessToken = Array.isArray(access) ? access[0] : access
+  const accessResult = await authorizeOrderAccess({
+    order,
+    accessToken,
+  })
+
+  if (!accessResult) {
+    return <OrderAccessRequired />
+  }
+
+  const canonicalOrderNumber = order.order_number
+  const orderPath = buildOrderPath(canonicalOrderNumber, accessResult.via === 'token' ? accessToken : undefined)
 
   const customer = {
     name: order.customer_name,
@@ -24,6 +47,9 @@ export default async function InvoicePage({ params }: InvoicePageProps) {
   }
   const shipping = order.shipping_address as Record<string, unknown> || {}
   const items = (order.items as Record<string, unknown>[]) || []
+  const subtotalAmount = toDisplayAmount(order.subtotal)
+  const shippingAmount = toDisplayAmount(order.shipping_cost)
+  const totalAmount = toDisplayAmount(order.total)
   const createdAt = new Date(order.created_at)
   const dueDate = new Date(createdAt.getTime() + 14 * 24 * 60 * 60 * 1000) // 14 days
 
@@ -36,7 +62,7 @@ export default async function InvoicePage({ params }: InvoicePageProps) {
     <div className="min-h-screen bg-white">
       {/* Print button bar */}
       <div className="container-main py-4 print:hidden flex justify-between items-center">
-        <a href={`/order/${orderNumber}`} className="text-sm text-primary-700 hover:underline">
+        <a href={orderPath} className="text-sm text-primary-700 hover:underline">
           &larr; Back to Order
         </a>
         <PrintButton />
@@ -54,7 +80,7 @@ export default async function InvoicePage({ params }: InvoicePageProps) {
           </div>
           <div className="text-right">
             <h2 className="text-xl font-bold text-secondary-800">PROFORMA INVOICE</h2>
-            <p className="mt-1 text-sm text-secondary-600">Invoice: {orderNumber}</p>
+            <p className="mt-1 text-sm text-secondary-600">Invoice: {canonicalOrderNumber}</p>
             <p className="text-sm text-secondary-600">Date: {createdAt.toLocaleDateString('en-US')}</p>
             <p className="text-sm text-secondary-600">Due: {dueDate.toLocaleDateString('en-US')}</p>
           </div>
@@ -99,8 +125,8 @@ export default async function InvoicePage({ params }: InvoicePageProps) {
                   <td className="py-2.5 text-secondary-800">{item.productName as string}</td>
                   <td className="py-2.5 text-secondary-600">{item.sku as string}</td>
                   <td className="py-2.5 text-right text-secondary-800">{item.quantity as number}</td>
-                  <td className="py-2.5 text-right text-secondary-800">${(item.unitPrice as number).toFixed(2)}</td>
-                  <td className="py-2.5 text-right font-medium text-secondary-900">${(item.lineTotal as number).toFixed(2)}</td>
+                  <td className="py-2.5 text-right text-secondary-800">${toDisplayAmount(item.unitPrice).toFixed(2)}</td>
+                  <td className="py-2.5 text-right font-medium text-secondary-900">${toDisplayAmount(item.lineTotal).toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>
@@ -112,15 +138,15 @@ export default async function InvoicePage({ params }: InvoicePageProps) {
           <div className="w-64 space-y-1 text-sm">
             <div className="flex justify-between text-secondary-600">
               <span>Subtotal</span>
-              <span>${order.subtotal.toFixed(2)}</span>
+              <span>${subtotalAmount.toFixed(2)}</span>
             </div>
             <div className="flex justify-between text-secondary-600">
               <span>Shipping</span>
-              <span>{order.shipping_cost === 0 ? 'FREE' : `$${order.shipping_cost.toFixed(2)}`}</span>
+              <span>{shippingAmount === 0 ? 'FREE' : `$${shippingAmount.toFixed(2)}`}</span>
             </div>
             <div className="flex justify-between border-t-2 border-secondary-300 pt-2 font-bold text-secondary-900 text-base">
               <span>Total Due</span>
-              <span>${order.total.toFixed(2)} {currency}</span>
+              <span>${totalAmount.toFixed(2)} {currency}</span>
             </div>
           </div>
         </div>
@@ -130,7 +156,7 @@ export default async function InvoicePage({ params }: InvoicePageProps) {
           <div className="mt-10 border-t border-secondary-200 pt-6">
             <h3 className="text-sm font-bold text-secondary-800">Bank Transfer Details</h3>
             <p className="mt-1 text-xs text-secondary-500">
-              Please transfer the total amount to the following account and include the invoice number ({orderNumber}) as payment reference.
+              Please transfer the total amount to the following account and include the invoice number ({canonicalOrderNumber}) as payment reference.
             </p>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               {displayAccounts.map((account) => (

@@ -1,5 +1,6 @@
 import { getGlossaryTermBySlug, safeQuery } from '@/lib/db'
 import { getCanonicalProductCategory, getProductExactMatchToken } from '@/lib/seo'
+import { getStaticGlossaryAliasRedirects } from '@/lib/static-glossary-terms'
 
 interface ProductLookupRow {
   id: string
@@ -18,7 +19,20 @@ export interface PathResolution {
   matchedBy?: string
 }
 
+interface ManagedRedirectEntry {
+  redirectTo: string
+  statusCode: 301 | 302
+}
+
 const NO_MATCH_TOKEN = '__machrio_no_match__'
+const REDIRECT_CACHE_TTL_MS = 5 * 60 * 1000
+
+let redirectCache:
+  | {
+      expiresAt: number
+      entries: Map<string, ManagedRedirectEntry>
+    }
+  | null = null
 
 // Seed a few of the highest-impression dead URLs so recovery starts immediately
 // while the automatic matcher covers the long tail.
@@ -35,10 +49,34 @@ const MANUAL_PRODUCT_REDIRECTS: Record<string, string> = {
     '/product/surface-protection-tape/high-voltage-rubber-insulation-tape-0-91-in-x-15-ft-10kv-pkg-qty-2-ae2592620',
 }
 
-const MANUAL_GLOSSARY_REDIRECTS: Record<string, string> = {}
+const MANUAL_GLOSSARY_REDIRECTS: Record<string, string> = {
+  ...getStaticGlossaryAliasRedirects(),
+}
 
 function trimTrailingSlash(pathname: string): string {
   return pathname !== '/' && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname
+}
+
+function normalizeComparablePath(input: string | null | undefined): string | null {
+  const raw = (input || '').trim()
+  if (!raw) return null
+
+  let path = raw
+
+  try {
+    if (/^https?:\/\//i.test(raw)) {
+      path = new URL(raw).pathname
+    }
+  } catch {
+    path = raw
+  }
+
+  const withoutHash = path.split('#')[0] || path
+  const withoutQuery = withoutHash.split('?')[0] || withoutHash
+  const withLeadingSlash = withoutQuery.startsWith('/') ? withoutQuery : `/${withoutQuery}`
+  const normalizedSlashes = withLeadingSlash.replace(/\/{2,}/g, '/').toLowerCase()
+
+  return trimTrailingSlash(normalizedSlashes)
 }
 
 function normalizeToken(value: string | null | undefined): string {
@@ -73,6 +111,87 @@ function buildCanonicalProductPath(candidate: ProductLookupRow): string {
   return `/product/${canonicalCategory.slug}/${candidate.slug}`
 }
 
+async function getManagedRedirectEntries(): Promise<Map<string, ManagedRedirectEntry>> {
+  if (redirectCache && redirectCache.expiresAt > Date.now()) {
+    return redirectCache.entries
+  }
+
+  if (!process.env.DATABASE_URI) {
+    const entries = redirectCache?.entries || new Map<string, ManagedRedirectEntry>()
+    redirectCache = {
+      expiresAt: Date.now() + REDIRECT_CACHE_TTL_MS,
+      entries,
+    }
+    return entries
+  }
+
+  try {
+    const [{ getPayload }, configModule] = await Promise.all([
+      import('payload'),
+      import('@payload-config'),
+    ])
+    const payload = await getPayload({ config: configModule.default })
+    const entries = new Map<string, ManagedRedirectEntry>()
+    let page = 1
+
+    while (true) {
+      const response = await payload.find({
+        collection: 'redirects',
+        depth: 0,
+        limit: 1000,
+        page,
+        where: {
+          isActive: {
+            equals: true,
+          },
+        },
+      })
+
+      for (const doc of response.docs as unknown as Array<Record<string, unknown>>) {
+        const fromPath = normalizeComparablePath(typeof doc.from === 'string' ? doc.from : null)
+        const toPath = normalizeComparablePath(typeof doc.to === 'string' ? doc.to : null)
+
+        if (!fromPath || !toPath || fromPath === toPath) continue
+
+        entries.set(fromPath, {
+          redirectTo: toPath,
+          statusCode: doc.type === '302' ? 302 : 301,
+        })
+      }
+
+      if (!response.hasNextPage) break
+      page = response.nextPage || page + 1
+    }
+
+    redirectCache = {
+      expiresAt: Date.now() + REDIRECT_CACHE_TTL_MS,
+      entries,
+    }
+
+    return entries
+  } catch (error) {
+    console.error('[getManagedRedirectEntries] failed to load redirects:', error)
+    return redirectCache?.entries || new Map()
+  }
+}
+
+async function getManagedRedirect(pathname: string): Promise<PathResolution | null> {
+  const normalizedPath = normalizeComparablePath(pathname)
+  if (!normalizedPath) return null
+
+  const entries = await getManagedRedirectEntries()
+  const match = entries.get(normalizedPath)
+
+  if (!match) return null
+
+  return {
+    exists: false,
+    redirectTo: match.redirectTo,
+    statusCode: match.statusCode,
+    matchedBy: 'payload-redirect',
+  }
+}
+
 async function getPublishedProductBySlug(slug: string): Promise<ProductLookupRow | null> {
   const result = await safeQuery<ProductLookupRow>(
     `SELECT
@@ -91,6 +210,43 @@ async function getPublishedProductBySlug(slug: string): Promise<ProductLookupRow
   )
 
   return result.rows[0] || null
+}
+
+async function findProductsBySourcePath(pathname: string): Promise<ProductLookupRow[]> {
+  const normalizedPath = normalizeComparablePath(pathname)
+
+  if (!normalizedPath) return []
+
+  const likePatterns = Array.from(
+    new Set([
+      `%${normalizedPath}`,
+      `%${normalizedPath}/`,
+      `%${normalizedPath}?%`,
+      `%${normalizedPath}/?%`,
+      `%${normalizedPath}#%`,
+      `%${normalizedPath}/#%`,
+    ]),
+  )
+
+  const result = await safeQuery<ProductLookupRow>(
+    `SELECT
+       p.id,
+       p.name,
+       p.slug,
+       p.sku,
+       p.source_url,
+       c.slug AS category_slug,
+       c.name AS category_name
+     FROM products p
+     LEFT JOIN categories c ON p.primary_category_id = c.id
+     WHERE p.status = 'published'
+       AND lower(COALESCE(p.source_url, '')) LIKE ANY($1::text[])
+     ORDER BY p.updated_at DESC NULLS LAST, p.created_at DESC
+     LIMIT 20`,
+    [likePatterns],
+  )
+
+  return result.rows.filter((candidate) => normalizeComparablePath(candidate.source_url) === normalizedPath)
 }
 
 function buildLegacySignals(pathname: string, category: string, slug: string) {
@@ -261,7 +417,7 @@ export async function resolveProductPath(
   category: string,
   slug: string,
 ): Promise<PathResolution> {
-  const normalizedPath = trimTrailingSlash(pathname)
+  const normalizedPath = normalizeComparablePath(pathname) || trimTrailingSlash(pathname)
   const manualRedirect = MANUAL_PRODUCT_REDIRECTS[normalizedPath]
 
   if (manualRedirect) {
@@ -274,6 +430,15 @@ export async function resolveProductPath(
   }
 
   try {
+    const managedRedirect = await getManagedRedirect(normalizedPath)
+    if (managedRedirect) {
+      return managedRedirect
+    }
+
+    if (!process.env.DATABASE_URI) {
+      return { exists: false, matchedBy: 'no-product-database' }
+    }
+
     const exactProduct = await getPublishedProductBySlug(slug)
 
     if (exactProduct) {
@@ -288,6 +453,26 @@ export async function resolveProductPath(
       }
 
       return { exists: true, matchedBy: 'exact-product-slug' }
+    }
+
+    const exactSourceMatches = await findProductsBySourcePath(normalizedPath)
+
+    if (exactSourceMatches.length > 0) {
+      const [bestSourceMatch] = exactSourceMatches
+        .map((candidate) => scoreLegacyProductCandidate(candidate, normalizedPath, category, slug))
+        .sort((a, b) => b.score - a.score)
+
+      if (bestSourceMatch) {
+        const canonicalPath = buildCanonicalProductPath(bestSourceMatch.candidate)
+        if (canonicalPath !== normalizedPath) {
+          return {
+            exists: false,
+            redirectTo: canonicalPath,
+            statusCode: 301,
+            matchedBy: 'source-url-match',
+          }
+        }
+      }
     }
 
     const rankedCandidates = (await findLegacyProductCandidates(normalizedPath, category, slug))
@@ -322,7 +507,7 @@ export async function resolveProductPath(
 }
 
 export async function resolveGlossaryPath(pathname: string, slug: string): Promise<PathResolution> {
-  const normalizedPath = trimTrailingSlash(pathname)
+  const normalizedPath = normalizeComparablePath(pathname) || trimTrailingSlash(pathname)
   const manualRedirect = MANUAL_GLOSSARY_REDIRECTS[normalizedPath]
 
   if (manualRedirect) {
@@ -335,6 +520,11 @@ export async function resolveGlossaryPath(pathname: string, slug: string): Promi
   }
 
   try {
+    const managedRedirect = await getManagedRedirect(normalizedPath)
+    if (managedRedirect) {
+      return managedRedirect
+    }
+
     const term = await getGlossaryTermBySlug(slug)
     return term ? { exists: true, matchedBy: 'glossary-term-found' } : { exists: false }
   } catch (error) {

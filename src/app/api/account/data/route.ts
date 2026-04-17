@@ -1,66 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getPool } from '@/lib/db'
+import { getPool, getRfqSubmissionsByEmail } from '@/lib/db'
 import {
   ensureAccountAuthTables,
   getAccountSessionFromRequest,
 } from '@/lib/account-session'
+import { syncCustomerLinksByEmail } from '@/lib/customer-service'
 
-interface AccountRfqRow {
-  id: string
-  customer_name: string
-  customer_phone: string | null
-  customer_company: string | null
-  message: string
-  status: string | null
-  submitted_at: string | null
-  created_at: string | null
+function isUuid(value: string | null | undefined): value is string {
+  return Boolean(
+    value
+    && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value),
+  )
 }
 
 function toFiniteNumber(value: unknown, fallback = 0): number {
   const numericValue = typeof value === 'number' ? value : Number(value)
   return Number.isFinite(numericValue) ? numericValue : fallback
-}
-
-async function getRfqSummariesForAccount(email: string): Promise<AccountRfqRow[]> {
-  const pool = getPool()
-
-  try {
-    const result = await pool.query<AccountRfqRow>(
-      `SELECT id::text AS id,
-              COALESCE(customer->>'name', '') AS customer_name,
-              NULLIF(customer->>'phone', '') AS customer_phone,
-              NULLIF(customer->>'company', '') AS customer_company,
-              COALESCE(inquiry->>'message', notes, '') AS message,
-              status,
-              submitted_at,
-              created_at
-       FROM rfq_submissions
-       WHERE LOWER(COALESCE(customer->>'email', '')) = $1
-       ORDER BY submitted_at DESC NULLS LAST, created_at DESC
-       LIMIT 50`,
-      [email],
-    )
-
-    return result.rows
-  } catch {
-    const legacyResult = await pool.query<AccountRfqRow>(
-      `SELECT id::text AS id,
-              COALESCE(customer_name, '') AS customer_name,
-              customer_phone,
-              customer_company,
-              COALESCE(message, '') AS message,
-              status,
-              submitted_at,
-              created_at
-       FROM rfq_submissions
-       WHERE LOWER(customer_email) = $1
-       ORDER BY submitted_at DESC NULLS LAST, created_at DESC
-       LIMIT 50`,
-      [email],
-    )
-
-    return legacyResult.rows
-  }
 }
 
 export async function GET(request: NextRequest) {
@@ -74,34 +29,54 @@ export async function GET(request: NextRequest) {
 
     const email = session.email
     const pool = getPool()
+    const customer = await syncCustomerLinksByEmail(email, {
+      markAccountLinked: true,
+    }).catch((customerLinkError) => {
+      console.error('Failed to sync customer links while loading account data:', customerLinkError)
+      return null
+    })
 
     const [ordersResult, rfqs] = await Promise.all([
-      pool.query(
-        `SELECT * FROM orders
-         WHERE LOWER(customer_email) = $1
-         ORDER BY created_at DESC
-         LIMIT 50`,
-        [email],
-      ),
-      getRfqSummariesForAccount(email),
+      customer?.id && isUuid(customer.id)
+        ? pool.query(
+            `SELECT * FROM orders
+             WHERE customer_ref_id = $1::uuid
+                OR LOWER(customer_email) = $2
+             ORDER BY created_at DESC
+             LIMIT 50`,
+            [customer.id, email],
+          )
+        : pool.query(
+            `SELECT * FROM orders
+             WHERE LOWER(customer_email) = $1
+             ORDER BY created_at DESC
+             LIMIT 50`,
+            [email],
+          ),
+      getRfqSubmissionsByEmail(email, 50),
     ])
 
-    // Build profile from most recent order or RFQ
-    let profile = { name: '', company: '', phone: '', email }
-    if (ordersResult.rows.length > 0) {
+    // Build profile from customer master record, with order/RFQ fallback for sparse fields
+    let profile = {
+      name: customer?.name || '',
+      company: customer?.company || '',
+      phone: customer?.phone || '',
+      email,
+    }
+    if (ordersResult.rows.length > 0 && (!profile.name || !profile.company || !profile.phone)) {
       const latestOrder = ordersResult.rows[0]
       profile = {
-        name: latestOrder.customer_name || '',
-        company: latestOrder.customer_company || '',
-        phone: latestOrder.customer_phone || '',
+        name: profile.name || latestOrder.customer_name || '',
+        company: profile.company || latestOrder.customer_company || '',
+        phone: profile.phone || latestOrder.customer_phone || '',
         email,
       }
-    } else if (rfqs.length > 0) {
+    } else if (rfqs.length > 0 && (!profile.name || !profile.company || !profile.phone)) {
       const latestRfq = rfqs[0]
       profile = {
-        name: latestRfq.customer_name || '',
-        company: latestRfq.customer_company || '',
-        phone: latestRfq.customer_phone || '',
+        name: profile.name || latestRfq.customer_name || '',
+        company: profile.company || latestRfq.customer_company || '',
+        phone: profile.phone || latestRfq.customer_phone || '',
         email,
       }
     }

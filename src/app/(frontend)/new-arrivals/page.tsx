@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { getProducts, type ProductRow } from '@/lib/db'
+import { safeQuery } from '@/lib/db'
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 import { ProductGrid } from '@/components/category/ProductGrid'
 import { normalizePurchaseMode } from '@/lib/purchase-mode'
@@ -19,7 +19,21 @@ export const metadata: Metadata = {
   },
 }
 
-function mapProductToCard(product: ProductRow) {
+interface NewArrivalProductRow {
+  id: string
+  name: string
+  slug: string
+  sku: string
+  short_description: string | null
+  pricing: unknown | null
+  external_image_url: string | null
+  availability: string | null
+  purchase_mode: string | null
+  package_qty: number | null
+  package_unit: string | null
+}
+
+function mapProductToCard(product: NewArrivalProductRow) {
   const pricing = parsePricing(product.pricing)
 
   return {
@@ -46,8 +60,18 @@ function mapProductToCard(product: ProductRow) {
 export default async function NewArrivalsPage() {
   let gridProducts: Array<ReturnType<typeof mapProductToCard>> = []
   try {
-    const result = await getProducts({ limit: 100, sort: '-created_at' })
-    gridProducts = result.docs.map(mapProductToCard)
+    const result = await safeQuery<NewArrivalProductRow>(
+      `SELECT id, name, slug, sku, short_description, pricing,
+              external_image_url, availability, purchase_mode,
+              package_qty, package_unit
+       FROM products
+       WHERE status = 'published'
+       ORDER BY created_at DESC
+       LIMIT $1`,
+      [100]
+    )
+
+    gridProducts = result.rows.map(mapProductToCard)
   } catch (error) {
     console.error('Error loading new arrivals:', error)
   }

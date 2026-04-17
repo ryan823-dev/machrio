@@ -12,7 +12,11 @@
     "generate:types": "payload generate:types",
     "generate:nav": "npx tsx scripts/generate-nav-data.ts",
     "seed": "tsx src/scripts/seed.ts",
-    "check-links": "tsx scripts/check-links.ts"
+    "seed:shipping": "tsx scripts/seed-shipping-postgres.ts",
+    "check:shipping": "npx tsx scripts/check-shipping-readiness.ts",
+    "check-links": "tsx scripts/check-links.ts",
+    "sync:product-redirects": "tsx scripts/sync-product-source-redirects.ts",
+    "sync:priority-seo": "tsx scripts/sync-priority-seo-content.ts"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "3.17.1",

@@ -3,12 +3,13 @@
 import { useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCart } from '@/contexts/CartContext'
+import { appendQueryParamsToPath } from '@/lib/order-access-links'
 
 interface StripeReturnHandlerProps {
-  orderNumber: string
+  orderPath: string
 }
 
-export function StripeReturnHandler({ orderNumber }: StripeReturnHandlerProps) {
+export function StripeReturnHandler({ orderPath }: StripeReturnHandlerProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { clearCart } = useCart()
@@ -33,17 +34,26 @@ export function StripeReturnHandler({ orderNumber }: StripeReturnHandlerProps) {
 
     if (redirectStatus === 'succeeded') {
       clearCart()
-      router.replace(`/order/${orderNumber}?payment=success&provider=stripe`)
+      router.replace(appendQueryParamsToPath(orderPath, {
+        payment: 'success',
+        provider: 'stripe',
+      }))
       return
     }
 
     if (redirectStatus === 'processing') {
-      router.replace(`/order/${orderNumber}?payment=processing&provider=stripe`)
+      router.replace(appendQueryParamsToPath(orderPath, {
+        payment: 'processing',
+        provider: 'stripe',
+      }))
       return
     }
 
-    router.replace(`/order/${orderNumber}?payment=cancelled&provider=stripe`)
-  }, [clearCart, orderNumber, router, searchParams])
+    router.replace(appendQueryParamsToPath(orderPath, {
+      payment: 'cancelled',
+      provider: 'stripe',
+    }))
+  }, [clearCart, orderPath, router, searchParams])
 
   return null
 }

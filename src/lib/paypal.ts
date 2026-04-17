@@ -7,6 +7,34 @@ const PAYPAL_API_BASE = process.env.NODE_ENV === 'production'
   ? 'https://api-m.paypal.com'
   : 'https://api-m.sandbox.paypal.com'
 
+const PAYPAL_PLACEHOLDER_PATTERNS = [
+  /your-paypal-client-id/i,
+  /your-paypal-secret/i,
+  /placeholder/i,
+]
+
+function isPlaceholderCredential(value: string | null | undefined): boolean {
+  return PAYPAL_PLACEHOLDER_PATTERNS.some((pattern) => pattern.test(String(value || '')))
+}
+
+export function hasConfiguredPayPalPublicClientId(
+  clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID,
+): boolean {
+  return Boolean(clientId && !isPlaceholderCredential(clientId))
+}
+
+export function isPayPalConfigured(): boolean {
+  const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID
+  const clientSecret = process.env.PAYPAL_CLIENT_SECRET
+
+  return Boolean(
+    clientId
+    && clientSecret
+    && !isPlaceholderCredential(clientId)
+    && !isPlaceholderCredential(clientSecret),
+  )
+}
+
 interface PayPalAccessTokenResponse {
   access_token: string
   token_type: string
@@ -38,8 +66,8 @@ export async function getPayPalAccessToken(): Promise<string> {
   const clientId = process.env.NEXT_PUBLIC_PAYPAL_CLIENT_ID
   const clientSecret = process.env.PAYPAL_CLIENT_SECRET
 
-  if (!clientId || !clientSecret) {
-    throw new Error('PayPal credentials not configured')
+  if (!isPayPalConfigured()) {
+    throw new Error('PayPal is not configured for this environment')
   }
 
   const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64')
@@ -76,6 +104,8 @@ interface CreatePayPalOrderParams {
   total: number
   currency?: string
   customerEmail: string
+  returnUrl?: string
+  cancelUrl?: string
 }
 
 /**
@@ -84,6 +114,8 @@ interface CreatePayPalOrderParams {
 export async function createPayPalOrder(params: CreatePayPalOrderParams): Promise<PayPalOrderResponse> {
   const accessToken = await getPayPalAccessToken()
   const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'https://machrio.com'
+  const returnUrl = params.returnUrl || `${serverUrl}/order/${params.orderNumber}?payment=success&provider=paypal`
+  const cancelUrl = params.cancelUrl || `${serverUrl}/order/${params.orderNumber}?payment=cancelled`
 
   const orderData = {
     intent: 'CAPTURE',
@@ -124,8 +156,8 @@ export async function createPayPalOrder(params: CreatePayPalOrderParams): Promis
       brand_name: 'Machrio',
       landing_page: 'BILLING',
       user_action: 'PAY_NOW',
-      return_url: `${serverUrl}/order/${params.orderNumber}?payment=success&provider=paypal`,
-      cancel_url: `${serverUrl}/order/${params.orderNumber}?payment=cancelled`,
+      return_url: returnUrl,
+      cancel_url: cancelUrl,
     },
   }
 

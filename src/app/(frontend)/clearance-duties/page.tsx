@@ -31,7 +31,7 @@ export default function ClearanceDutiesPage() {
             <h3 className="mt-3 font-semibold text-secondary-800">Economy DDP (Sea)</h3>
             <ul className="mt-3 space-y-2 text-sm text-secondary-600">
               <li>No import taxes at destination</li>
-              <li>Free shipping over $200</li>
+              <li>Method-specific free-shipping rules may apply</li>
               <li>Door-to-door delivery included</li>
               <li>Transit: 20&ndash;35 days</li>
             </ul>

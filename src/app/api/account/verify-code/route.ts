@@ -5,6 +5,7 @@ import {
   ensureAccountAuthTables,
   setAccountSessionCookie,
 } from '@/lib/account-session'
+import { syncCustomerLinksByEmail } from '@/lib/customer-service'
 
 export async function POST(request: Request) {
   try {
@@ -54,12 +55,19 @@ export async function POST(request: Request) {
     )
 
     const session = await createAccountSession(normalizedEmail)
+
     const response = NextResponse.json({
       success: true,
       expiresAt: session.expiresAt,
     })
 
     setAccountSessionCookie(response, session)
+
+    queueMicrotask(() => {
+      void syncCustomerLinksByEmail(normalizedEmail, { markAccountLinked: true }).catch((customerLinkError) => {
+        console.error('Failed to sync customer links after account verification:', customerLinkError)
+      })
+    })
 
     return response
   } catch (err) {

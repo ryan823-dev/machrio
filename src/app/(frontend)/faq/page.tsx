@@ -62,7 +62,7 @@ const faqSections = [
     items: [
       {
         q: 'What shipping methods are available?',
-        a: 'We offer U.S. warehouse express shipping (2-7 days), China DDP air (6-15 days), DDP sea freight (20-35 days), and international couriers (DHL/FedEx/UPS, 3-10 days).',
+        a: 'Available shipping methods depend on the destination and the active rate configuration. Common options include U.S. warehouse delivery, DDP air, DDP sea freight, and courier routes where supported.',
       },
       {
         q: 'Is shipping duty-free?',
@@ -70,7 +70,7 @@ const faqSections = [
       },
       {
         q: 'What is the free shipping threshold?',
-        a: 'Orders over $200 qualify for free shipping. Orders under $200 incur a flat $25 shipping fee.',
+        a: 'There is no single sitewide free-shipping threshold. Free-shipping rules are configured per shipping method and can be country-specific or global. When a route qualifies, the cart and checkout show the remaining amount needed.',
       },
       {
         q: 'Do you provide customs documentation?',

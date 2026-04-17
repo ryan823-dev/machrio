@@ -60,6 +60,26 @@ const GUIDE_LIBRARY: Record<string, SeoGuideLink> = {
     title: 'Air Respirator Buying Guide',
     excerpt: 'Review the 10 most important fit, filter, comfort, and compliance checks before purchasing air respirators.',
   },
+  'how-to-choose-hot-melt-adhesives-for-packaging-assembly-and-rework': {
+    slug: 'how-to-choose-hot-melt-adhesives-for-packaging-assembly-and-rework',
+    title: 'How to Choose Hot Melt Adhesives',
+    excerpt: 'Use substrate, open time, temperature, viscosity, and line speed to compare hot melt adhesives before buying.',
+  },
+  'how-to-buy-plastic-perforated-sheets-for-guards-panels-and-fabrication': {
+    slug: 'how-to-buy-plastic-perforated-sheets-for-guards-panels-and-fabrication',
+    title: 'How to Buy Plastic Perforated Sheets',
+    excerpt: 'Compare resin, thickness, hole pattern, open area, and fabrication needs before sourcing perforated sheets.',
+  },
+  'how-to-specify-shaft-grounding-rings-for-vfd-motors': {
+    slug: 'how-to-specify-shaft-grounding-rings-for-vfd-motors',
+    title: 'How to Specify Shaft Grounding Rings',
+    excerpt: 'Match shaft grounding rings to shaft diameter, motor frame, environment, and retrofit constraints on VFD-driven equipment.',
+  },
+  'how-to-choose-oil-seals-for-rotating-equipment': {
+    slug: 'how-to-choose-oil-seals-for-rotating-equipment',
+    title: 'How to Choose Oil Seals',
+    excerpt: 'Use shaft size, lip design, elastomer, temperature, and contamination exposure to compare industrial oil seals.',
+  },
 }
 
 const CATEGORY_GUIDES: Record<string, string[]> = {
@@ -75,6 +95,10 @@ const CATEGORY_GUIDES: Record<string, string[]> = {
     'how-to-choose-respiratory-protection-buying-guide',
     'are-all-types-of-respirators-the-same',
   ],
+  'hot-melt-adhesives': ['how-to-choose-hot-melt-adhesives-for-packaging-assembly-and-rework'],
+  'plastic-perforated-sheets': ['how-to-buy-plastic-perforated-sheets-for-guards-panels-and-fabrication'],
+  'shaft-grounding-rings': ['how-to-specify-shaft-grounding-rings-for-vfd-motors'],
+  'plain-bearings': ['how-to-choose-oil-seals-for-rotating-equipment'],
 }
 
 const CATEGORY_OVERRIDES: Record<string, SeoCategoryOverride> = {
@@ -116,6 +140,7 @@ const CATEGORY_OVERRIDES: Record<string, SeoCategoryOverride> = {
           'Use RFQ when the order is repeat volume, multiple chemistries need to be compared, or landed cost and replenishment timing matter more than one-off unit price.',
       },
     ],
+    guideSlugs: ['how-to-choose-hot-melt-adhesives-for-packaging-assembly-and-rework'],
   },
   'plastic-perforated-sheets': {
     metaTitle: 'Plastic Perforated Sheets for Guards, Panels & Fabrication',
@@ -155,6 +180,7 @@ const CATEGORY_OVERRIDES: Record<string, SeoCategoryOverride> = {
           'Use RFQ for custom cut sizes, repeated fabrication runs, unusual resin requirements, or orders where packing and freight affect total cost materially.',
       },
     ],
+    guideSlugs: ['how-to-buy-plastic-perforated-sheets-for-guards-panels-and-fabrication'],
   },
   'shaft-grounding-rings': {
     metaTitle: 'Shaft Grounding Rings for VFD Motors & Bearing Protection',
@@ -194,6 +220,47 @@ const CATEGORY_OVERRIDES: Record<string, SeoCategoryOverride> = {
           'Request support when the motor is a retrofit, the mounting space is tight, the environment is aggressive, or repeated bearing failures suggest the root cause still needs to be confirmed.',
       },
     ],
+    guideSlugs: ['how-to-specify-shaft-grounding-rings-for-vfd-motors'],
+  },
+  'plain-bearings': {
+    metaTitle: 'Oil Seals & Rotary Shaft Seals for Pumps, Motors & Gearboxes',
+    metaDescription:
+      'Compare oil seals by shaft size, housing bore, lip design, elastomer, pressure, and contamination exposure for rotating industrial equipment.',
+    summary:
+      'On Machrio, the plain bearings category is also carrying oil seal intent, so the page needs to explicitly help buyers compare radial shaft seals by size, lip geometry, compound, and operating environment. Buyers searching oil seals are rarely browsing casually; they want to cross-check fit and failure risk quickly.',
+    buyingFactors: [
+      'Start with shaft diameter, housing bore, width, and whether the application is oil retention, dust exclusion, or both.',
+      'Compare single-lip, dual-lip, and spring-loaded designs based on contamination risk, shaft finish, and direction of sealing duty.',
+      'Match the elastomer to temperature, lubricant, speed, and chemical exposure instead of assuming NBR, FKM, and PU are interchangeable.',
+    ],
+    applications: [
+      'Motors, pumps, gearboxes, reducers, and rotating process equipment',
+      'Maintenance replacement for leaking or contaminated shaft-seal positions',
+      'Procurement workflows where cross-reference fit and material confirmation matter before order',
+    ],
+    procurementChecklist: [
+      'Record shaft diameter, housing bore, seal width, and rotation or pressure conditions.',
+      'Confirm lip design, spring requirement, and elastomer compatibility with lubricant and temperature.',
+      'Check whether dust exclusion, washdown, or abrasive contamination is part of the service environment.',
+    ],
+    faq: [
+      {
+        question: 'What do buyers need to confirm before ordering industrial oil seals?',
+        answer:
+          'The critical checks are shaft size, housing bore, seal width, lip design, elastomer, operating speed, and contamination exposure. A seal that matches only one dimension can still fail quickly in service.',
+      },
+      {
+        question: 'How should buyers compare NBR, FKM, and polyurethane oil seals?',
+        answer:
+          'NBR is common for general oil service, FKM is often chosen for higher temperature and chemical resistance, and polyurethane is used where abrasion resistance matters. Material choice should follow the real operating environment, not just price.',
+      },
+      {
+        question: 'When is RFQ the better path for oil seals?',
+        answer:
+          'Use RFQ when dimensions must be cross-referenced, material compatibility is uncertain, or the order involves repeated maintenance stock across multiple machines.',
+      },
+    ],
+    guideSlugs: ['how-to-choose-oil-seals-for-rotating-equipment'],
   },
   'valve-lockout-devices': {
     metaTitle: 'Valve Lockout Devices for Ball, Gate & Butterfly Valves',
@@ -764,6 +831,69 @@ const ARTICLE_TOPIC_CLUSTERS: Record<
         slug: 'respirator-fit-testing',
         name: 'Respirator Fit Testing',
         description: 'Review adjacent respirator options and fit-related considerations before ordering.',
+      },
+    ],
+  },
+  'how-to-choose-hot-melt-adhesives-for-packaging-assembly-and-rework': {
+    title: 'Move from Hot Melt Adhesive Research into Product Categories',
+    description:
+      'Use these categories to compare hot melt purchasing options after narrowing chemistry, open time, and line-fit requirements.',
+    categories: [
+      {
+        slug: 'hot-melt-adhesives',
+        name: 'Hot Melt Adhesives',
+        description: 'Browse hot melt adhesive formats and options by packaging, assembly, and maintenance use case.',
+      },
+      {
+        slug: 'construction-adhesives',
+        name: 'Construction Adhesives',
+        description: 'Compare adjacent adhesive families when the application needs a non-hot-melt bonding path.',
+      },
+      {
+        slug: 'caulks-and-sealants',
+        name: 'Caulks and Sealants',
+        description: 'Review adjacent sealant options when flexibility, weathering, or joint sealing matters more than hot-melt speed.',
+      },
+    ],
+  },
+  'how-to-buy-plastic-perforated-sheets-for-guards-panels-and-fabrication': {
+    title: 'Compare the Plastic Sheet Category Behind This Buying Guide',
+    description:
+      'Move from specification research into the category buyers use to compare resin, perforation, and fabrication options.',
+    categories: [
+      {
+        slug: 'plastic-perforated-sheets',
+        name: 'Plastic Perforated Sheets',
+        description: 'Browse perforated sheet options for guards, panels, airflow, drainage, and fabrication projects.',
+      },
+    ],
+  },
+  'how-to-specify-shaft-grounding-rings-for-vfd-motors': {
+    title: 'Continue into VFD Motor Protection Categories',
+    description:
+      'Use these categories to move from bearing-current diagnosis into the products buyers compare for motor reliability and retrofit work.',
+    categories: [
+      {
+        slug: 'shaft-grounding-rings',
+        name: 'Shaft Grounding Rings',
+        description: 'Compare shaft grounding ring options for retrofit fit, contamination tolerance, and VFD duty.',
+      },
+      {
+        slug: 'plain-bearings',
+        name: 'Plain Bearings and Oil Seals',
+        description: 'Review adjacent rotating-equipment reliability products often purchased during maintenance troubleshooting.',
+      },
+    ],
+  },
+  'how-to-choose-oil-seals-for-rotating-equipment': {
+    title: 'Move from Oil Seal Selection into Product Categories',
+    description:
+      'After confirming size, lip design, and elastomer, use these categories to compare the rotating-equipment products buyers usually shortlist next.',
+    categories: [
+      {
+        slug: 'plain-bearings',
+        name: 'Plain Bearings and Oil Seals',
+        description: 'Browse oil-seal and adjacent rotating-equipment products with clearer commercial next steps.',
       },
     ],
   },

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { getOrderById, getPool } from '@/lib/db'
+import { recordOrderEvent } from '@/lib/order-events'
 import { syncPartnerCommissionForOrderId } from '@/lib/partner-program'
 
 function getStripe() {
@@ -99,6 +100,19 @@ export async function POST(req: NextRequest) {
 
         await syncPartnerCommissionForOrderId(orderId)
 
+        await recordOrderEvent({
+          orderNumber: order.order_number,
+          orderId,
+          type: 'payment.paid',
+          data: {
+            paymentMethod: 'stripe',
+            source: 'checkout-session',
+          },
+          oncePerOrder: true,
+        }).catch((orderEventError) => {
+          console.error(`Failed to record payment.paid event for order ${order.order_number}:`, orderEventError)
+        })
+
         console.log(`Order ${orderNumber} marked as paid via Stripe Checkout Session`)
       } catch (err) {
         console.error(`Failed to update order ${orderNumber}:`, err)
@@ -163,6 +177,19 @@ export async function POST(req: NextRequest) {
         )
 
         await syncPartnerCommissionForOrderId(orderId)
+
+        await recordOrderEvent({
+          orderNumber: order.order_number,
+          orderId,
+          type: 'payment.paid',
+          data: {
+            paymentMethod: 'stripe',
+            source: 'payment-intent',
+          },
+          oncePerOrder: true,
+        }).catch((orderEventError) => {
+          console.error(`Failed to record payment.paid event for order ${order.order_number}:`, orderEventError)
+        })
 
         console.log(`Order ${orderNumber} marked as paid via Stripe PaymentIntent (embedded)`)
       } catch (err) {

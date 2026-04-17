@@ -110,7 +110,7 @@ function CheckoutForm({ returnPath, onSuccess, onError, onCancel }: CheckoutForm
 }
 
 interface StripePaymentProps {
-  orderNumber: string
+  orderPath: string
   amount: number
   currency: string
   clientSecret: string
@@ -121,7 +121,7 @@ interface StripePaymentProps {
 
 // 主组件
 export default function StripePayment({
-  orderNumber,
+  orderPath,
   amount,
   currency,
   clientSecret,
@@ -224,7 +224,7 @@ export default function StripePayment({
         }}
       >
         <CheckoutForm
-          returnPath={`/order/${orderNumber}?provider=stripe`}
+          returnPath={orderPath}
           onSuccess={onSuccess}
           onError={onError}
           onCancel={onCancel}

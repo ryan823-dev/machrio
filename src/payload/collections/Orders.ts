@@ -1,4 +1,5 @@
 import type { CollectionConfig } from 'payload'
+import { recordOrderEvent } from '@/lib/order-events'
 
 export const Orders: CollectionConfig = {
   slug: 'orders',
@@ -10,6 +11,54 @@ export const Orders: CollectionConfig = {
     useAsTitle: 'orderNumber',
     group: '销售',
     defaultColumns: ['orderNumber', 'customer.company', 'status', 'paymentStatus', 'total', 'createdAt'],
+  },
+  hooks: {
+    afterChange: [
+      async ({ operation, doc, previousDoc }) => {
+        if (operation !== 'update') return
+
+        const orderNumber = typeof doc?.orderNumber === 'string' ? doc.orderNumber : ''
+        if (!orderNumber) return
+
+        const currentStatus = typeof doc?.status === 'string' ? doc.status : ''
+        const previousStatus = typeof previousDoc?.status === 'string' ? previousDoc.status : ''
+        const currentShipping = doc?.shipping && typeof doc.shipping === 'object'
+          ? doc.shipping as Record<string, unknown>
+          : {}
+        const previousShipping = previousDoc?.shipping && typeof previousDoc.shipping === 'object'
+          ? previousDoc.shipping as Record<string, unknown>
+          : {}
+
+        const currentTrackingNumber = typeof currentShipping.trackingNumber === 'string'
+          ? currentShipping.trackingNumber.trim()
+          : ''
+        const previousTrackingNumber = typeof previousShipping.trackingNumber === 'string'
+          ? previousShipping.trackingNumber.trim()
+          : ''
+        const currentShippingMethod = typeof currentShipping.method === 'string'
+          ? currentShipping.method.trim()
+          : ''
+
+        const wasShipped = previousStatus === 'shipped' || previousStatus === 'delivered' || Boolean(previousTrackingNumber)
+        const isShipped = currentStatus === 'shipped' || currentStatus === 'delivered' || Boolean(currentTrackingNumber)
+
+        if (!isShipped || wasShipped) return
+
+        await recordOrderEvent({
+          orderNumber,
+          orderId: typeof doc?.id === 'string' ? doc.id : String(doc?.id || ''),
+          type: 'shipment.created',
+          data: {
+            shippingMethod: currentShippingMethod,
+            trackingNumber: currentTrackingNumber,
+            status: currentStatus,
+          },
+          oncePerOrder: true,
+        }).catch((orderEventError) => {
+          console.error(`Failed to record shipment.created event for order ${orderNumber}:`, orderEventError)
+        })
+      },
+    ],
   },
   fields: [
     {

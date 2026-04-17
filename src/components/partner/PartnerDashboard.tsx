@@ -5,8 +5,6 @@ import Link from 'next/link'
 import {
   clearSession,
   fetchWithAuth,
-  getSession,
-  setSession,
 } from '@/lib/account'
 import { PartnerCodeStep, PartnerEmailStep } from './PartnerAuthPanels'
 
@@ -123,18 +121,32 @@ export function PartnerDashboard() {
   }
 
   useEffect(() => {
-    const session = getSession()
-    if (session?.isValid) {
-      setEmail(session.email)
-      void loadDashboard()
-      return
+    clearSession()
+
+    async function checkSession() {
+      try {
+        const response = await fetch('/api/account/me', {
+          credentials: 'same-origin',
+          cache: 'no-store',
+        })
+        const payload = await response.json().catch(() => ({}))
+
+        if (response.ok && payload.authenticated && payload.email) {
+          setEmail(String(payload.email))
+          await loadDashboard()
+          return
+        }
+      } catch {
+        // Show sign-in UI when the session check fails
+      }
+
+      setLoading(false)
     }
 
-    setLoading(false)
+    void checkSession()
   }, [])
 
-  const handleVerified = (token: string, expiresAt: string) => {
-    setSession(token, email, expiresAt)
+  const handleVerified = () => {
     void loadDashboard()
   }
 

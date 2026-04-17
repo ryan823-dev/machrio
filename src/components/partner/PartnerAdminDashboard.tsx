@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { clearSession, fetchWithAuth, getSession, setSession } from '@/lib/account'
+import { clearSession, fetchWithAuth } from '@/lib/account'
 import { PartnerCodeStep, PartnerEmailStep } from './PartnerAuthPanels'
 
 function formatMoney(value: number, currency = 'USD') {
@@ -109,14 +109,29 @@ export function PartnerAdminDashboard() {
   }
 
   useEffect(() => {
-    const session = getSession()
-    if (session?.isValid) {
-      setEmail(session.email)
-      void loadOverview()
-      return
+    clearSession()
+
+    async function checkSession() {
+      try {
+        const response = await fetch('/api/account/me', {
+          credentials: 'same-origin',
+          cache: 'no-store',
+        })
+        const payload = await response.json().catch(() => ({}))
+
+        if (response.ok && payload.authenticated && payload.email) {
+          setEmail(String(payload.email))
+          await loadOverview()
+          return
+        }
+      } catch {
+        // Show sign-in flow when session lookup fails
+      }
+
+      setLoading(false)
     }
 
-    setLoading(false)
+    void checkSession()
   }, [])
 
   const handlePartnerAction = async (
@@ -336,8 +351,7 @@ export function PartnerAdminDashboard() {
             setStep('email')
             setError('')
           }}
-          onVerified={(token, expiresAt) => {
-            setSession(token, email, expiresAt)
+          onVerified={() => {
             void loadOverview()
           }}
         />

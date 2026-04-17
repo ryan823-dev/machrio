@@ -1,5 +1,5 @@
 import { Pool, PoolClient, QueryResult, QueryResultRow } from 'pg'
-import { STATIC_GLOSSARY_TERMS } from '@/lib/static-glossary-terms'
+import { STATIC_GLOSSARY_TERMS, getStaticGlossaryAliasTarget } from '@/lib/static-glossary-terms'
 
 // 全局连接池 - Vercel Serverless 环境使用 globalThis 持久化
 let globalPool: Pool | null = null
@@ -544,7 +544,8 @@ export async function getGlossaryTerms(limit?: number): Promise<GlossaryTermRow[
 }
 
 export async function getGlossaryTermBySlug(slug: string): Promise<GlossaryTermRow | null> {
-  const staticTerm = getStaticGlossaryRows().find((term) => term.slug === slug) || null
+  const canonicalSlug = getStaticGlossaryAliasTarget(slug) || slug
+  const staticTerm = getStaticGlossaryRows().find((term) => term.slug === canonicalSlug) || null
 
   if (!process.env.DATABASE_URI) {
     return staticTerm
@@ -554,7 +555,7 @@ export async function getGlossaryTermBySlug(slug: string): Promise<GlossaryTermR
   try {
     const result = await pool.query(
       `SELECT * FROM glossary_terms WHERE slug = $1 AND status = 'published'`,
-      [slug]
+      [canonicalSlug]
     )
     return (
       result.rows[0]
@@ -577,9 +578,15 @@ export interface OrderRow {
   id: string
   order_number: string
   customer_email: string
+  customer_ref?: number | null
+  customer_ref_id?: string | null
   customer_name: string
   customer_phone: string | null
   customer_company: string | null
+  ownership_status?: string | null
+  guest_email?: string | null
+  claimed_at?: string | null
+  placed_by_type?: string | null
   status: string
   payment_status: string
   payment_method: string | null
@@ -597,12 +604,111 @@ export interface OrderRow {
   updated_at: string
 }
 
+type RfqSubmissionStorageMode = 'legacy' | 'payload' | 'unknown'
+
+export interface RfqSubmissionRow {
+  id: string
+  customer_name: string
+  customer_email: string
+  customer_phone: string | null
+  customer_company: string | null
+  message: string
+  status: string | null
+  submitted_at: string | null
+  created_at: string | null
+}
+
+let rfqSubmissionStorageModePromise: Promise<RfqSubmissionStorageMode> | null = null
+
+async function detectRfqSubmissionStorageMode(): Promise<RfqSubmissionStorageMode> {
+  const pool = getPool()
+  const result = await pool.query<{ column_name: string }>(
+    `SELECT column_name
+     FROM information_schema.columns
+     WHERE table_name = 'rfq_submissions'
+       AND column_name = ANY($1::text[])`,
+    [[
+      'customer_email',
+      'customer_name',
+      'customer_phone',
+      'customer_company',
+      'customer_ref',
+      'customer',
+      'inquiry',
+      'customer_ref_id',
+    ]],
+  )
+
+  const columns = new Set(result.rows.map((row) => row.column_name))
+  if (columns.has('customer_email')) return 'legacy'
+  if (columns.has('customer') || columns.has('inquiry')) return 'payload'
+  return 'unknown'
+}
+
+async function getRfqSubmissionStorageMode(): Promise<RfqSubmissionStorageMode> {
+  if (!rfqSubmissionStorageModePromise) {
+    rfqSubmissionStorageModePromise = detectRfqSubmissionStorageMode().catch((error) => {
+      rfqSubmissionStorageModePromise = null
+      throw error
+    })
+  }
+
+  return rfqSubmissionStorageModePromise
+}
+
+export async function ensureCustomerReferenceColumns(): Promise<void> {
+  const pool = getPool()
+
+  await pool.query(`
+    ALTER TABLE IF EXISTS orders
+    ADD COLUMN IF NOT EXISTS customer_ref INTEGER,
+    ADD COLUMN IF NOT EXISTS customer_ref_id UUID,
+    ADD COLUMN IF NOT EXISTS ownership_status TEXT,
+    ADD COLUMN IF NOT EXISTS guest_email TEXT,
+    ADD COLUMN IF NOT EXISTS claimed_at TIMESTAMPTZ,
+    ADD COLUMN IF NOT EXISTS placed_by_type TEXT
+  `)
+
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_customer_ref ON orders(customer_ref)`)
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_customer_ref_id ON orders(customer_ref_id)`)
+  await pool.query(`CREATE INDEX IF NOT EXISTS idx_orders_ownership_status ON orders(ownership_status)`)
+
+  const rfqStorageMode = await getRfqSubmissionStorageMode()
+  if (rfqStorageMode === 'legacy') {
+    await pool.query(`
+      ALTER TABLE IF EXISTS rfq_submissions
+      ADD COLUMN IF NOT EXISTS customer_ref INTEGER
+    `)
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_rfq_submissions_customer_ref ON rfq_submissions(customer_ref)`)
+  } else if (rfqStorageMode === 'payload') {
+    await pool.query(`CREATE INDEX IF NOT EXISTS idx_rfq_submissions_customer_ref_id ON rfq_submissions(customer_ref_id)`)
+  }
+}
+
 export async function getOrderByNumber(orderNumber: string): Promise<OrderRow | null> {
   const pool = getPool()
   try {
+    const normalizedOrderNumber = orderNumber.trim()
+    const uppercaseOrderNumber = normalizedOrderNumber.toUpperCase()
+    const candidateOrderNumbers = Array.from(new Set([
+      normalizedOrderNumber,
+      uppercaseOrderNumber,
+    ].filter(Boolean)))
+
+    if (candidateOrderNumbers.length === 0) {
+      return null
+    }
+
     const result = await pool.query(
-      `SELECT * FROM orders WHERE order_number = $1`,
-      [orderNumber]
+      `SELECT * FROM orders
+       WHERE order_number = ANY($1::text[])
+       ORDER BY CASE
+         WHEN order_number = $2 THEN 0
+         WHEN order_number = $3 THEN 1
+         ELSE 2
+       END
+       LIMIT 1`,
+      [candidateOrderNumbers, normalizedOrderNumber, uppercaseOrderNumber]
     )
     return result.rows[0] || null
   } catch {
@@ -626,9 +732,14 @@ export async function getOrderById(orderId: string): Promise<OrderRow | null> {
 export async function createOrder(data: {
   orderNumber: string
   customerEmail: string
+  customerRef?: number
   customerName: string
   customerPhone?: string
   customerCompany?: string
+  ownershipStatus?: string
+  guestEmail?: string
+  claimedAt?: string
+  placedByType?: string
   status: string
   paymentStatus: string
   paymentMethod?: string
@@ -644,16 +755,30 @@ export async function createOrder(data: {
 }): Promise<OrderRow | null> {
   const pool = getPool()
   try {
+    await ensureCustomerReferenceColumns()
+
     const result = await pool.query(
       `INSERT INTO orders (
-        order_number, customer_email, customer_name, customer_phone, customer_company,
+        order_number, customer_email, customer_ref, customer_name, customer_phone, customer_company,
+        ownership_status, guest_email, claimed_at, placed_by_type,
         status, payment_status, payment_method, subtotal, shipping_cost, tax, total, currency,
         shipping_address, billing_address, items, notes
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+      ) VALUES (
+        $1, $2, $3, $4, $5, $6,
+        $7, $8, $9, $10,
+        $11, $12, $13, $14, $15, $16, $17, $18,
+        $19, $20, $21, $22
+      )
       RETURNING *`,
       [
-        data.orderNumber, data.customerEmail, data.customerName, data.customerPhone || null,
-        data.customerCompany || null, data.status, data.paymentStatus, data.paymentMethod || null,
+        data.orderNumber, data.customerEmail, data.customerRef || null,
+        data.customerName, data.customerPhone || null,
+        data.customerCompany || null,
+        data.ownershipStatus || null,
+        data.guestEmail || null,
+        data.claimedAt || null,
+        data.placedByType || null,
+        data.status, data.paymentStatus, data.paymentMethod || null,
         data.subtotal, data.shippingCost, data.tax, data.total, data.currency,
         JSON.stringify(data.shippingAddress), JSON.stringify(data.billingAddress),
         JSON.stringify(data.items), data.notes || null
@@ -670,9 +795,110 @@ export async function createOrder(data: {
 // RFQ Submissions 查询
 // ============================================
 
+export async function getRfqSubmissionsByEmail(
+  email: string,
+  limit = 50,
+): Promise<RfqSubmissionRow[]> {
+  const normalizedEmail = email.trim().toLowerCase()
+  if (!normalizedEmail) return []
+
+  const pool = getPool()
+  const storageMode = await getRfqSubmissionStorageMode()
+
+  if (storageMode === 'legacy') {
+    const result = await pool.query<RfqSubmissionRow>(
+      `SELECT id::text AS id,
+              COALESCE(customer_name, '') AS customer_name,
+              LOWER(COALESCE(customer_email, '')) AS customer_email,
+              customer_phone,
+              customer_company,
+              COALESCE(message, '') AS message,
+              status,
+              submitted_at,
+              created_at
+       FROM rfq_submissions
+       WHERE LOWER(customer_email) = $1
+       ORDER BY submitted_at DESC NULLS LAST, created_at DESC
+       LIMIT $2`,
+      [normalizedEmail, limit],
+    )
+    return result.rows
+  }
+
+  if (storageMode === 'payload') {
+    const result = await pool.query<RfqSubmissionRow>(
+      `SELECT id::text AS id,
+              COALESCE(customer->>'name', '') AS customer_name,
+              LOWER(COALESCE(customer->>'email', '')) AS customer_email,
+              NULLIF(customer->>'phone', '') AS customer_phone,
+              NULLIF(customer->>'company', '') AS customer_company,
+              COALESCE(inquiry->>'message', notes, '') AS message,
+              status,
+              submitted_at,
+              created_at
+       FROM rfq_submissions
+       WHERE LOWER(COALESCE(customer->>'email', '')) = $1
+       ORDER BY submitted_at DESC NULLS LAST, created_at DESC
+       LIMIT $2`,
+      [normalizedEmail, limit],
+    )
+    return result.rows
+  }
+
+  return []
+}
+
+export async function getLatestRfqSubmissionByEmail(
+  email: string,
+): Promise<RfqSubmissionRow | null> {
+  const rows = await getRfqSubmissionsByEmail(email, 1)
+  return rows[0] || null
+}
+
+export async function linkRfqSubmissionsToCustomerByEmail(
+  email: string,
+  customerId: string | number,
+): Promise<void> {
+  const normalizedEmail = email.trim().toLowerCase()
+  if (!normalizedEmail) return
+
+  const pool = getPool()
+  const storageMode = await getRfqSubmissionStorageMode()
+
+  if (storageMode === 'legacy') {
+    const numericCustomerId = typeof customerId === 'number'
+      ? customerId
+      : Number.parseInt(String(customerId), 10)
+
+    if (!Number.isInteger(numericCustomerId)) return
+
+    await pool.query(
+      `UPDATE rfq_submissions
+       SET customer_ref = $1
+       WHERE LOWER(customer_email) = $2
+         AND customer_ref IS DISTINCT FROM $1`,
+      [numericCustomerId, normalizedEmail],
+    )
+    return
+  }
+
+  if (storageMode === 'payload') {
+    if (typeof customerId !== 'string' || !customerId.trim()) return
+
+    await pool.query(
+      `UPDATE rfq_submissions
+       SET customer_ref_id = $1::uuid
+       WHERE LOWER(COALESCE(customer->>'email', '')) = $2
+         AND customer_ref_id IS DISTINCT FROM $1::uuid`,
+      [customerId, normalizedEmail],
+    )
+  }
+}
+
 export async function createRFQSubmission(data: {
   customerName: string
   customerEmail: string
+  customerRef?: number
   customerPhone?: string
   customerCompany: string
   message: string
@@ -680,14 +906,43 @@ export async function createRFQSubmission(data: {
 }): Promise<{ id: string } | null> {
   const pool = getPool()
   try {
+    await ensureCustomerReferenceColumns()
+    const storageMode = await getRfqSubmissionStorageMode()
+
+    if (storageMode === 'payload') {
+      const result = await pool.query(
+        `INSERT INTO rfq_submissions (
+          customer, inquiry, source, status, submitted_at
+        ) VALUES ($1::jsonb, $2::jsonb, $3::jsonb, $4, $5)
+        RETURNING id::text AS id`,
+        [
+          JSON.stringify({
+            name: data.customerName,
+            email: data.customerEmail,
+            phone: data.customerPhone || '',
+            company: data.customerCompany,
+          }),
+          JSON.stringify({
+            message: data.message,
+          }),
+          JSON.stringify({
+            page: data.sourcePage || '/rfq',
+          }),
+          'new',
+          new Date().toISOString(),
+        ],
+      )
+      return result.rows[0] || null
+    }
     const result = await pool.query(
       `INSERT INTO rfq_submissions (
-        customer_name, customer_email, customer_phone, customer_company,
+        customer_name, customer_email, customer_ref, customer_phone, customer_company,
         message, source_page, status, submitted_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
       RETURNING id::text AS id`,
       [
-        data.customerName, data.customerEmail, data.customerPhone || null,
+        data.customerName, data.customerEmail, data.customerRef || null,
+        data.customerPhone || null,
         data.customerCompany, data.message, data.sourcePage || '/rfq',
         'new', new Date().toISOString()
       ]
@@ -1043,26 +1298,20 @@ export async function getProductShippingInfo(productId: string): Promise<{
       `SELECT shipping_info, weight FROM products WHERE id::text = $1 OR sku = $1 LIMIT 1`,
       [productId]
     )
-
-    const row = result.rows[0]
+    const row = result.rows[0] as { shipping_info?: unknown; weight?: unknown } | undefined
     if (!row) {
       return { weight: 0, processingTime: 3 }
     }
 
     let parsedShippingInfo: Record<string, unknown> | null = null
-    if (row.shipping_info) {
-      if (typeof row.shipping_info === 'string') {
-        try {
-          const parsed = JSON.parse(row.shipping_info)
-          if (parsed && typeof parsed === 'object') {
-            parsedShippingInfo = parsed as Record<string, unknown>
-          }
-        } catch {
-          parsedShippingInfo = null
-        }
-      } else if (typeof row.shipping_info === 'object') {
-        parsedShippingInfo = row.shipping_info as Record<string, unknown>
+    if (typeof row.shipping_info === 'string' && row.shipping_info.trim()) {
+      try {
+        parsedShippingInfo = JSON.parse(row.shipping_info) as Record<string, unknown>
+      } catch {
+        parsedShippingInfo = null
       }
+    } else if (row.shipping_info && typeof row.shipping_info === 'object') {
+      parsedShippingInfo = row.shipping_info as Record<string, unknown>
     }
 
     const rawWeight = parsedShippingInfo?.weight ?? row.weight

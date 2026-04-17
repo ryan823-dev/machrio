@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 // 完全静态生成，构建时生成 HTML
 export const dynamic = 'force-static'
@@ -8,6 +8,8 @@ import { useRouter } from 'next/navigation'
 import { useCart } from '@/contexts/CartContext'
 import StripePayment from '@/components/StripePayment'
 import { FREE_SHIPPING_THRESHOLD_USD, formatUsd } from '@/lib/shipping/rules'
+import { fetchWithAuth } from '@/lib/account'
+import { appendQueryParamsToPath } from '@/lib/order-access-links'
 
 interface CheckoutForm {
   name: string
@@ -19,6 +21,9 @@ interface CheckoutForm {
   state: string
   postalCode: string
   country: string
+  companyLegalName: string
+  taxId: string
+  billingAddress: string
   paymentMethod: 'stripe' | 'paypal' | 'bank-transfer'
   preferredCurrency: string
   notes: string
@@ -34,9 +39,37 @@ const initialForm: CheckoutForm = {
   state: '',
   postalCode: '',
   country: 'US',
+  companyLegalName: '',
+  taxId: '',
+  billingAddress: '',
   paymentMethod: 'stripe',
   preferredCurrency: 'USD',
   notes: '',
+}
+
+interface AccountProfile {
+  name: string
+  company: string
+  phone: string
+  email: string
+}
+
+interface SavedShippingAddress {
+  label: string
+  address: string
+  city: string
+  state: string
+  postalCode: string
+  country: string
+}
+
+const SHIPPING_ADDRESS_FORM_FIELDS = ['address', 'city', 'state', 'postalCode', 'country'] as const
+type ShippingAddressFormField = (typeof SHIPPING_ADDRESS_FORM_FIELDS)[number]
+
+interface BillingInfo {
+  companyLegalName: string
+  taxId: string
+  billingAddress: string
 }
 
 const COUNTRY_CURRENCY_MAP: { code: string; name: string; flag: string; currency: string; currencyName: string }[] = [
@@ -73,13 +106,85 @@ function getPreferredCurrencyForCountry(country: string): string {
   return match.currency
 }
 
+function buildAccountProfile(value: unknown): AccountProfile {
+  const profile = value && typeof value === 'object'
+    ? value as Record<string, unknown>
+    : {}
+
+  return {
+    name: typeof profile.name === 'string' ? profile.name : '',
+    company: typeof profile.company === 'string' ? profile.company : '',
+    phone: typeof profile.phone === 'string' ? profile.phone : '',
+    email: typeof profile.email === 'string' ? profile.email : '',
+  }
+}
+
+function buildSavedShippingAddresses(value: unknown): SavedShippingAddress[] {
+  if (!Array.isArray(value)) return []
+
+  return value
+    .map((entry) => {
+      const address = entry && typeof entry === 'object'
+        ? entry as Record<string, unknown>
+        : {}
+
+      return {
+        label: typeof address.label === 'string' ? address.label : '',
+        address: typeof address.address === 'string' ? address.address : '',
+        city: typeof address.city === 'string' ? address.city : '',
+        state: typeof address.state === 'string' ? address.state : '',
+        postalCode: typeof address.postalCode === 'string' ? address.postalCode : '',
+        country: typeof address.country === 'string' && address.country ? address.country : 'US',
+      }
+    })
+    .filter((address) => (
+      Boolean(
+        address.address.trim()
+        || address.city.trim()
+        || address.state.trim()
+        || address.postalCode.trim(),
+      )
+    ))
+}
+
+function normalizeComparableText(value: string): string {
+  return value.trim().toLowerCase()
+}
+
+function getSavedShippingAddressTitle(address: SavedShippingAddress, index: number): string {
+  return address.label.trim() || `Saved Address ${index + 1}`
+}
+
+function getSavedShippingAddressSummary(address: SavedShippingAddress): string {
+  return [
+    address.address,
+    [address.city, address.state, address.postalCode].filter(Boolean).join(', '),
+    address.country,
+  ]
+    .filter((value) => value && value.trim())
+    .join(' • ')
+}
+
+function buildBillingInfo(value: unknown): BillingInfo {
+  const billing = value && typeof value === 'object'
+    ? value as Record<string, unknown>
+    : {}
+
+  return {
+    companyLegalName: typeof billing.companyLegalName === 'string' ? billing.companyLegalName : '',
+    taxId: typeof billing.taxId === 'string' ? billing.taxId : '',
+    billingAddress: typeof billing.billingAddress === 'string' ? billing.billingAddress : '',
+  }
+}
+
 // 嵌入式支付订单信息
 interface PendingOrder {
   orderNumber: string
+  orderPath: string
+  invoicePath?: string
   amount: number
   currency: string
   clientSecret: string
-  stripeUrl?: string // 回退跳转 URL
 }
 
 export default function CheckoutPage() {
@@ -87,7 +192,7 @@ export default function CheckoutPage() {
   const {
     items, selectedItems, itemCount, subtotal, shippingCost, total,
     shippingMethodCode, shippingQuotes, shippingLoading, estimatedShipDate, totalWeight,
-    clearCart, setShippingCountry, setShippingMethod,
+    clearCart, setShippingCountry, setShippingMethod, hasLiveShippingQuote,
   } = useCart()
   const [form, setForm] = useState<CheckoutForm>(initialForm)
   const [submitting, setSubmitting] = useState(false)
@@ -95,20 +200,242 @@ export default function CheckoutPage() {
   // 嵌入式支付状态
   const [showStripePayment, setShowStripePayment] = useState(false)
   const [pendingOrder, setPendingOrder] = useState<PendingOrder | null>(null)
+  const [isAuthenticatedAccount, setIsAuthenticatedAccount] = useState(false)
+  const [savedShippingAddresses, setSavedShippingAddresses] = useState<SavedShippingAddress[]>([])
+  const [shippingAddressMode, setShippingAddressMode] = useState<'saved' | 'new'>('new')
+  const [selectedSavedAddressIndex, setSelectedSavedAddressIndex] = useState<number | null>(null)
+  const [isPayPalAvailable, setIsPayPalAvailable] = useState(false)
+  const [hasCheckedPayPalAvailability, setHasCheckedPayPalAvailability] = useState(false)
+  const touchedFieldsRef = useRef<Set<keyof CheckoutForm>>(new Set())
+  const accountPrefillRequestedRef = useRef(false)
 
   // Only show selected items
   const selectedCartItems = items.filter(i => selectedItems.has(i.productId))
   const selectedQuote = shippingQuotes.find(q => q.code === shippingMethodCode)
-  const gapToFreeShipping = Math.max(0, FREE_SHIPPING_THRESHOLD_USD - subtotal)
+  const shippingDisplay = selectedQuote
+    ? (selectedQuote.isFreeShipping ? 'FREE' : `$${selectedQuote.cost.toFixed(2)}`)
+    : shippingLoading
+      ? 'Updating...'
+      : 'Quote required'
+  const totalDisplay = selectedQuote
+    ? `$${total.toFixed(2)}`
+    : shippingLoading
+      ? 'Updating...'
+      : 'Awaiting quote'
+  const canSubmitOrder = Boolean(selectedQuote)
+  const selectedSavedAddress = selectedSavedAddressIndex !== null
+    ? savedShippingAddresses[selectedSavedAddressIndex] || null
+    : null
+
+  function applyShippingAddress(address: SavedShippingAddress, nextMode: 'saved' | 'new', index: number | null) {
+    setShippingAddressMode(nextMode)
+    setSelectedSavedAddressIndex(index)
+    setForm((current) => ({
+      ...current,
+      address: address.address,
+      city: address.city,
+      state: address.state,
+      postalCode: address.postalCode,
+      country: address.country,
+      preferredCurrency: touchedFieldsRef.current.has('preferredCurrency')
+        ? current.preferredCurrency
+        : getPreferredCurrencyForCountry(address.country),
+    }))
+    setShippingCountry(address.country)
+  }
+
+  function handleSelectSavedAddress(index: number) {
+    const nextAddress = savedShippingAddresses[index]
+    if (!nextAddress) return
+
+    applyShippingAddress(nextAddress, 'saved', index)
+  }
+
+  function handleUseNewAddress() {
+    applyShippingAddress({
+      label: '',
+      address: '',
+      city: '',
+      state: '',
+      postalCode: '',
+      country: 'US',
+    }, 'new', null)
+  }
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadPaymentAvailability() {
+      try {
+        const response = await fetch('/api/paypal/config', {
+          cache: 'no-store',
+        })
+        const data = await response.json().catch(() => ({}))
+
+        if (cancelled) return
+
+        setIsPayPalAvailable(Boolean(data.configured))
+      } catch (paymentAvailabilityError) {
+        if (!cancelled) {
+          console.error('Failed to load PayPal availability:', paymentAvailabilityError)
+        }
+      } finally {
+        if (!cancelled) {
+          setHasCheckedPayPalAvailability(true)
+        }
+      }
+    }
+
+    loadPaymentAvailability()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    if (accountPrefillRequestedRef.current) return
+
+    accountPrefillRequestedRef.current = true
+    let cancelled = false
+
+    async function loadAccountPrefill() {
+      try {
+        const [profileRes, addressesRes, billingRes] = await Promise.all([
+          fetchWithAuth('/api/account/profile'),
+          fetchWithAuth('/api/account/addresses'),
+          fetchWithAuth('/api/account/billing'),
+        ])
+
+        if (
+          [profileRes.status, addressesRes.status, billingRes.status].every(
+            (status) => status === 401,
+          )
+        ) {
+          return
+        }
+
+        const [profileJson, addressesJson, billingJson] = await Promise.all([
+          profileRes.json().catch(() => ({})),
+          addressesRes.json().catch(() => ({})),
+          billingRes.json().catch(() => ({})),
+        ])
+
+        if (cancelled) return
+
+        const profile = profileRes.ok ? buildAccountProfile(profileJson.profile) : null
+        const shippingAddresses = addressesRes.ok
+          ? buildSavedShippingAddresses(addressesJson.addresses)
+          : []
+        const shippingAddress = shippingAddresses[0] || null
+        const billingInfo = billingRes.ok
+          ? buildBillingInfo(billingJson.billing)
+          : buildBillingInfo(null)
+        const shippingFieldsTouched = SHIPPING_ADDRESS_FORM_FIELDS.some((field) => (
+          touchedFieldsRef.current.has(field)
+        ))
+
+        setIsAuthenticatedAccount(profileRes.ok || addressesRes.ok || billingRes.ok)
+        setSavedShippingAddresses(shippingAddresses)
+
+        if (!shippingFieldsTouched && shippingAddresses.length > 0) {
+          setShippingAddressMode('saved')
+          setSelectedSavedAddressIndex(0)
+        }
+
+        let countryForShippingQuote: string | null = null
+        setForm((current) => {
+          const touchedFields = touchedFieldsRef.current
+          const nextCountry = !touchedFields.has('country') && shippingAddress?.country
+            ? shippingAddress.country
+            : current.country
+
+          const nextForm: CheckoutForm = {
+            ...current,
+            name: !touchedFields.has('name') && !current.name.trim()
+              ? profile?.name || current.name
+              : current.name,
+            email: !touchedFields.has('email') && !current.email.trim()
+              ? profile?.email || current.email
+              : current.email,
+            phone: !touchedFields.has('phone') && !current.phone.trim()
+              ? profile?.phone || current.phone
+              : current.phone,
+            company: !touchedFields.has('company') && !current.company.trim()
+              ? profile?.company || current.company
+              : current.company,
+            address: !touchedFields.has('address') && !current.address.trim()
+              ? shippingAddress?.address || current.address
+              : current.address,
+            city: !touchedFields.has('city') && !current.city.trim()
+              ? shippingAddress?.city || current.city
+              : current.city,
+            state: !touchedFields.has('state') && !current.state.trim()
+              ? shippingAddress?.state || current.state
+              : current.state,
+            postalCode: !touchedFields.has('postalCode') && !current.postalCode.trim()
+              ? shippingAddress?.postalCode || current.postalCode
+              : current.postalCode,
+            country: nextCountry,
+            companyLegalName: !touchedFields.has('companyLegalName') && !current.companyLegalName.trim()
+              ? billingInfo.companyLegalName || current.companyLegalName
+              : current.companyLegalName,
+            taxId: !touchedFields.has('taxId') && !current.taxId.trim()
+              ? billingInfo.taxId || current.taxId
+              : current.taxId,
+            billingAddress: !touchedFields.has('billingAddress') && !current.billingAddress.trim()
+              ? billingInfo.billingAddress || current.billingAddress
+              : current.billingAddress,
+            preferredCurrency: !touchedFields.has('preferredCurrency') && nextCountry !== current.country
+              ? getPreferredCurrencyForCountry(nextCountry)
+              : current.preferredCurrency,
+          }
+
+          if (nextCountry !== current.country) {
+            countryForShippingQuote = nextCountry
+          }
+
+          return nextForm
+        })
+
+        if (countryForShippingQuote) {
+          setShippingCountry(countryForShippingQuote)
+        }
+      } catch (prefillError) {
+        console.error('Failed to load checkout account prefill:', prefillError)
+      }
+    }
+
+    loadAccountPrefill()
+
+    return () => {
+      cancelled = true
+    }
+  }, [setShippingCountry])
 
   function updateField(field: keyof CheckoutForm, value: string) {
+    touchedFieldsRef.current.add(field)
+    if (field === 'country') {
+      setShippingCountry(value)
+    }
+
+    if (
+      SHIPPING_ADDRESS_FORM_FIELDS.includes(field as ShippingAddressFormField)
+      && shippingAddressMode === 'saved'
+      && selectedSavedAddress
+    ) {
+      const selectedValue = selectedSavedAddress[field as ShippingAddressFormField]
+      if (normalizeComparableText(value) !== normalizeComparableText(selectedValue)) {
+        setShippingAddressMode('new')
+        setSelectedSavedAddressIndex(null)
+      }
+    }
+
     setForm(prev => {
       const updated = { ...prev, [field]: value }
       // Auto-set currency when country changes (if bank transfer selected)
       if (field === 'country') {
         updated.preferredCurrency = getPreferredCurrencyForCountry(value)
-        // Sync shipping country for live re-quote
-        setShippingCountry(value)
       }
       return updated
     })
@@ -117,6 +444,12 @@ export default function CheckoutPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
+
+    if (!selectedQuote) {
+      setError('A live shipping quote is required before you can place this order.')
+      return
+    }
+
     setSubmitting(true)
 
     try {
@@ -136,6 +469,11 @@ export default function CheckoutPage() {
             state: form.state,
             postalCode: form.postalCode,
             country: form.country,
+          },
+          billing: {
+            companyLegalName: form.companyLegalName,
+            taxId: form.taxId,
+            billingAddress: form.billingAddress,
           },
           items: selectedCartItems.map(item => ({
             product: item.productId,
@@ -170,10 +508,11 @@ export default function CheckoutPage() {
         // 注意：不要在这里清空购物车，支付成功后再清空
         setPendingOrder({
           orderNumber: data.orderNumber,
+          orderPath: data.orderPath,
+          invoicePath: data.invoicePath,
           amount: data.total,
           currency: data.currency,
           clientSecret: data.stripeClientSecret,
-          stripeUrl: data.stripeUrl, // 保留跳转 URL 作为回退
         })
         setShowStripePayment(true)
         setSubmitting(false)
@@ -189,7 +528,7 @@ export default function CheckoutPage() {
         } else {
           // Bank transfer - go to order confirmation with invoice
           clearCart()
-          router.push(`/order/${data.orderNumber}`)
+          router.push(data.orderPath)
         }
       }
     } catch (err) {
@@ -203,7 +542,12 @@ export default function CheckoutPage() {
   function handleStripeSuccess() {
     clearCart() // 支付成功后清空购物车
     setShowStripePayment(false)
-    router.push(`/order/${pendingOrder?.orderNumber}?payment=success`)
+    if (!pendingOrder) return
+
+    router.push(appendQueryParamsToPath(pendingOrder.orderPath, {
+      payment: 'success',
+      provider: 'stripe',
+    }))
   }
 
   // 嵌入式支付失败回调
@@ -219,15 +563,12 @@ export default function CheckoutPage() {
       return
     }
 
-    if (pendingOrder?.stripeUrl) {
-      clearCart() // 取消时也清空购物车（订单已创建）
-      // 回退到 Stripe Checkout 跳转方式
-      window.location.href = pendingOrder.stripeUrl
-    } else {
-      clearCart()
-      setShowStripePayment(false)
-      router.push(`/order/${pendingOrder.orderNumber}?payment=cancelled&provider=stripe`)
-    }
+    clearCart()
+    setShowStripePayment(false)
+    router.push(appendQueryParamsToPath(pendingOrder.orderPath, {
+      payment: 'cancelled',
+      provider: 'stripe',
+    }))
   }
 
   // 嵌入式支付模式：优先显示支付表单（即使购物车已清空）
@@ -241,7 +582,9 @@ export default function CheckoutPage() {
             Please complete your payment below.
           </p>
           <StripePayment
-            orderNumber={pendingOrder.orderNumber}
+            orderPath={appendQueryParamsToPath(pendingOrder.orderPath, {
+              provider: 'stripe',
+            })}
             amount={pendingOrder.amount}
             currency={pendingOrder.currency}
             clientSecret={pendingOrder.clientSecret}
@@ -330,7 +673,88 @@ export default function CheckoutPage() {
 
           {/* Shipping Address */}
           <section className="rounded-lg border border-secondary-200 bg-white p-6">
-            <h2 className="text-lg font-bold text-secondary-900">Shipping Address</h2>
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-bold text-secondary-900">Shipping Address</h2>
+                {savedShippingAddresses.length > 0 ? (
+                  <p className="mt-1 text-sm text-secondary-500">
+                    Choose a saved address or switch to a new delivery location for this order.
+                  </p>
+                ) : isAuthenticatedAccount ? (
+                  <p className="mt-1 text-sm text-secondary-500">
+                    No saved shipping addresses yet. Enter a new one below and we&apos;ll save it after checkout.
+                  </p>
+                ) : null}
+              </div>
+              {savedShippingAddresses.length > 0 && (
+                <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${
+                  shippingAddressMode === 'saved'
+                    ? 'bg-primary-100 text-primary-800'
+                    : 'bg-secondary-100 text-secondary-700'
+                }`}>
+                  {shippingAddressMode === 'saved' ? 'Using saved address' : 'Creating a new address'}
+                </span>
+              )}
+            </div>
+
+            {savedShippingAddresses.length > 0 && (
+              <div className="mt-4 space-y-3">
+                {savedShippingAddresses.map((address, index) => {
+                  const isActive = shippingAddressMode === 'saved' && selectedSavedAddressIndex === index
+
+                  return (
+                    <button
+                      key={`saved-shipping-address-${index}`}
+                      type="button"
+                      onClick={() => handleSelectSavedAddress(index)}
+                      className={`w-full rounded-lg border p-4 text-left transition ${
+                        isActive
+                          ? 'border-primary-500 bg-primary-50'
+                          : 'border-secondary-200 hover:border-primary-300 hover:bg-secondary-50'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-semibold text-secondary-900">
+                            {getSavedShippingAddressTitle(address, index)}
+                          </p>
+                          <p className="mt-1 text-sm text-secondary-600">
+                            {getSavedShippingAddressSummary(address)}
+                          </p>
+                        </div>
+                        {isActive && (
+                          <span className="rounded-full bg-primary-600 px-2 py-1 text-xs font-semibold text-white">
+                            Selected
+                          </span>
+                        )}
+                      </div>
+                    </button>
+                  )
+                })}
+
+                <button
+                  type="button"
+                  onClick={handleUseNewAddress}
+                  className={`w-full rounded-lg border border-dashed p-4 text-left transition ${
+                    shippingAddressMode === 'new'
+                      ? 'border-primary-500 bg-primary-50'
+                      : 'border-secondary-300 text-secondary-700 hover:border-primary-300 hover:bg-secondary-50'
+                  }`}
+                >
+                  <p className="text-sm font-semibold text-secondary-900">Use a new shipping address</p>
+                  <p className="mt-1 text-sm text-secondary-500">
+                    Start with a blank form. If you place the order while signed in, we&apos;ll remember it for later.
+                  </p>
+                </button>
+              </div>
+            )}
+
+            {shippingAddressMode === 'saved' && selectedSavedAddress && (
+              <div className="mt-4 rounded-lg border border-primary-200 bg-primary-50 px-4 py-3 text-sm text-primary-800">
+                Editing the fields below will switch this order to a new shipping address while keeping your saved address intact.
+              </div>
+            )}
+
             <div className="mt-4 grid gap-4">
               <div>
                 <label className="block text-sm font-medium text-secondary-700">Street Address *</label>
@@ -394,6 +818,46 @@ export default function CheckoutPage() {
             </div>
           </section>
 
+          {/* Billing & Tax */}
+          <section className="rounded-lg border border-secondary-200 bg-white p-6">
+            <h2 className="text-lg font-bold text-secondary-900">Billing & Tax</h2>
+            <p className="mt-1 text-sm text-secondary-500">
+              Optional, but useful if you need invoice details prefilled for repeat orders.
+            </p>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="block text-sm font-medium text-secondary-700">Legal Company Name</label>
+                <input
+                  type="text"
+                  value={form.companyLegalName}
+                  onChange={e => updateField('companyLegalName', e.target.value)}
+                  className="input-field mt-1 w-full"
+                  placeholder="Acme Industrial Supplies LLC"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-secondary-700">Tax ID / VAT Number</label>
+                <input
+                  type="text"
+                  value={form.taxId}
+                  onChange={e => updateField('taxId', e.target.value)}
+                  className="input-field mt-1 w-full"
+                  placeholder="VAT / GST / EIN"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-secondary-700">Billing Address</label>
+                <textarea
+                  rows={2}
+                  value={form.billingAddress}
+                  onChange={e => updateField('billingAddress', e.target.value)}
+                  className="input-field mt-1 w-full"
+                  placeholder="Invoice address if different from shipping"
+                />
+              </div>
+            </div>
+          </section>
+
           {/* Payment Method */}
           <section className="rounded-lg border border-secondary-200 bg-white p-6">
             <h2 className="text-lg font-bold text-secondary-900">Payment Method</h2>
@@ -414,22 +878,24 @@ export default function CheckoutPage() {
                   </p>
                 </div>
               </label>
-              <label className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors ${form.paymentMethod === 'paypal' ? 'border-primary-500 bg-primary-50' : 'border-secondary-200 hover:bg-secondary-50'}`}>
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value="paypal"
-                  checked={form.paymentMethod === 'paypal'}
-                  onChange={() => updateField('paymentMethod', 'paypal')}
-                  className="mt-0.5"
-                />
-                <div>
-                  <span className="text-sm font-semibold text-secondary-900">PayPal</span>
-                  <p className="mt-0.5 text-xs text-secondary-500">
-                    Pay securely with your PayPal account or debit/credit card.
-                  </p>
-                </div>
-              </label>
+              {isPayPalAvailable ? (
+                <label className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors ${form.paymentMethod === 'paypal' ? 'border-primary-500 bg-primary-50' : 'border-secondary-200 hover:bg-secondary-50'}`}>
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="paypal"
+                    checked={form.paymentMethod === 'paypal'}
+                    onChange={() => updateField('paymentMethod', 'paypal')}
+                    className="mt-0.5"
+                  />
+                  <div>
+                    <span className="text-sm font-semibold text-secondary-900">PayPal</span>
+                    <p className="mt-0.5 text-xs text-secondary-500">
+                      Pay securely with your PayPal account or debit/credit card.
+                    </p>
+                  </div>
+                </label>
+              ) : null}
               <label className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors ${form.paymentMethod === 'bank-transfer' ? 'border-primary-500 bg-primary-50' : 'border-secondary-200 hover:bg-secondary-50'}`}>
                 <input
                   type="radio"
@@ -476,6 +942,12 @@ export default function CheckoutPage() {
                     ) : null
                   })()}
                 </div>
+              )}
+
+              {hasCheckedPayPalAvailability && !isPayPalAvailable && (
+                <p className="text-xs text-secondary-500">
+                  PayPal is temporarily unavailable in this environment. Please use Stripe or bank transfer for now.
+                </p>
               )}
             </div>
           </section>
@@ -572,7 +1044,14 @@ export default function CheckoutPage() {
                   </div>
                 )}
               </div>
-            ) : null}
+            ) : (
+              <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700">
+                <p className="font-medium">We do not have a live shipping rate for this destination yet.</p>
+                <p className="mt-1">
+                  Update the shipping country or contact <a href="mailto:sales@machrio.com" className="underline">sales@machrio.com</a> for a manual freight quote.
+                </p>
+              </div>
+            )}
 
             {/* Totals */}
             <div className="mt-4 border-t border-secondary-200 pt-4 space-y-2 text-sm">
@@ -582,22 +1061,18 @@ export default function CheckoutPage() {
               </div>
               <div className="flex justify-between text-secondary-600">
                 <span>Shipping</span>
-                <span>{shippingCost === 0 ? 'FREE' : `$${shippingCost.toFixed(2)}`}</span>
+                <span>{shippingDisplay}</span>
               </div>
               <div className="border-t border-secondary-200 pt-2 flex justify-between font-bold text-secondary-900 text-base">
                 <span>Total</span>
-                <span>${total.toFixed(2)}</span>
+                <span>{totalDisplay}</span>
               </div>
             </div>
 
-            {gapToFreeShipping > 0 ? (
-              <div className="mt-4 rounded-lg border border-green-200 bg-green-50 p-3 text-xs text-green-800">
-                Spend {formatUsd(gapToFreeShipping)} more to qualify for free shipping at {formatUsd(FREE_SHIPPING_THRESHOLD_USD)}.
-              </div>
-            ) : (
-              <div className="mt-4 rounded-lg border border-green-200 bg-green-50 p-3 text-xs text-green-800">
-                This order qualifies for free shipping because it meets the {formatUsd(FREE_SHIPPING_THRESHOLD_USD)} threshold.
-              </div>
+            {!shippingLoading && !hasLiveShippingQuote && (
+              <p className="mt-3 text-xs text-amber-600">
+                Orders can only be placed once a live shipping method is available for the selected destination.
+              </p>
             )}
 
             {error && (
@@ -608,10 +1083,10 @@ export default function CheckoutPage() {
 
             <button
               type="submit"
-              disabled={submitting}
+              disabled={submitting || !canSubmitOrder}
               className="btn-primary mt-6 w-full disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {submitting ? 'Placing Order...' : 'Place Order'}
+              {submitting ? 'Placing Order...' : canSubmitOrder ? 'Place Order' : 'Shipping Quote Required'}
             </button>
 
             <Link href="/cart" className="mt-3 block text-center text-sm text-secondary-500 hover:text-primary-700">

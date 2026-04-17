@@ -12,7 +12,7 @@
     {
       "name": "remind-unpaid-orders",
       "schedule": "0 9 * * *",
-      "command": "curl -H \"Authorization: Bearer $CRON_SECRET\" https://machrio.com/api/cron/remind-unpaid"
+      "command": "curl -H \"Authorization: Bearer $CRON_SECRET\" \"$NEXT_PUBLIC_SERVER_URL/api/cron/remind-unpaid\""
     }
   ]
 }

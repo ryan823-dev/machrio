@@ -5,9 +5,10 @@ import { useSearchParams } from 'next/navigation'
 
 interface PayPalCaptureHandlerProps {
   orderNumber: string
+  accessToken?: string
 }
 
-export function PayPalCaptureHandler({ orderNumber }: PayPalCaptureHandlerProps) {
+export function PayPalCaptureHandler({ orderNumber, accessToken }: PayPalCaptureHandlerProps) {
   const searchParams = useSearchParams()
   const [capturing, setCapturing] = useState(false)
   const [captured, setCaptured] = useState(false)
@@ -17,7 +18,6 @@ export function PayPalCaptureHandler({ orderNumber }: PayPalCaptureHandlerProps)
     const payment = searchParams.get('payment')
     const provider = searchParams.get('provider')
     const token = searchParams.get('token') // PayPal order ID
-    const PayerID = searchParams.get('PayerID')
 
     // Only handle PayPal success callbacks
     if (payment !== 'success' || provider !== 'paypal' || !token) {
@@ -27,6 +27,26 @@ export function PayPalCaptureHandler({ orderNumber }: PayPalCaptureHandlerProps)
     // Already captured or currently capturing
     if (captured || capturing) {
       return
+    }
+
+    async function reportPaymentFailure(message: string) {
+      try {
+        await fetch(`/api/orders/${encodeURIComponent(orderNumber)}/events`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            type: 'payment.failed',
+            accessToken,
+            data: {
+              paymentMethod: 'paypal',
+              message,
+              reason: 'capture-failed',
+            },
+          }),
+        })
+      } catch (reportError) {
+        console.error('Failed to report PayPal payment failure:', reportError)
+      }
     }
 
     async function capturePayment() {
@@ -40,6 +60,7 @@ export function PayPalCaptureHandler({ orderNumber }: PayPalCaptureHandlerProps)
           body: JSON.stringify({
             paypalOrderId: token,
             orderNumber,
+            accessToken,
           }),
         })
 
@@ -52,14 +73,16 @@ export function PayPalCaptureHandler({ orderNumber }: PayPalCaptureHandlerProps)
         setCaptured(true)
       } catch (err) {
         console.error('PayPal capture error:', err)
-        setError(err instanceof Error ? err.message : 'Failed to capture payment')
+        const message = err instanceof Error ? err.message : 'Failed to capture payment'
+        setError(message)
+        void reportPaymentFailure(message)
       } finally {
         setCapturing(false)
       }
     }
 
     capturePayment()
-  }, [searchParams, orderNumber, captured, capturing])
+  }, [searchParams, orderNumber, accessToken, captured, capturing])
 
   // Don't render anything if not PayPal
   const payment = searchParams.get('payment')

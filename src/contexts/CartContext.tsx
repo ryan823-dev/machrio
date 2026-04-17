@@ -58,6 +58,7 @@ interface CartContextType extends CartState {
   deselectAll: () => void
   setShippingCountry: (country: string) => void
   setShippingMethod: (code: string) => void
+  hasLiveShippingQuote: boolean
 }
 
 const STORAGE_KEY = 'machrio_cart'
@@ -124,6 +125,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   // Get shipping cost from selected method
   const selectedQuote = shippingQuotes.find(q => q.code === shippingMethodCode)
+  const hasLiveShippingQuote = Boolean(selectedQuote)
   const shippingCost = selectedQuote?.cost ?? 0
   const total = subtotal + shippingCost
 
@@ -139,6 +141,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setShippingQuotes([])
       setEstimatedShipDate('')
       setTotalWeight(0)
+      setShippingMethodCodeState('')
       return
     }
 
@@ -154,15 +157,21 @@ export function CartProvider({ children }: { children: ReactNode }) {
         }),
       })
       const data = await res.json()
-      if (data.success && data.methods) {
+      if (data.success && Array.isArray(data.methods) && data.methods.length > 0) {
         setShippingQuotes(data.methods)
         setEstimatedShipDate(data.estimatedShipDate || '')
         setTotalWeight(data.totalWeight || 0)
       } else {
         setShippingQuotes([])
+        setEstimatedShipDate('')
+        setTotalWeight(0)
+        setShippingMethodCodeState('')
       }
     } catch {
       setShippingQuotes([])
+      setEstimatedShipDate('')
+      setTotalWeight(0)
+      setShippingMethodCodeState('')
     } finally {
       setShippingLoading(false)
     }
@@ -278,6 +287,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       deselectAll,
       setShippingCountry,
       setShippingMethod,
+      hasLiveShippingQuote,
     }}>
       {children}
     </CartContext.Provider>

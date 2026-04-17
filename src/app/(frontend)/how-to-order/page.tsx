@@ -26,7 +26,7 @@ const howToSchema = {
       '@type': 'HowToStep',
       position: 1,
       name: 'Online Ordering',
-      text: 'Browse our catalog, add items to your cart, and proceed to checkout. Complete your payment securely using credit card (via Stripe) or select bank transfer for offline payment. Orders over $200 qualify for free shipping.',
+      text: 'Browse our catalog, add items to your cart, and proceed to checkout. Complete your payment securely using credit card (via Stripe) or select bank transfer for offline payment. Shipping is quoted live at checkout based on destination, weight, and shipping method.',
       url: 'https://machrio.com/how-to-order/#step-1',
     },
     {
@@ -69,7 +69,7 @@ export default function HowToOrderPage() {
           <div>
             <h2 className="text-lg font-semibold text-secondary-900">Online Ordering</h2>
             <p className="mt-2 text-sm leading-relaxed text-secondary-600">
-              Browse our catalog, add items to your cart, and proceed to checkout. Complete your payment securely using credit card (via Stripe) or select bank transfer for offline payment. Orders over $200 qualify for free shipping.
+              Browse our catalog, add items to your cart, and proceed to checkout. Complete your payment securely using credit card (via Stripe) or select bank transfer for offline payment. Shipping is quoted live at checkout based on destination, weight, and shipping method.
             </p>
             <p className="mt-2 text-sm text-secondary-600">
               Once your order is placed, you&apos;ll receive an email confirmation with your order number and tracking details.

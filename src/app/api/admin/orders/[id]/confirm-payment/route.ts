@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { sendEmail } from '@/lib/email'
+import { recordOrderEvent } from '@/lib/order-events'
 import { syncPartnerCommissionForOrderId } from '@/lib/partner-program'
+import { issueOrderAccessLinks } from '@/lib/order-access'
 
 export async function POST(
   req: NextRequest,
@@ -50,10 +52,39 @@ export async function POST(
     const total = order.total as number
     const currency = order.currency as string
 
+    await recordOrderEvent({
+      orderNumber,
+      orderId: String(order.id),
+      type: 'payment.paid',
+      data: {
+        paymentMethod: 'bank-transfer',
+        source: 'manual-confirmation',
+      },
+      oncePerOrder: true,
+    }).catch((orderEventError) => {
+      console.error(`Failed to record payment.paid event for order ${orderNumber}:`, orderEventError)
+    })
+
+    await recordOrderEvent({
+      orderNumber,
+      orderId: String(order.id),
+      type: 'payment.confirmed_manually',
+      data: {
+        note: typeof notes === 'string' ? notes : '',
+      },
+      oncePerOrder: true,
+    }).catch((orderEventError) => {
+      console.error(`Failed to record payment.confirmed_manually event for order ${orderNumber}:`, orderEventError)
+    })
+
     // Send payment confirmation email to customer if requested
     if (notifyCustomer) {
       const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'https://machrio.com'
-      const orderUrl = `${serverUrl}/order/${orderNumber}`
+      const { orderUrl } = await issueOrderAccessLinks({
+        orderNumber,
+        email: customerEmail,
+        baseUrl: serverUrl,
+      })
 
       await sendEmail({
         to: customerEmail,

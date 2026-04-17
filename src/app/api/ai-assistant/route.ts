@@ -123,11 +123,11 @@ function generateFallbackResponse(input: string, source?: string): string {
 
   if (lower.includes('shipping') || lower.includes('deliver')) {
     return `**Machrio Shipping:**\n\n` +
-      `• Same-day shipping on orders before 3PM EST\n` +
-      `• Standard delivery: 3-5 business days\n` +
-      `• Express: 1-2 business days\n` +
-      `• Free shipping on orders over $99\n\n` +
-      `Need to check stock on a specific item?`
+      `• Shipping is quoted live from item weight, destination, and shipping method\n` +
+      `• Available routes can include U.S. warehouse, DDP air, and DDP sea\n` +
+      `• Method-specific free-shipping thresholds may apply when configured\n` +
+      `• If no live rate is available, our team can confirm freight manually\n\n` +
+      `Need help checking shipping for a specific destination or order size?`
   }
 
   if (lower.includes('return') || lower.includes('refund')) {

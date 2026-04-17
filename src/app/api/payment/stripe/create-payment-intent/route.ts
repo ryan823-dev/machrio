@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { getOrderById } from '@/lib/db'
+import { getOrderById, getPool } from '@/lib/db'
+import { authorizeOrderAccess } from '@/lib/order-access'
+import { recordOrderEvent } from '@/lib/order-events'
 
 export const dynamic = 'force-dynamic'
 
@@ -14,6 +16,20 @@ function toMinorUnits(amount: unknown): number {
   const numericAmount = typeof amount === 'number' ? amount : Number(amount)
   if (!Number.isFinite(numericAmount) || numericAmount <= 0) return 0
   return Math.round(numericAmount * 100)
+}
+
+function getStoredPaymentMethod(order: Awaited<ReturnType<typeof getOrderById>>): string | null {
+  if (!order) return null
+
+  const paymentInfo = (order.payment_info || {}) as {
+    method?: string
+    stripe?: unknown
+    paypal?: unknown
+  }
+
+  return order.payment_method
+    || paymentInfo.method
+    || (paymentInfo.stripe ? 'stripe' : paymentInfo.paypal ? 'paypal' : null)
 }
 
 /**
@@ -32,7 +48,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json()
-    const { orderId, orderNumber } = body
+    const { orderId, orderNumber, accessToken } = body
 
     if (!orderId || typeof orderId !== 'string') {
       return NextResponse.json(
@@ -56,7 +72,21 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (order.payment_method !== 'stripe') {
+    const hasAccess = await authorizeOrderAccess({
+      order,
+      request,
+      accessToken: typeof accessToken === 'string' ? accessToken : undefined,
+      allowedPurposes: ['order-access', 'payment-retry'],
+    })
+
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 403 }
+      )
+    }
+
+    if (getStoredPaymentMethod(order) !== 'stripe') {
       return NextResponse.json(
         { error: 'Order is not configured for Stripe payment' },
         { status: 400 }
@@ -91,6 +121,41 @@ export async function POST(request: NextRequest) {
       },
       receipt_email: order.customer_email || undefined,
     })
+
+    const pool = getPool()
+    await pool.query(
+      `UPDATE orders
+       SET payment_info = jsonb_set(
+         COALESCE(payment_info, '{}'::jsonb) || '{"method":"stripe"}'::jsonb,
+         '{stripe}',
+         $1::jsonb,
+         true
+       ),
+           updated_at = NOW()
+       WHERE id::text = $2`,
+      [
+        JSON.stringify({
+          method: 'stripe',
+          stripePaymentIntentId: paymentIntent.id,
+          paymentType: 'retry',
+        }),
+        orderId,
+      ],
+    )
+
+    try {
+      await recordOrderEvent({
+        orderNumber: order.order_number,
+        orderId,
+        type: 'payment.pending',
+        data: {
+          paymentMethod: 'stripe',
+          source: 'retry',
+        },
+      })
+    } catch (orderEventError) {
+      console.error('Failed to record Stripe retry event:', orderEventError)
+    }
 
     return NextResponse.json({
       clientSecret: paymentIntent.client_secret,

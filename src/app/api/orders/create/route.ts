@@ -2,15 +2,27 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPool, createOrder } from '@/lib/db/index'
 import Stripe from 'stripe'
 import { sendOrderConfirmationEmail } from '@/lib/email'
+import { getAccountSessionFromRequest } from '@/lib/account-session'
+import {
+  type BillingInfoInput,
+  type ShippingAddressInput,
+  syncCustomerLinksByEmail,
+  syncCheckoutCustomerData,
+} from '@/lib/customer-service'
 import { normalizePurchaseMode } from '@/lib/purchase-mode'
-import { calculateShipping } from '@/lib/shipping/calculator'
+import { recordOrderEvent } from '@/lib/order-events'
 import { parsePricing } from '@/lib/pricing'
-import { FREE_SHIPPING_THRESHOLD_USD } from '@/lib/shipping/rules'
-import { createPayPalOrder, getPayPalApprovalUrl } from '@/lib/paypal'
+import { calculateShipping } from '@/lib/shipping/calculator'
+import { createPayPalOrder, getPayPalApprovalUrl, isPayPalConfigured } from '@/lib/paypal'
 import {
   attachPartnerAttributionToOrder,
   ensurePartnerProgramTables,
 } from '@/lib/partner-program'
+import {
+  issueOrderAccessLinks,
+  revokeOrderAccessTokensForOrder,
+} from '@/lib/order-access'
+import { appendQueryParamsToPath, toAbsoluteUrl } from '@/lib/order-access-links'
 
 const ALLOWED_CURRENCIES = new Set(['USD', 'HKD', 'EUR', 'GBP', 'CAD', 'CNY'])
 
@@ -43,6 +55,11 @@ interface OrderRequest {
     postalCode: string
     country: string
   }
+  billing?: {
+    companyLegalName?: string
+    taxId?: string
+    billingAddress?: string
+  }
   items: OrderItem[]
   subtotal: number
   shippingCost: number
@@ -53,9 +70,41 @@ interface OrderRequest {
   customerNotes?: string
 }
 
+interface ValidatedOrderItem {
+  productId: string
+  productName: string
+  sku: string
+  quantity: number
+  unitPrice: number
+  lineTotal: number
+}
+
 function normalizeCurrency(currency?: string): string {
   const normalized = currency?.toUpperCase() || 'USD'
   return ALLOWED_CURRENCIES.has(normalized) ? normalized : 'USD'
+}
+
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase()
+}
+
+function normalizeText(value?: string | null): string {
+  return value?.trim() || ''
+}
+
+function sanitizeBillingInfo(
+  billing?: OrderRequest['billing'],
+): BillingInfoInput {
+  return {
+    companyLegalName: normalizeText(billing?.companyLegalName),
+    taxId: normalizeText(billing?.taxId),
+    billingAddress: normalizeText(billing?.billingAddress),
+  }
+}
+
+function buildStoredBillingAddress(billingInfo: BillingInfoInput): Record<string, string> {
+  const storedBillingInfo = Object.entries(billingInfo).filter(([, value]) => Boolean(value))
+  return Object.fromEntries(storedBillingInfo) as Record<string, string>
 }
 
 function getBasePrice(pricing: unknown): number | null {
@@ -70,6 +119,110 @@ function getBasePrice(pricing: unknown): number | null {
 
 function toMinorUnits(amount: number): number {
   return Math.round(amount * 100)
+}
+
+function schedulePostOrderTasks(input: {
+  headers: Headers
+  orderId: string
+  orderNumber: string
+  orderCreatedAt?: string | Date | null
+  normalizedCustomerEmail: string
+  customerName: string
+  customerCompany: string
+  customerPhone?: string
+  paymentMethod: OrderRequest['paymentMethod']
+  total: number
+  currency: string
+  validatedItems: ValidatedOrderItem[]
+  shippingAddress: ShippingAddressInput
+  billingInfo: BillingInfoInput
+  isAuthenticatedCustomer: boolean
+  subtotal: number
+  orderAccessToken?: string
+}) {
+  const requestHeaders = new Headers(input.headers)
+
+  queueMicrotask(() => {
+    void (async () => {
+      try {
+        await recordOrderEvent({
+          orderNumber: input.orderNumber,
+          orderId: input.orderId,
+          type: 'order.created',
+          data: {
+            paymentMethod: input.paymentMethod,
+            total: input.total,
+            currency: input.currency,
+          },
+          createdAt: input.orderCreatedAt,
+          oncePerOrder: true,
+        })
+
+        await recordOrderEvent({
+          orderNumber: input.orderNumber,
+          orderId: input.orderId,
+          type: 'payment.pending',
+          data: {
+            paymentMethod: input.paymentMethod,
+            source: 'initial-checkout',
+          },
+          createdAt: input.orderCreatedAt,
+        })
+      } catch (orderEventError) {
+        console.error('Failed to record order creation timeline events:', orderEventError)
+      }
+
+      try {
+        await syncCheckoutCustomerData({
+          email: input.normalizedCustomerEmail,
+          name: input.customerName,
+          company: input.customerCompany,
+          phone: input.customerPhone,
+          source: 'direct',
+          shippingAddress: input.shippingAddress,
+          billingInfo: input.billingInfo,
+        })
+      } catch (checkoutCustomerSyncError) {
+        console.error('Failed to sync checkout customer data after order creation:', checkoutCustomerSyncError)
+      }
+
+      try {
+        await syncCustomerLinksByEmail(input.normalizedCustomerEmail, {
+          markAccountLinked: input.isAuthenticatedCustomer,
+        })
+      } catch (customerLinkError) {
+        console.error('Failed to sync customer links after order creation:', customerLinkError)
+      }
+
+      try {
+        await attachPartnerAttributionToOrder({
+          headers: requestHeaders,
+          orderId: input.orderId,
+          orderNumber: input.orderNumber,
+          subtotal: input.subtotal,
+          currency: input.currency,
+          orderStatus: 'pending',
+          paymentStatus: 'unpaid',
+        })
+      } catch (partnerAttributionError) {
+        console.error('Failed to attach partner attribution after order creation:', partnerAttributionError)
+      }
+
+      sendOrderConfirmationEmail({
+        orderNumber: input.orderNumber,
+        customerName: input.customerName,
+        customerEmail: input.normalizedCustomerEmail,
+        company: input.customerCompany,
+        total: input.total,
+        currency: input.currency,
+        paymentMethod: input.paymentMethod,
+        itemCount: input.validatedItems.length,
+        orderAccessToken: input.orderAccessToken,
+      }).catch((emailError) => console.error('Email send error:', emailError))
+    })().catch((postOrderTaskError) => {
+      console.error('Unexpected post-order task failure:', postOrderTaskError)
+    })
+  })
 }
 
 export async function POST(req: NextRequest) {
@@ -128,6 +281,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Shipping address is required' }, { status: 400 })
     }
 
+    const normalizedCustomerEmail = normalizeEmail(body.customer.email)
+    const shippingAddress: ShippingAddressInput = {
+      address: normalizeText(body.shipping.address),
+      city: normalizeText(body.shipping.city),
+      state: normalizeText(body.shipping.state),
+      postalCode: normalizeText(body.shipping.postalCode),
+      country: normalizeText(body.shipping.country) || 'US',
+      label: 'Checkout Shipping',
+    }
+    const billingInfo = sanitizeBillingInfo(body.billing)
+    const session = await getAccountSessionFromRequest(req).catch((sessionError) => {
+      console.error('Failed to read checkout account session:', sessionError)
+      return null
+    })
+    const isAuthenticatedCustomer = Boolean(
+      session && normalizeEmail(session.email) === normalizedCustomerEmail,
+    )
+
+    if (body.paymentMethod === 'paypal' && !isPayPalConfigured()) {
+      return NextResponse.json(
+        { error: 'PayPal is not configured for this environment' },
+        { status: 503 },
+      )
+    }
+
     const orderCurrency = body.paymentMethod === 'bank-transfer'
       ? normalizeCurrency(body.currency)
       : 'USD'
@@ -145,14 +323,7 @@ export async function POST(req: NextRequest) {
 
     const productById = new Map(productResult.rows.map(row => [row.id as string, row]))
     const productBySku = new Map(productResult.rows.map(row => [row.sku as string, row]))
-    const validatedItems: Array<{
-      productId: string
-      productName: string
-      sku: string
-      quantity: number
-      unitPrice: number
-      lineTotal: number
-    }> = []
+    const validatedItems: ValidatedOrderItem[] = []
 
     let subtotal = 0
     for (const item of body.items) {
@@ -196,27 +367,41 @@ export async function POST(req: NextRequest) {
     let estimatedDeliveryDate = ''
     let totalWeight = 0
 
+    if (!body.shippingMethodCode) {
+      return NextResponse.json(
+        { error: 'A live shipping method must be selected before placing the order' },
+        { status: 400 },
+      )
+    }
+
     const shippingItems = validatedItems.map(item => ({
       productId: item.productId,
       quantity: item.quantity,
     }))
-    const country = body.shipping.country || 'US'
+    const country = shippingAddress.country || 'US'
     const calcResult = await calculateShipping(shippingItems, country, subtotal)
 
-    if (calcResult.success && calcResult.methods.length > 0) {
-      const selectedMethod = body.shippingMethodCode
-        ? calcResult.methods.find(m => m.code === body.shippingMethodCode) || calcResult.methods[0]
-        : calcResult.methods[0]
-
-      shippingCost = selectedMethod.cost
-      shippingMethodCode = selectedMethod.code
-      shippingMethodName = selectedMethod.name
-      estimatedShipDate = calcResult.estimatedShipDate
-      estimatedDeliveryDate = selectedMethod.estimatedDeliveryDate
-      totalWeight = calcResult.totalWeight
-    } else {
-      shippingCost = subtotal >= FREE_SHIPPING_THRESHOLD_USD ? 0 : 25
+    if (!calcResult.success || calcResult.methods.length === 0) {
+      return NextResponse.json(
+        { error: calcResult.error || 'No live shipping rates are configured for the selected destination' },
+        { status: 409 },
+      )
     }
+
+    const selectedMethod = calcResult.methods.find(m => m.code === body.shippingMethodCode)
+    if (!selectedMethod) {
+      return NextResponse.json(
+        { error: 'The selected shipping method is no longer available. Please refresh checkout and try again.' },
+        { status: 409 },
+      )
+    }
+
+    shippingCost = selectedMethod.cost
+    shippingMethodCode = selectedMethod.code
+    shippingMethodName = selectedMethod.name
+    estimatedShipDate = calcResult.estimatedShipDate
+    estimatedDeliveryDate = selectedMethod.estimatedDeliveryDate
+    totalWeight = calcResult.totalWeight
 
     shippingCost = Math.round(shippingCost * 100) / 100
     const total = Math.round((subtotal + shippingCost) * 100) / 100
@@ -229,10 +414,14 @@ export async function POST(req: NextRequest) {
     try {
       order = await createOrder({
         orderNumber,
-        customerEmail: body.customer.email,
+        customerEmail: normalizedCustomerEmail,
         customerName: body.customer.name,
         customerPhone: body.customer.phone,
         customerCompany: body.customer.company,
+        ownershipStatus: isAuthenticatedCustomer ? 'linked' : 'guest',
+        guestEmail: isAuthenticatedCustomer ? undefined : normalizedCustomerEmail,
+        claimedAt: isAuthenticatedCustomer ? new Date().toISOString() : undefined,
+        placedByType: isAuthenticatedCustomer ? 'account' : 'guest',
         status: 'pending',
         paymentStatus: 'unpaid',
         paymentMethod: body.paymentMethod,
@@ -242,18 +431,14 @@ export async function POST(req: NextRequest) {
         total,
         currency: orderCurrency,
         shippingAddress: {
-          address: body.shipping.address,
-          city: body.shipping.city,
-          state: body.shipping.state,
-          postalCode: body.shipping.postalCode,
-          country: body.shipping.country || 'US',
+          ...shippingAddress,
           shippingMethodCode,
           shippingMethodName,
           estimatedShipDate,
           estimatedDeliveryDate,
           totalWeight,
         },
-        billingAddress: {},
+        billingAddress: buildStoredBillingAddress(billingInfo),
         items: validatedItems.map(item => ({
           productId: item.productId,
           productName: item.productName,
@@ -298,6 +483,12 @@ export async function POST(req: NextRequest) {
     const paymentInfoUpdate: Record<string, unknown> = {
       method: body.paymentMethod,
     }
+    const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'https://machrio.com'
+    const orderAccess = await issueOrderAccessLinks({
+      orderNumber,
+      email: normalizedCustomerEmail,
+      baseUrl: serverUrl,
+    })
     let stripeUrl: string | undefined
     let stripeClientSecret: string | undefined
     let stripePaymentIntentId: string | undefined
@@ -308,6 +499,7 @@ export async function POST(req: NextRequest) {
       if (!stripe) {
         try {
           await pool.query(`DELETE FROM orders WHERE id = $1`, [order.id])
+          await revokeOrderAccessTokensForOrder(orderNumber)
         } catch (cleanupError) {
           console.error('Failed to clean up order after Stripe config error:', cleanupError)
         }
@@ -323,7 +515,7 @@ export async function POST(req: NextRequest) {
             orderNumber,
             orderId: order.id,
           },
-          receipt_email: body.customer.email,
+          receipt_email: normalizedCustomerEmail,
         })
 
         if (!paymentIntent.client_secret) {
@@ -334,12 +526,10 @@ export async function POST(req: NextRequest) {
         stripePaymentIntentId = paymentIntent.id
         paymentInfoUpdate.stripePaymentIntentId = paymentIntent.id
 
-        const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'https://machrio.com'
-
         try {
           const session = await stripe.checkout.sessions.create({
             mode: 'payment',
-            customer_email: body.customer.email,
+            customer_email: normalizedCustomerEmail,
             metadata: {
               orderNumber,
               orderId: order.id,
@@ -369,8 +559,20 @@ export async function POST(req: NextRequest) {
                   }]
                 : []
             ),
-            success_url: `${serverUrl}/order/${orderNumber}?payment=success&provider=stripe`,
-            cancel_url: `${serverUrl}/order/${orderNumber}?payment=cancelled&provider=stripe`,
+            success_url: toAbsoluteUrl(
+              appendQueryParamsToPath(orderAccess.orderPath, {
+                payment: 'success',
+                provider: 'stripe',
+              }),
+              serverUrl,
+            ),
+            cancel_url: toAbsoluteUrl(
+              appendQueryParamsToPath(orderAccess.orderPath, {
+                payment: 'cancelled',
+                provider: 'stripe',
+              }),
+              serverUrl,
+            ),
           })
 
           stripeUrl = session.url || undefined
@@ -383,6 +585,7 @@ export async function POST(req: NextRequest) {
       } catch (stripeError) {
         try {
           await pool.query(`DELETE FROM orders WHERE id = $1`, [order.id])
+          await revokeOrderAccessTokensForOrder(orderNumber)
         } catch (cleanupError) {
           console.error('Failed to clean up order after Stripe init error:', cleanupError)
         }
@@ -404,7 +607,21 @@ export async function POST(req: NextRequest) {
           shippingCost,
           total,
           currency: orderCurrency,
-          customerEmail: body.customer.email,
+          customerEmail: normalizedCustomerEmail,
+          returnUrl: toAbsoluteUrl(
+            appendQueryParamsToPath(orderAccess.orderPath, {
+              payment: 'success',
+              provider: 'paypal',
+            }),
+            serverUrl,
+          ),
+          cancelUrl: toAbsoluteUrl(
+            appendQueryParamsToPath(orderAccess.orderPath, {
+              payment: 'cancelled',
+              provider: 'paypal',
+            }),
+            serverUrl,
+          ),
         })
 
         approvalUrl = getPayPalApprovalUrl(paypalOrder) || undefined
@@ -416,6 +633,7 @@ export async function POST(req: NextRequest) {
       } catch (paypalError) {
         try {
           await pool.query(`DELETE FROM orders WHERE id = $1`, [order.id])
+          await revokeOrderAccessTokensForOrder(orderNumber)
         } catch (cleanupError) {
           console.error('Failed to clean up order after PayPal init error:', cleanupError)
         }
@@ -431,33 +649,34 @@ export async function POST(req: NextRequest) {
       [JSON.stringify(paymentInfoUpdate), order.id]
     )
 
-    await attachPartnerAttributionToOrder({
+    schedulePostOrderTasks({
       headers: req.headers,
       orderId: order.id,
       orderNumber,
-      subtotal,
-      currency: orderCurrency,
-      orderStatus: 'pending',
-      paymentStatus: 'unpaid',
-    })
-
-    // Send confirmation emails only after payment initialization succeeds
-    sendOrderConfirmationEmail({
-      orderNumber,
+      orderCreatedAt: order.created_at,
+      normalizedCustomerEmail,
       customerName: body.customer.name,
-      customerEmail: body.customer.email,
-      company: body.customer.company,
+      customerCompany: body.customer.company,
+      customerPhone: body.customer.phone,
+      paymentMethod: body.paymentMethod,
       total,
       currency: orderCurrency,
-      paymentMethod: body.paymentMethod,
-      itemCount: validatedItems.length,
-    }).catch(err => console.error('Email send error:', err))
+      validatedItems,
+      shippingAddress,
+      billingInfo,
+      isAuthenticatedCustomer,
+      subtotal,
+      orderAccessToken: orderAccess.accessToken,
+    })
 
     return NextResponse.json({
       orderNumber,
       orderId: order.id,
       total,
       currency: orderCurrency,
+      orderPath: orderAccess.orderPath,
+      invoicePath: orderAccess.invoicePath,
+      orderAccessToken: orderAccess.accessToken,
       stripeUrl,
       stripeClientSecret,
       stripePaymentIntentId,

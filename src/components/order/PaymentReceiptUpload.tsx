@@ -1,17 +1,27 @@
 'use client'
 
 import { useState, useRef } from 'react'
+import { appendQueryParamsToPath } from '@/lib/order-access-links'
 
 interface PaymentReceiptUploadProps {
   orderNumber: string
+  accessToken?: string
   onUploadSuccess?: () => void
 }
 
-export function PaymentReceiptUpload({ orderNumber, onUploadSuccess }: PaymentReceiptUploadProps) {
+export function PaymentReceiptUpload({
+  orderNumber,
+  accessToken,
+  onUploadSuccess,
+}: PaymentReceiptUploadProps) {
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const uploadUrl = appendQueryParamsToPath(`/api/orders/${orderNumber}/upload-receipt`, {
+    access: accessToken,
+  })
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -37,7 +47,7 @@ export function PaymentReceiptUpload({ orderNumber, onUploadSuccess }: PaymentRe
     formData.append('receipt', file)
 
     try {
-      const response = await fetch(`/api/orders/${orderNumber}/upload-receipt`, {
+      const response = await fetch(uploadUrl, {
         method: 'POST',
         body: formData,
       })
@@ -82,7 +92,7 @@ export function PaymentReceiptUpload({ orderNumber, onUploadSuccess }: PaymentRe
     formData.append('receipt', file)
 
     try {
-      const response = await fetch(`/api/orders/${orderNumber}/upload-receipt`, {
+      const response = await fetch(uploadUrl, {
         method: 'POST',
         body: formData,
       })

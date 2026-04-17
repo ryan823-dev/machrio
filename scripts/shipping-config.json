@@ -1,0 +1,312 @@
+{
+  "methods": [
+    {
+      "code": "us-warehouse",
+      "name": "U.S. Warehouse",
+      "description": "Domestic fulfillment for stocked U.S. inventory.",
+      "transitDays": 5,
+      "sortOrder": 1,
+      "isActive": true
+    },
+    {
+      "code": "ddp-air",
+      "name": "DDP Air",
+      "description": "Air freight with duties and taxes prepaid where offered.",
+      "transitDays": 10,
+      "sortOrder": 2,
+      "isActive": true
+    },
+    {
+      "code": "ddp-sea",
+      "name": "DDP Sea",
+      "description": "Sea freight for planned bulk orders with duties and taxes prepaid where offered.",
+      "transitDays": 30,
+      "sortOrder": 3,
+      "isActive": true
+    }
+  ],
+  "rates": [
+    {
+      "shippingMethodCode": "us-warehouse",
+      "countryCode": "US",
+      "baseWeight": 2,
+      "baseRate": 12.2,
+      "additionalRate": 2.4,
+      "handlingFee": 2.5,
+      "isActive": true
+    },
+
+    {
+      "shippingMethodCode": "ddp-air",
+      "countryCode": "US",
+      "baseWeight": 2,
+      "baseRate": 13.5,
+      "additionalRate": 6.2,
+      "handlingFee": 4,
+      "isActive": true
+    },
+    {
+      "shippingMethodCode": "ddp-air",
+      "countryCode": "CA",
+      "baseWeight": 2,
+      "baseRate": 15,
+      "additionalRate": 7,
+      "handlingFee": 4,
+      "isActive": true
+    },
+    {
+      "shippingMethodCode": "ddp-air",
+      "countryCode": "GB",
+      "baseWeight": 2,
+      "baseRate": 13,
+      "additionalRate": 6.3,
+      "handlingFee": 4,
+      "isActive": true
+    },
+    {
+      "shippingMethodCode": "ddp-air",
+      "countryCode": "DE",
+      "baseWeight": 2,
+      "baseRate": 12.5,
+      "additionalRate": 6,
+      "handlingFee": 4,
+      "isActive": true
+    },
+    {
+      "shippingMethodCode": "ddp-air",
+      "countryCode": "DK",
+      "baseWeight": 2,
+      "baseRate": 13,
+      "additionalRate": 6.2,
+      "handlingFee": 4,
+      "isActive": true
+    },
+    {
+      "shippingMethodCode": "ddp-air",
+      "countryCode": "AU",
+      "baseWeight": 2,
+      "baseRate": 11,
+      "additionalRate": 5.2,
+      "handlingFee": 4,
+      "isActive": true
+    },
+    {
+      "shippingMethodCode": "ddp-air",
+      "countryCode": "NZ",
+      "baseWeight": 2,
+      "baseRate": 12,
+      "additionalRate": 5.5,
+      "handlingFee": 4,
+      "isActive": true
+    },
+    {
+      "shippingMethodCode": "ddp-air",
+      "countryCode": "SG",
+      "baseWeight": 2,
+      "baseRate": 6,
+      "additionalRate": 2.8,
+      "handlingFee": 3,
+      "isActive": true
+    },
+    {
+      "shippingMethodCode": "ddp-air",
+      "countryCode": "HK",
+      "baseWeight": 2,
+      "baseRate": 7,
+      "additionalRate": 3.2,
+      "handlingFee": 3,
+      "isActive": true
+    },
+    {
+      "shippingMethodCode": "ddp-air",
+      "countryCode": "AE",
+      "baseWeight": 2,
+      "baseRate": 10.5,
+      "additionalRate": 5,
+      "handlingFee": 4,
+      "isActive": true
+    },
+    {
+      "shippingMethodCode": "ddp-air",
+      "countryCode": "MX",
+      "baseWeight": 2,
+      "baseRate": 15,
+      "additionalRate": 7.2,
+      "handlingFee": 4,
+      "isActive": true
+    },
+    {
+      "shippingMethodCode": "ddp-air",
+      "countryCode": "PH",
+      "baseWeight": 2,
+      "baseRate": 7,
+      "additionalRate": 3.4,
+      "handlingFee": 3,
+      "isActive": true
+    },
+    {
+      "shippingMethodCode": "ddp-air",
+      "countryCode": "ID",
+      "baseWeight": 2,
+      "baseRate": 7.2,
+      "additionalRate": 3.5,
+      "handlingFee": 3,
+      "isActive": true
+    },
+    {
+      "shippingMethodCode": "ddp-air",
+      "countryCode": "IL",
+      "baseWeight": 2,
+      "baseRate": 12.5,
+      "additionalRate": 6.2,
+      "handlingFee": 4,
+      "isActive": true
+    },
+    {
+      "shippingMethodCode": "ddp-air",
+      "countryCode": "OTHER",
+      "baseWeight": 2,
+      "baseRate": 14,
+      "additionalRate": 6.5,
+      "handlingFee": 4,
+      "isActive": true
+    },
+
+    {
+      "shippingMethodCode": "ddp-sea",
+      "countryCode": "US",
+      "baseWeight": 5,
+      "baseRate": 12,
+      "additionalRate": 2.6,
+      "handlingFee": 3,
+      "isActive": true
+    },
+    {
+      "shippingMethodCode": "ddp-sea",
+      "countryCode": "CA",
+      "baseWeight": 5,
+      "baseRate": 13,
+      "additionalRate": 2.8,
+      "handlingFee": 3,
+      "isActive": true
+    },
+    {
+      "shippingMethodCode": "ddp-sea",
+      "countryCode": "GB",
+      "baseWeight": 5,
+      "baseRate": 11.5,
+      "additionalRate": 2.3,
+      "handlingFee": 3,
+      "isActive": true
+    },
+    {
+      "shippingMethodCode": "ddp-sea",
+      "countryCode": "DE",
+      "baseWeight": 5,
+      "baseRate": 11,
+      "additionalRate": 2.2,
+      "handlingFee": 3,
+      "isActive": true
+    },
+    {
+      "shippingMethodCode": "ddp-sea",
+      "countryCode": "DK",
+      "baseWeight": 5,
+      "baseRate": 11.5,
+      "additionalRate": 2.3,
+      "handlingFee": 3,
+      "isActive": true
+    },
+    {
+      "shippingMethodCode": "ddp-sea",
+      "countryCode": "AU",
+      "baseWeight": 5,
+      "baseRate": 9,
+      "additionalRate": 1.8,
+      "handlingFee": 3,
+      "isActive": true
+    },
+    {
+      "shippingMethodCode": "ddp-sea",
+      "countryCode": "NZ",
+      "baseWeight": 5,
+      "baseRate": 9.5,
+      "additionalRate": 1.9,
+      "handlingFee": 3,
+      "isActive": true
+    },
+    {
+      "shippingMethodCode": "ddp-sea",
+      "countryCode": "SG",
+      "baseWeight": 5,
+      "baseRate": 5,
+      "additionalRate": 1,
+      "handlingFee": 2,
+      "isActive": true
+    },
+    {
+      "shippingMethodCode": "ddp-sea",
+      "countryCode": "HK",
+      "baseWeight": 5,
+      "baseRate": 4.5,
+      "additionalRate": 0.9,
+      "handlingFee": 2,
+      "isActive": true
+    },
+    {
+      "shippingMethodCode": "ddp-sea",
+      "countryCode": "AE",
+      "baseWeight": 5,
+      "baseRate": 8.5,
+      "additionalRate": 1.7,
+      "handlingFee": 3,
+      "isActive": true
+    },
+    {
+      "shippingMethodCode": "ddp-sea",
+      "countryCode": "MX",
+      "baseWeight": 5,
+      "baseRate": 12.5,
+      "additionalRate": 2.7,
+      "handlingFee": 3,
+      "isActive": true
+    },
+    {
+      "shippingMethodCode": "ddp-sea",
+      "countryCode": "PH",
+      "baseWeight": 5,
+      "baseRate": 6.5,
+      "additionalRate": 1.3,
+      "handlingFee": 2.5,
+      "isActive": true
+    },
+    {
+      "shippingMethodCode": "ddp-sea",
+      "countryCode": "ID",
+      "baseWeight": 5,
+      "baseRate": 6,
+      "additionalRate": 1.2,
+      "handlingFee": 2.5,
+      "isActive": true
+    },
+    {
+      "shippingMethodCode": "ddp-sea",
+      "countryCode": "IL",
+      "baseWeight": 5,
+      "baseRate": 10,
+      "additionalRate": 2,
+      "handlingFee": 3,
+      "isActive": true
+    },
+    {
+      "shippingMethodCode": "ddp-sea",
+      "countryCode": "OTHER",
+      "baseWeight": 5,
+      "baseRate": 13,
+      "additionalRate": 2.8,
+      "handlingFee": 3,
+      "isActive": true
+    }
+  ],
+  "freeShippingRules": []
+}

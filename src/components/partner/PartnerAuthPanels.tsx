@@ -98,7 +98,7 @@ export function PartnerCodeStep({
   email: string
   title: string
   onBack: () => void
-  onVerified: (token: string, expiresAt: string) => void
+  onVerified: () => void
 }) {
   const [code, setCode] = useState('')
   const [loading, setLoading] = useState(false)
@@ -129,7 +129,7 @@ export function PartnerCodeStep({
         return
       }
 
-      onVerified(data.token, data.expiresAt)
+      onVerified()
     } catch {
       setError('Network error. Please try again.')
     } finally {

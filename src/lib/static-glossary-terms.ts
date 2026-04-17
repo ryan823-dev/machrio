@@ -309,4 +309,165 @@ export const STATIC_GLOSSARY_TERMS: readonly StaticGlossaryTerm[] = [
     category: 'tools',
     status: 'published',
   },
+  {
+    term: 'NIOSH',
+    slug: 'niosh',
+    full_name: 'National Institute for Occupational Safety and Health',
+    fullName: 'National Institute for Occupational Safety and Health',
+    definition:
+      'A U.S. federal agency that researches workplace hazards and certifies respirators and other protective equipment. NIOSH approval is a core checkpoint when buying respiratory protection for industrial use.',
+    category: 'standards',
+    status: 'published',
+  },
+  {
+    term: 'APF',
+    slug: 'apf',
+    full_name: 'Assigned Protection Factor',
+    fullName: 'Assigned Protection Factor',
+    definition:
+      'A rating that indicates the level of respiratory protection a properly selected and properly fitted respirator can provide in the workplace. APF helps buyers compare disposable, half-face, full-face, PAPR, and supplied-air respirators against exposure requirements.',
+    category: 'safety',
+    status: 'published',
+  },
+  {
+    term: 'PAPR',
+    slug: 'papr',
+    full_name: 'Powered Air-Purifying Respirator',
+    fullName: 'Powered Air-Purifying Respirator',
+    definition:
+      'A respirator system that uses a battery-powered blower to pull contaminated air through filters or cartridges and deliver cleaned air to the wearer. PAPRs are often chosen when comfort, higher protection, or compatibility with longer shifts matters.',
+    category: 'safety',
+    status: 'published',
+  },
+  {
+    term: 'P100',
+    slug: 'p100',
+    full_name: null,
+    fullName: null,
+    definition:
+      'A NIOSH particulate filter rating indicating at least 99.97% filtration efficiency and resistance to oil-based aerosols. P100 filters are commonly used for welding fumes, silica, grinding dust, and other high-particulate industrial tasks.',
+    category: 'safety',
+    status: 'published',
+  },
+  {
+    term: 'Fit Test',
+    slug: 'fit-test',
+    full_name: 'Respirator Fit Test',
+    fullName: 'Respirator Fit Test',
+    definition:
+      'A procedure used to verify that a tight-fitting respirator forms an effective seal on the user face. Fit testing is a core part of respiratory protection programs because filter performance does not matter if the mask leaks.',
+    category: 'safety',
+    status: 'published',
+  },
+  {
+    term: 'VFD',
+    slug: 'vfd',
+    full_name: 'Variable Frequency Drive',
+    fullName: 'Variable Frequency Drive',
+    definition:
+      'An electronic drive that controls motor speed and torque by varying the frequency and voltage supplied to the motor. VFDs improve efficiency and process control, but they can also create shaft voltage that damages bearings without mitigation such as shaft grounding rings.',
+    category: 'tools',
+    status: 'published',
+  },
+  {
+    term: 'Bearing Fluting',
+    slug: 'bearing-fluting',
+    full_name: null,
+    fullName: null,
+    definition:
+      'A washboard-like damage pattern that forms on motor bearings when electrical current passes through the bearing surfaces. Bearing fluting is a common symptom of unmanaged shaft voltage on VFD-driven motors.',
+    category: 'maintenance',
+    status: 'published',
+  },
+  {
+    term: 'Oil Seal',
+    slug: 'oil-seal',
+    full_name: 'Radial Shaft Seal',
+    fullName: 'Radial Shaft Seal',
+    definition:
+      'A sealing component installed around a rotating shaft to retain lubricant and block contaminants such as dust, water, and debris. Buyers usually compare oil seals by shaft size, housing bore, lip design, rubber compound, and operating conditions.',
+    category: 'materials',
+    status: 'published',
+  },
+  {
+    term: 'Hot Melt Adhesive',
+    slug: 'hot-melt-adhesive',
+    full_name: null,
+    fullName: null,
+    definition:
+      'A thermoplastic adhesive applied in molten form and solidified as it cools to create a bond. Hot melt adhesives are typically selected by substrate compatibility, open time, application temperature, viscosity, and glue-stick or pellet format.',
+    category: 'materials',
+    status: 'published',
+  },
+  {
+    term: 'Perforated Sheet',
+    slug: 'perforated-sheet',
+    full_name: null,
+    fullName: null,
+    definition:
+      'A sheet material manufactured with a regular pattern of holes to control airflow, drainage, visibility, or weight. Industrial buyers compare perforated sheets by material, thickness, hole pattern, open area, and fabrication requirements.',
+    category: 'materials',
+    status: 'published',
+  },
 ] as const
+
+const STATIC_GLOSSARY_ALIASES: Record<string, string[]> = {
+  ppe: ['personal-protective-equipment', 'personal-protection-equipment'],
+  loto: ['lockout-tagout', 'lock-out-tag-out', 'lockout-tag-out'],
+  osha: ['occupational-safety-and-health-administration'],
+  sds: ['safety-data-sheet', 'safety-data-sheets', 'msds', 'material-safety-data-sheet'],
+  ghs: ['globally-harmonized-system', 'globally-harmonized-system-of-classification-and-labelling-of-chemicals'],
+  nrr: ['noise-reduction-rating'],
+  fr: ['flame-resistant'],
+  mro: ['maintenance-repair-and-operations', 'maintenance-repair-operations'],
+  moq: ['minimum-order-quantity'],
+  ddp: ['delivered-duty-paid'],
+  rfq: ['request-for-quote', 'request-for-quotation'],
+  fob: ['free-on-board'],
+  bom: ['bill-of-materials'],
+  cfm: ['cubic-feet-per-minute'],
+  rpm: ['revolutions-per-minute'],
+  niosh: ['national-institute-for-occupational-safety-and-health'],
+  apf: ['assigned-protection-factor'],
+  papr: ['powered-air-purifying-respirator'],
+  p100: ['p-100'],
+  'fit-test': ['respirator-fit-test', 'fit-testing'],
+  vfd: ['variable-frequency-drive'],
+  'bearing-fluting': ['electrical-bearing-fluting'],
+  'oil-seal': ['shaft-seal', 'radial-shaft-seal'],
+  'hot-melt-adhesive': ['hot-melt-glue', 'hot-melt-glue-stick'],
+  'perforated-sheet': ['perforated-plastic-sheet', 'plastic-perforated-sheet'],
+}
+
+function normalizeGlossarySlug(value: string): string {
+  return value
+    .toLowerCase()
+    .trim()
+    .replace(/^\/+|\/+$/g, '')
+    .replace(/[^a-z0-9-]+/g, '-')
+    .replace(/-{2,}/g, '-')
+}
+
+export function getStaticGlossaryAliasTarget(slug: string): string | null {
+  const normalized = normalizeGlossarySlug(slug)
+
+  for (const [canonicalSlug, aliases] of Object.entries(STATIC_GLOSSARY_ALIASES)) {
+    if (aliases.map(normalizeGlossarySlug).includes(normalized)) {
+      return canonicalSlug
+    }
+  }
+
+  return null
+}
+
+export function getStaticGlossaryAliasRedirects(): Record<string, string> {
+  const redirects: Record<string, string> = {}
+
+  for (const [canonicalSlug, aliases] of Object.entries(STATIC_GLOSSARY_ALIASES)) {
+    for (const alias of aliases) {
+      redirects[`/glossary/${normalizeGlossarySlug(alias)}`] = `/glossary/${canonicalSlug}`
+    }
+  }
+
+  return redirects
+}

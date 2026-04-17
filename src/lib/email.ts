@@ -1,4 +1,5 @@
 import { Resend } from 'resend'
+import { issueOrderAccessLinks } from '@/lib/order-access'
 
 const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
@@ -23,22 +24,36 @@ export interface EmailOptions {
   attachments?: EmailAttachment[]
 }
 
+type EmailSendResult = {
+  success: boolean
+  messageId?: string
+  error?: string
+}
+
+type ResendEmailPayload = {
+  from: string
+  to: string | string[]
+  subject: string
+  html: string
+  attachments?: Array<{
+    filename: string
+    content: string
+    contentType?: string
+  }>
+}
+
 // ==================== 核心邮件发送函数 ====================
 
 /**
  * 使用 Resend 发送带附件的邮件
  */
-export async function sendEmail(options: EmailOptions): Promise<{
-  success: boolean
-  messageId?: string
-  error?: string
-}> {
+export async function sendEmail(options: EmailOptions): Promise<EmailSendResult> {
   if (!resend) {
     console.warn('Resend not configured, skipping email')
     return { success: false, error: 'Resend not configured' }
   }
 
-  const emailPayload: any = {
+  const emailPayload: ResendEmailPayload = {
     from: options.from || FROM_EMAIL,
     to: options.to,
     subject: options.subject,
@@ -57,9 +72,10 @@ export async function sendEmail(options: EmailOptions): Promise<{
   try {
     const result = await resend.emails.send(emailPayload)
     return { success: true, messageId: result.data?.id }
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown email error'
     console.error('Failed to send email:', err)
-    return { success: false, error: err.message }
+    return { success: false, error: errorMessage }
   }
 }
 
@@ -75,6 +91,7 @@ interface OrderEmailData {
   paymentMethod: 'stripe' | 'paypal' | 'bank-transfer'
   itemCount: number
   paid?: boolean
+  orderAccessToken?: string
 }
 
 export async function sendOrderConfirmationEmail(data: OrderEmailData) {
@@ -84,8 +101,12 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData) {
   }
 
   const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'https://machrio.com'
-  const orderUrl = `${serverUrl}/order/${data.orderNumber}`
-  const invoiceUrl = `${orderUrl}/invoice`
+  const { orderUrl, invoiceUrl } = await issueOrderAccessLinks({
+    orderNumber: data.orderNumber,
+    email: data.customerEmail,
+    baseUrl: serverUrl,
+    accessToken: data.orderAccessToken,
+  })
 
   const paymentSection = data.paymentMethod === 'bank-transfer'
     ? `<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;padding:16px;margin:16px 0">
@@ -430,9 +451,10 @@ export async function sendOutreachEmail(data: OutreachEmailData): Promise<{
     })
 
     return { success: true, messageId: result.data?.id }
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown outreach email error'
     console.error('Failed to send outreach email:', err)
-    return { success: false, error: err.message }
+    return { success: false, error: errorMessage }
   }
 }
 

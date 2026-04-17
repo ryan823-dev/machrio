@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { sendEmail } from '@/lib/email'
+import { issueOrderAccessLinks } from '@/lib/order-access'
 
 /**
  * Cron job to remind customers about unpaid bank transfer orders
@@ -80,7 +81,11 @@ export async function GET(req: NextRequest) {
         (new Date().getTime() - createdAt.getTime()) / (1000 * 60 * 60 * 24)
       )
 
-      const invoiceUrl = `${serverUrl}/order/${orderNumber}/invoice`
+      const { invoiceUrl } = await issueOrderAccessLinks({
+        orderNumber,
+        email: customerEmail,
+        baseUrl: serverUrl,
+      })
 
       try {
         await sendEmail({

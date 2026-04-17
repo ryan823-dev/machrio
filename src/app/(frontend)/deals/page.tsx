@@ -125,7 +125,7 @@ export default function DealsPage() {
           </div>
           <div>
             <h3 className="text-sm font-medium text-secondary-800">Is there a minimum order value?</h3>
-            <p className="mt-1 text-sm text-secondary-600">No minimum order value. However, orders over $200 qualify for free shipping.</p>
+            <p className="mt-1 text-sm text-secondary-600">No minimum order value. Shipping is calculated separately based on destination, total order weight, and the selected shipping method.</p>
           </div>
         </div>
       </section>

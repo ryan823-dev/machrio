@@ -15,6 +15,25 @@ interface Profile {
   email: string
 }
 
+interface EditableProfile extends Profile {
+  title: string
+}
+
+interface ShippingAddress {
+  label: string
+  address: string
+  city: string
+  state: string
+  postalCode: string
+  country: string
+}
+
+interface BillingInfo {
+  companyLegalName: string
+  taxId: string
+  billingAddress: string
+}
+
 interface OrderSummary {
   id: string
   orderNumber: string
@@ -37,6 +56,11 @@ interface AccountData {
   profile: Profile
   orders: OrderSummary[]
   rfqs: RFQSummary[]
+}
+
+interface SectionNotice {
+  type: 'success' | 'error'
+  message: string
 }
 
 interface SendCodeResult {
@@ -86,6 +110,82 @@ function formatOrderTotal(value: number | string | null | undefined) {
   return Number.isFinite(normalizedValue) ? normalizedValue.toFixed(2) : '0.00'
 }
 
+const EMPTY_PROFILE: EditableProfile = {
+  name: '',
+  company: '',
+  phone: '',
+  title: '',
+  email: '',
+}
+
+const EMPTY_SHIPPING_ADDRESS: ShippingAddress = {
+  label: '',
+  address: '',
+  city: '',
+  state: '',
+  postalCode: '',
+  country: 'US',
+}
+
+const EMPTY_BILLING_INFO: BillingInfo = {
+  companyLegalName: '',
+  taxId: '',
+  billingAddress: '',
+}
+
+function buildEditableProfile(value?: Partial<EditableProfile> | null): EditableProfile {
+  return {
+    name: value?.name || '',
+    company: value?.company || '',
+    phone: value?.phone || '',
+    title: value?.title || '',
+    email: value?.email || '',
+  }
+}
+
+function buildShippingAddresses(value: unknown): ShippingAddress[] {
+  if (!Array.isArray(value)) return []
+
+  return value.map((entry) => {
+    const address = entry && typeof entry === 'object'
+      ? entry as Record<string, unknown>
+      : {}
+
+    return {
+      label: typeof address.label === 'string' ? address.label : '',
+      address: typeof address.address === 'string' ? address.address : '',
+      city: typeof address.city === 'string' ? address.city : '',
+      state: typeof address.state === 'string' ? address.state : '',
+      postalCode: typeof address.postalCode === 'string' ? address.postalCode : '',
+      country: typeof address.country === 'string' && address.country
+        ? address.country
+        : 'US',
+    }
+  })
+}
+
+function buildBillingInfo(value: unknown): BillingInfo {
+  const billing = value && typeof value === 'object'
+    ? value as Record<string, unknown>
+    : {}
+
+  return {
+    companyLegalName: typeof billing.companyLegalName === 'string' ? billing.companyLegalName : '',
+    taxId: typeof billing.taxId === 'string' ? billing.taxId : '',
+    billingAddress: typeof billing.billingAddress === 'string' ? billing.billingAddress : '',
+  }
+}
+
+function isAddressBlank(address: ShippingAddress) {
+  return ![
+    address.label,
+    address.address,
+    address.city,
+    address.state,
+    address.postalCode,
+  ].some((value) => value.trim())
+}
+
 // ─── Status Badges ───────────────────────────────────────────────────────────
 
 const ORDER_STATUS_COLORS: Record<string, string> = {
@@ -117,6 +217,22 @@ function Badge({ label, colorClass }: { label: string; colorClass: string }) {
     <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium capitalize ${colorClass}`}>
       {label}
     </span>
+  )
+}
+
+function SectionNoticeMessage({ notice }: { notice: SectionNotice | null }) {
+  if (!notice) return null
+
+  return (
+    <div
+      className={`mt-4 rounded-lg border px-4 py-3 text-sm ${
+        notice.type === 'success'
+          ? 'border-green-200 bg-green-50 text-green-700'
+          : 'border-red-200 bg-red-50 text-red-700'
+      }`}
+    >
+      {notice.message}
+    </div>
   )
 }
 
@@ -346,24 +462,56 @@ function CodeStep({
 
 function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [data, setData] = useState<AccountData | null>(null)
+  const [profileForm, setProfileForm] = useState<EditableProfile>(EMPTY_PROFILE)
+  const [shippingAddresses, setShippingAddresses] = useState<ShippingAddress[]>([])
+  const [billingInfo, setBillingInfo] = useState<BillingInfo>(EMPTY_BILLING_INFO)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [profileSaving, setProfileSaving] = useState(false)
+  const [addressesSaving, setAddressesSaving] = useState(false)
+  const [billingSaving, setBillingSaving] = useState(false)
+  const [profileNotice, setProfileNotice] = useState<SectionNotice | null>(null)
+  const [addressesNotice, setAddressesNotice] = useState<SectionNotice | null>(null)
+  const [billingNotice, setBillingNotice] = useState<SectionNotice | null>(null)
 
   const loadData = useCallback(async () => {
-    try {
-      const res = await fetchWithAuth('/api/account/data')
-      const json = await res.json()
+    setLoading(true)
+    setError('')
 
-      if (!res.ok) {
-        if (res.status === 401) {
-          onLogout()
-          return
-        }
-        setError(json.error || 'Failed to load data')
+    try {
+      const [dashboardRes, profileRes, addressesRes, billingRes] = await Promise.all([
+        fetchWithAuth('/api/account/data'),
+        fetchWithAuth('/api/account/profile'),
+        fetchWithAuth('/api/account/addresses'),
+        fetchWithAuth('/api/account/billing'),
+      ])
+
+      const responses = [dashboardRes, profileRes, addressesRes, billingRes]
+
+      if (responses.some((response) => response.status === 401)) {
+        onLogout()
         return
       }
 
-      setData(json)
+      const [dashboardJson, profileJson, addressesJson, billingJson] = await Promise.all(
+        responses.map((response) => response.json().catch(() => ({}))),
+      )
+
+      if (!dashboardRes.ok || !profileRes.ok || !addressesRes.ok || !billingRes.ok) {
+        setError(
+          dashboardJson.error
+          || profileJson.error
+          || addressesJson.error
+          || billingJson.error
+          || 'Failed to load account data',
+        )
+        return
+      }
+
+      setData(dashboardJson)
+      setProfileForm(buildEditableProfile(profileJson.profile || dashboardJson.profile))
+      setShippingAddresses(buildShippingAddresses(addressesJson.addresses))
+      setBillingInfo(buildBillingInfo(billingJson.billing))
     } catch {
       setError('Failed to load account data')
     } finally {
@@ -383,6 +531,178 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     }
     clearSession()
     onLogout()
+  }
+
+  const handleProfileChange = (field: keyof EditableProfile, value: string) => {
+    setProfileForm((current) => ({
+      ...current,
+      [field]: value,
+    }))
+    setProfileNotice(null)
+  }
+
+  const handleAddressChange = (index: number, field: keyof ShippingAddress, value: string) => {
+    setShippingAddresses((current) => current.map((address, addressIndex) => (
+      addressIndex === index
+        ? { ...address, [field]: value }
+        : address
+    )))
+    setAddressesNotice(null)
+  }
+
+  const handleAddAddress = () => {
+    setShippingAddresses((current) => [...current, { ...EMPTY_SHIPPING_ADDRESS }])
+    setAddressesNotice(null)
+  }
+
+  const handleRemoveAddress = (index: number) => {
+    setShippingAddresses((current) => current.filter((_, addressIndex) => addressIndex !== index))
+    setAddressesNotice(null)
+  }
+
+  const handleBillingChange = (field: keyof BillingInfo, value: string) => {
+    setBillingInfo((current) => ({
+      ...current,
+      [field]: value,
+    }))
+    setBillingNotice(null)
+  }
+
+  const handleSaveProfile = async () => {
+    setProfileSaving(true)
+    setProfileNotice(null)
+
+    try {
+      const res = await fetchWithAuth('/api/account/profile', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: profileForm.name,
+          company: profileForm.company,
+          phone: profileForm.phone,
+          title: profileForm.title,
+        }),
+      })
+      const json = await res.json().catch(() => ({}))
+
+      if (res.status === 401) {
+        onLogout()
+        return
+      }
+
+      if (!res.ok) {
+        setProfileNotice({
+          type: 'error',
+          message: json.error || 'Failed to save profile.',
+        })
+        return
+      }
+
+      const nextProfile = buildEditableProfile(json.profile)
+      setProfileForm(nextProfile)
+      setData((current) => current ? {
+        ...current,
+        profile: {
+          name: nextProfile.name,
+          company: nextProfile.company,
+          phone: nextProfile.phone,
+          email: nextProfile.email,
+        },
+      } : current)
+      setProfileNotice({
+        type: 'success',
+        message: 'Profile saved successfully.',
+      })
+    } catch {
+      setProfileNotice({
+        type: 'error',
+        message: 'Failed to save profile.',
+      })
+    } finally {
+      setProfileSaving(false)
+    }
+  }
+
+  const handleSaveAddresses = async () => {
+    setAddressesSaving(true)
+    setAddressesNotice(null)
+
+    try {
+      const res = await fetchWithAuth('/api/account/addresses', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          addresses: shippingAddresses.filter((address) => !isAddressBlank(address)),
+        }),
+      })
+      const json = await res.json().catch(() => ({}))
+
+      if (res.status === 401) {
+        onLogout()
+        return
+      }
+
+      if (!res.ok) {
+        setAddressesNotice({
+          type: 'error',
+          message: json.error || 'Failed to save addresses.',
+        })
+        return
+      }
+
+      setShippingAddresses(buildShippingAddresses(json.addresses))
+      setAddressesNotice({
+        type: 'success',
+        message: 'Shipping addresses saved successfully.',
+      })
+    } catch {
+      setAddressesNotice({
+        type: 'error',
+        message: 'Failed to save addresses.',
+      })
+    } finally {
+      setAddressesSaving(false)
+    }
+  }
+
+  const handleSaveBilling = async () => {
+    setBillingSaving(true)
+    setBillingNotice(null)
+
+    try {
+      const res = await fetchWithAuth('/api/account/billing', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(billingInfo),
+      })
+      const json = await res.json().catch(() => ({}))
+
+      if (res.status === 401) {
+        onLogout()
+        return
+      }
+
+      if (!res.ok) {
+        setBillingNotice({
+          type: 'error',
+          message: json.error || 'Failed to save billing details.',
+        })
+        return
+      }
+
+      setBillingInfo(buildBillingInfo(json.billing))
+      setBillingNotice({
+        type: 'success',
+        message: 'Billing details saved successfully.',
+      })
+    } catch {
+      setBillingNotice({
+        type: 'error',
+        message: 'Failed to save billing details.',
+      })
+    } finally {
+      setBillingSaving(false)
+    }
   }
 
   if (loading) {
@@ -408,19 +728,20 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
   }
 
   const { profile, orders, rfqs } = data
+  const displayProfile = profileForm.email ? profileForm : buildEditableProfile(profile)
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="mx-auto max-w-5xl">
       {/* Profile Header */}
       <div className="flex flex-wrap items-center justify-between gap-4 rounded-lg border border-secondary-200 bg-white p-6">
         <div>
           <h1 className="text-xl font-bold text-secondary-900">
-            {profile.name ? `Welcome back, ${profile.name}` : 'Your Account'}
+            {displayProfile.name ? `Welcome back, ${displayProfile.name}` : 'Your Account'}
           </h1>
           <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-sm text-secondary-500">
-            {profile.company && <span>{profile.company}</span>}
-            <span>{profile.email}</span>
-            {profile.phone && <span>{profile.phone}</span>}
+            {displayProfile.company && <span>{displayProfile.company}</span>}
+            <span>{displayProfile.email}</span>
+            {displayProfile.phone && <span>{displayProfile.phone}</span>}
           </div>
         </div>
         <button
@@ -430,6 +751,244 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
           Sign Out
         </button>
       </div>
+
+      {/* Profile */}
+      <section className="mt-8 rounded-lg border border-secondary-200 bg-white p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold text-secondary-900">Profile</h2>
+            <p className="mt-1 text-sm text-secondary-500">
+              Keep your primary buyer contact details up to date for faster checkout and support.
+            </p>
+          </div>
+          <button
+            onClick={handleSaveProfile}
+            disabled={profileSaving}
+            className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-700 disabled:opacity-50"
+          >
+            {profileSaving ? 'Saving...' : 'Save Profile'}
+          </button>
+        </div>
+
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="block text-sm font-medium text-secondary-700">Full Name</label>
+            <input
+              type="text"
+              value={profileForm.name}
+              onChange={(event) => handleProfileChange('name', event.target.value)}
+              className="mt-1 w-full rounded-lg border border-secondary-300 px-4 py-3 text-secondary-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-secondary-700">Job Title</label>
+            <input
+              type="text"
+              value={profileForm.title}
+              onChange={(event) => handleProfileChange('title', event.target.value)}
+              className="mt-1 w-full rounded-lg border border-secondary-300 px-4 py-3 text-secondary-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+              placeholder="Procurement Manager"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-secondary-700">Company</label>
+            <input
+              type="text"
+              value={profileForm.company}
+              onChange={(event) => handleProfileChange('company', event.target.value)}
+              className="mt-1 w-full rounded-lg border border-secondary-300 px-4 py-3 text-secondary-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-secondary-700">Phone</label>
+            <input
+              type="tel"
+              value={profileForm.phone}
+              onChange={(event) => handleProfileChange('phone', event.target.value)}
+              className="mt-1 w-full rounded-lg border border-secondary-300 px-4 py-3 text-secondary-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+              placeholder="+1 (555) 000-0000"
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="block text-sm font-medium text-secondary-700">Email</label>
+            <input
+              type="email"
+              value={profileForm.email}
+              disabled
+              className="mt-1 w-full rounded-lg border border-secondary-200 bg-secondary-50 px-4 py-3 text-secondary-500"
+            />
+          </div>
+        </div>
+
+        <SectionNoticeMessage notice={profileNotice} />
+      </section>
+
+      {/* Shipping Addresses */}
+      <section className="mt-8 rounded-lg border border-secondary-200 bg-white p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold text-secondary-900">Shipping Addresses</h2>
+            <p className="mt-1 text-sm text-secondary-500">
+              Save your common delivery locations now so we can use them for later checkout prefills.
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={handleAddAddress}
+              className="rounded-lg border border-secondary-300 px-4 py-2 text-sm font-medium text-secondary-700 transition hover:bg-secondary-50"
+            >
+              Add Address
+            </button>
+            <button
+              onClick={handleSaveAddresses}
+              disabled={addressesSaving}
+              className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-700 disabled:opacity-50"
+            >
+              {addressesSaving ? 'Saving...' : 'Save Addresses'}
+            </button>
+          </div>
+        </div>
+
+        {shippingAddresses.length === 0 ? (
+          <div className="mt-6 rounded-lg border border-dashed border-secondary-300 p-6 text-sm text-secondary-500">
+            No saved shipping addresses yet. Add one to start building your lightweight account center.
+          </div>
+        ) : (
+          <div className="mt-6 space-y-4">
+            {shippingAddresses.map((address, index) => (
+              <div key={`shipping-address-${index}`} className="rounded-lg border border-secondary-200 p-4">
+                <div className="flex items-center justify-between gap-3">
+                  <h3 className="text-sm font-semibold text-secondary-900">
+                    Address {index + 1}
+                  </h3>
+                  <button
+                    onClick={() => handleRemoveAddress(index)}
+                    className="text-sm font-medium text-red-600 hover:text-red-700"
+                  >
+                    Remove
+                  </button>
+                </div>
+
+                <div className="mt-4 grid gap-4 sm:grid-cols-2">
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-700">Label</label>
+                    <input
+                      type="text"
+                      value={address.label}
+                      onChange={(event) => handleAddressChange(index, 'label', event.target.value)}
+                      className="mt-1 w-full rounded-lg border border-secondary-300 px-4 py-3 text-secondary-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+                      placeholder="Warehouse / HQ"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-700">Country</label>
+                    <input
+                      type="text"
+                      value={address.country}
+                      onChange={(event) => handleAddressChange(index, 'country', event.target.value.toUpperCase())}
+                      className="mt-1 w-full rounded-lg border border-secondary-300 px-4 py-3 text-secondary-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+                      placeholder="US"
+                    />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-medium text-secondary-700">Street Address</label>
+                    <textarea
+                      rows={2}
+                      value={address.address}
+                      onChange={(event) => handleAddressChange(index, 'address', event.target.value)}
+                      className="mt-1 w-full rounded-lg border border-secondary-300 px-4 py-3 text-secondary-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+                      placeholder="123 Industrial Blvd, Suite 100"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-700">City</label>
+                    <input
+                      type="text"
+                      value={address.city}
+                      onChange={(event) => handleAddressChange(index, 'city', event.target.value)}
+                      className="mt-1 w-full rounded-lg border border-secondary-300 px-4 py-3 text-secondary-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-700">State / Region</label>
+                    <input
+                      type="text"
+                      value={address.state}
+                      onChange={(event) => handleAddressChange(index, 'state', event.target.value)}
+                      className="mt-1 w-full rounded-lg border border-secondary-300 px-4 py-3 text-secondary-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-secondary-700">Postal Code</label>
+                    <input
+                      type="text"
+                      value={address.postalCode}
+                      onChange={(event) => handleAddressChange(index, 'postalCode', event.target.value)}
+                      className="mt-1 w-full rounded-lg border border-secondary-300 px-4 py-3 text-secondary-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <SectionNoticeMessage notice={addressesNotice} />
+      </section>
+
+      {/* Billing / Tax */}
+      <section className="mt-8 rounded-lg border border-secondary-200 bg-white p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold text-secondary-900">Billing / Tax Info</h2>
+            <p className="mt-1 text-sm text-secondary-500">
+              Store your invoice legal name, tax number, and billing address for faster repeat purchasing.
+            </p>
+          </div>
+          <button
+            onClick={handleSaveBilling}
+            disabled={billingSaving}
+            className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-700 disabled:opacity-50"
+          >
+            {billingSaving ? 'Saving...' : 'Save Billing'}
+          </button>
+        </div>
+
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className="block text-sm font-medium text-secondary-700">Legal Company Name</label>
+            <input
+              type="text"
+              value={billingInfo.companyLegalName}
+              onChange={(event) => handleBillingChange('companyLegalName', event.target.value)}
+              className="mt-1 w-full rounded-lg border border-secondary-300 px-4 py-3 text-secondary-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+              placeholder="Acme Corporation LLC"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-secondary-700">Tax ID / VAT Number</label>
+            <input
+              type="text"
+              value={billingInfo.taxId}
+              onChange={(event) => handleBillingChange('taxId', event.target.value)}
+              className="mt-1 w-full rounded-lg border border-secondary-300 px-4 py-3 text-secondary-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+              placeholder="US EIN / VAT ID"
+            />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="block text-sm font-medium text-secondary-700">Billing Address</label>
+            <textarea
+              rows={3}
+              value={billingInfo.billingAddress}
+              onChange={(event) => handleBillingChange('billingAddress', event.target.value)}
+              className="mt-1 w-full rounded-lg border border-secondary-300 px-4 py-3 text-secondary-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+              placeholder="Billing address for invoices"
+            />
+          </div>
+        </div>
+
+        <SectionNoticeMessage notice={billingNotice} />
+      </section>
 
       {/* Order History */}
       <section className="mt-8">

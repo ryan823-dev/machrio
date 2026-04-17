@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getPool, getOrderByNumber } from '@/lib/db'
 import { capturePayPalOrder, getPayPalOrder } from '@/lib/paypal'
 import { sendOrderConfirmationEmail } from '@/lib/email'
+import { recordOrderEvent } from '@/lib/order-events'
 import { syncPartnerCommissionForOrderId } from '@/lib/partner-program'
+import { authorizeOrderAccess } from '@/lib/order-access'
 
 function formatAmount(value: unknown): string {
   const numericValue = typeof value === 'number' ? value : Number(value)
@@ -13,7 +15,7 @@ function formatAmount(value: unknown): string {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { paypalOrderId, orderNumber } = body
+    const { paypalOrderId, orderNumber, accessToken } = body
 
     if (!paypalOrderId || !orderNumber) {
       return NextResponse.json(
@@ -36,6 +38,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         { error: 'Order is not configured for PayPal payment' },
         { status: 400 }
+      )
+    }
+
+    const hasAccess = await authorizeOrderAccess({
+      order,
+      request: req,
+      accessToken: typeof accessToken === 'string' ? accessToken : undefined,
+      allowedPurposes: ['order-access', 'payment-retry'],
+    })
+
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 403 },
       )
     }
 
@@ -126,6 +142,19 @@ export async function POST(req: NextRequest) {
     )
 
     await syncPartnerCommissionForOrderId(order.id)
+
+    await recordOrderEvent({
+      orderNumber,
+      orderId: order.id,
+      type: 'payment.paid',
+      data: {
+        paymentMethod: 'paypal',
+        source: 'capture',
+      },
+      oncePerOrder: true,
+    }).catch((orderEventError) => {
+      console.error(`Failed to record payment.paid event for order ${orderNumber}:`, orderEventError)
+    })
 
     // Send payment confirmation email
     if (order.customer_email) {
