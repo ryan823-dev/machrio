@@ -7,6 +7,7 @@ export const dynamic = 'force-static'
 import { useRouter } from 'next/navigation'
 import { useCart } from '@/contexts/CartContext'
 import StripePayment from '@/components/StripePayment'
+import { FREE_SHIPPING_THRESHOLD_USD, formatUsd } from '@/lib/shipping/rules'
 
 interface CheckoutForm {
   name: string
@@ -85,7 +86,7 @@ export default function CheckoutPage() {
   const router = useRouter()
   const {
     items, selectedItems, itemCount, subtotal, shippingCost, total,
-    shippingMethodCode, shippingQuotes, shippingLoading, estimatedShipDate,
+    shippingMethodCode, shippingQuotes, shippingLoading, estimatedShipDate, totalWeight,
     clearCart, setShippingCountry, setShippingMethod,
   } = useCart()
   const [form, setForm] = useState<CheckoutForm>(initialForm)
@@ -98,6 +99,7 @@ export default function CheckoutPage() {
   // Only show selected items
   const selectedCartItems = items.filter(i => selectedItems.has(i.productId))
   const selectedQuote = shippingQuotes.find(q => q.code === shippingMethodCode)
+  const gapToFreeShipping = Math.max(0, FREE_SHIPPING_THRESHOLD_USD - subtotal)
 
   function updateField(field: keyof CheckoutForm, value: string) {
     setForm(prev => {
@@ -520,7 +522,12 @@ export default function CheckoutPage() {
               </div>
             ) : shippingQuotes.length > 0 ? (
               <div className="mt-4 border-t border-secondary-200 pt-3">
-                <label className="block text-xs font-medium text-secondary-600 mb-1.5">Shipping Method</label>
+                <div className="mb-2 space-y-1">
+                  <label className="block text-xs font-medium text-secondary-600">Shipping Method</label>
+                  <p className="text-xs leading-relaxed text-secondary-500">
+                    Shipping is calculated from the total shipment weight and destination. Orders over {formatUsd(FREE_SHIPPING_THRESHOLD_USD)} ship free.
+                  </p>
+                </div>
                 <div className="space-y-1.5">
                   {shippingQuotes.map((q) => (
                     <label
@@ -545,9 +552,24 @@ export default function CheckoutPage() {
                   ))}
                 </div>
                 {selectedQuote && (
-                  <p className="mt-2 text-xs text-secondary-500">
-                    Ships {estimatedShipDate} &bull; Arrives by {selectedQuote.estimatedDeliveryDate}
-                  </p>
+                  <div className="mt-2 space-y-1 text-xs text-secondary-500">
+                    <p>
+                      Total shipment weight: <span className="font-medium text-secondary-700">{totalWeight.toFixed(totalWeight >= 10 ? 1 : 2)} kg</span>
+                    </p>
+                    <p>
+                      Ships {estimatedShipDate} &bull; Arrives by {selectedQuote.estimatedDeliveryDate}
+                    </p>
+                    {!selectedQuote.isFreeShipping && selectedQuote.gapToFreeShipping !== undefined && selectedQuote.gapToFreeShipping > 0 && (
+                      <p className="font-medium text-green-700">
+                        Add {formatUsd(selectedQuote.gapToFreeShipping)} more to unlock free shipping.
+                      </p>
+                    )}
+                    {selectedQuote.isFreeShipping && (
+                      <p className="font-medium text-green-700">
+                        Free shipping has been applied to this order.
+                      </p>
+                    )}
+                  </div>
                 )}
               </div>
             ) : null}
@@ -567,6 +589,16 @@ export default function CheckoutPage() {
                 <span>${total.toFixed(2)}</span>
               </div>
             </div>
+
+            {gapToFreeShipping > 0 ? (
+              <div className="mt-4 rounded-lg border border-green-200 bg-green-50 p-3 text-xs text-green-800">
+                Spend {formatUsd(gapToFreeShipping)} more to qualify for free shipping at {formatUsd(FREE_SHIPPING_THRESHOLD_USD)}.
+              </div>
+            ) : (
+              <div className="mt-4 rounded-lg border border-green-200 bg-green-50 p-3 text-xs text-green-800">
+                This order qualifies for free shipping because it meets the {formatUsd(FREE_SHIPPING_THRESHOLD_USD)} threshold.
+              </div>
+            )}
 
             {error && (
               <div className="mt-4 rounded-md bg-red-50 p-3 text-sm text-red-700">

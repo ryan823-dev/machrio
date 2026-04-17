@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { FREE_SHIPPING_THRESHOLD_USD, formatUsd } from '@/lib/shipping/rules'
 
 // 完全静态生成，构建时生成 HTML
 export const dynamic = 'force-static'
@@ -19,14 +20,31 @@ export default function ShippingPolicyPage() {
     <div className="container-main pb-16 pt-8">
       <h1 className="text-3xl font-bold text-secondary-900">Shipping Policy</h1>
       <p className="mt-4 max-w-3xl text-sm leading-relaxed text-secondary-600">
-        Machrio provides reliable global shipping for industrial supplies. Orders are processed within 1&ndash;2 business days after payment confirmation. Weekend and holiday orders are handled on the next business day.
+        Machrio provides reliable global shipping for industrial supplies. Orders are typically processed within 1&ndash;3 business days after payment confirmation. Weekend and holiday orders are handled on the next business day.
       </p>
 
       {/* Free shipping banner */}
       <div className="mt-6 rounded-lg bg-green-50 border border-green-200 p-4">
-        <p className="text-sm font-semibold text-green-800">Orders over $200 qualify for FREE shipping!</p>
-        <p className="mt-1 text-xs text-green-600">Flat rate of $25 for orders under $200.</p>
+        <p className="text-sm font-semibold text-green-800">Orders over {formatUsd(FREE_SHIPPING_THRESHOLD_USD)} qualify for FREE shipping.</p>
+        <p className="mt-1 text-xs text-green-600">
+          All other shipping charges are calculated from the shipment&apos;s total weight, destination, and selected delivery method.
+        </p>
       </div>
+
+      <section className="mt-8 rounded-lg border border-secondary-200 bg-white p-6">
+        <h2 className="text-xl font-semibold text-secondary-900">How Machrio Shipping Rates Work</h2>
+        <div className="mt-4 space-y-3 text-sm leading-relaxed text-secondary-600">
+          <p>
+            Shipping is weight-based. The checkout system totals the weight of every item in your cart and then applies the destination-specific rate for the shipping method you choose.
+          </p>
+          <p>
+            This means one unit and ten units will not produce the same shipping fee. Heavier or larger combined shipments will generate a higher quote unless the free-shipping threshold is met.
+          </p>
+          <p>
+            Free shipping is applied automatically when the merchandise subtotal reaches {formatUsd(FREE_SHIPPING_THRESHOLD_USD)} or more.
+          </p>
+        </div>
+      </section>
 
       {/* Shipping options table */}
       <section className="mt-10">
@@ -38,7 +56,7 @@ export default function ShippingPolicyPage() {
                 <th className="px-4 py-3 text-left font-medium text-secondary-700">Origin</th>
                 <th className="px-4 py-3 text-left font-medium text-secondary-700">Delivery Time</th>
                 <th className="px-4 py-3 text-left font-medium text-secondary-700">Duties &amp; Taxes</th>
-                <th className="px-4 py-3 text-left font-medium text-secondary-700">Shipping Fee</th>
+                <th className="px-4 py-3 text-left font-medium text-secondary-700">Rate Rule</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-secondary-100">
@@ -46,25 +64,19 @@ export default function ShippingPolicyPage() {
                 <td className="px-4 py-3 font-medium text-secondary-800">U.S. Warehouse</td>
                 <td className="px-4 py-3 text-secondary-600">2&ndash;7 business days</td>
                 <td className="px-4 py-3"><span className="rounded bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">Included</span></td>
-                <td className="px-4 py-3 text-secondary-600">Calculated at checkout</td>
+                <td className="px-4 py-3 text-secondary-600">Base quote covers the first 2 kg, then additional weight is charged per extra kg.</td>
               </tr>
               <tr>
                 <td className="px-4 py-3 font-medium text-secondary-800">China &mdash; DDP Air</td>
                 <td className="px-4 py-3 text-secondary-600">6&ndash;15 business days</td>
                 <td className="px-4 py-3"><span className="rounded bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">Included</span></td>
-                <td className="px-4 py-3 text-secondary-600">Calculated at checkout</td>
+                <td className="px-4 py-3 text-secondary-600">Base quote covers the first 2 kg, then additional weight is charged per extra kg.</td>
               </tr>
               <tr>
                 <td className="px-4 py-3 font-medium text-secondary-800">China &mdash; DDP Sea</td>
                 <td className="px-4 py-3 text-secondary-600">20&ndash;35 business days</td>
                 <td className="px-4 py-3"><span className="rounded bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">Included</span></td>
-                <td className="px-4 py-3 text-secondary-600">Free over $200</td>
-              </tr>
-              <tr>
-                <td className="px-4 py-3 font-medium text-secondary-800">Express Courier</td>
-                <td className="px-4 py-3 text-secondary-600">3&ndash;10 business days</td>
-                <td className="px-4 py-3"><span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">Buyer Paid</span></td>
-                <td className="px-4 py-3 text-secondary-600">Calculated at checkout</td>
+                <td className="px-4 py-3 text-secondary-600">Base quote covers the first 5 kg, then additional weight is charged per extra kg.</td>
               </tr>
             </tbody>
           </table>

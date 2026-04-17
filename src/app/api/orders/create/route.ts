@@ -4,6 +4,8 @@ import Stripe from 'stripe'
 import { sendOrderConfirmationEmail } from '@/lib/email'
 import { normalizePurchaseMode } from '@/lib/purchase-mode'
 import { calculateShipping } from '@/lib/shipping/calculator'
+import { parsePricing } from '@/lib/pricing'
+import { FREE_SHIPPING_THRESHOLD_USD } from '@/lib/shipping/rules'
 import { createPayPalOrder, getPayPalApprovalUrl } from '@/lib/paypal'
 import {
   attachPartnerAttributionToOrder,
@@ -57,21 +59,13 @@ function normalizeCurrency(currency?: string): string {
 }
 
 function getBasePrice(pricing: unknown): number | null {
-  if (!pricing || typeof pricing !== 'object') return null
-
-  const rawPrice = (pricing as { basePrice?: unknown }).basePrice
-  if (typeof rawPrice === 'number' && Number.isFinite(rawPrice) && rawPrice > 0) {
-    return rawPrice
+  const parsedPricing = parsePricing(pricing)
+  if (typeof parsedPricing?.basePrice === 'number' && parsedPricing.basePrice > 0) {
+    return parsedPricing.basePrice
   }
 
-  if (typeof rawPrice === 'string') {
-    const parsed = Number(rawPrice)
-    if (Number.isFinite(parsed) && parsed > 0) {
-      return parsed
-    }
-  }
-
-  return null
+  const firstTierPrice = parsedPricing?.tieredPricing?.[0]?.unitPrice
+  return typeof firstTierPrice === 'number' && firstTierPrice > 0 ? firstTierPrice : null
 }
 
 function toMinorUnits(amount: number): number {
@@ -202,29 +196,26 @@ export async function POST(req: NextRequest) {
     let estimatedDeliveryDate = ''
     let totalWeight = 0
 
-    if (body.shippingMethodCode) {
-      const shippingItems = validatedItems.map(item => ({
-        productId: item.productId,
-        quantity: item.quantity,
-      }))
-      const country = body.shipping.country || 'US'
-      const calcResult = await calculateShipping(shippingItems, country, subtotal)
+    const shippingItems = validatedItems.map(item => ({
+      productId: item.productId,
+      quantity: item.quantity,
+    }))
+    const country = body.shipping.country || 'US'
+    const calcResult = await calculateShipping(shippingItems, country, subtotal)
 
-      if (calcResult.success && calcResult.methods.length > 0) {
-        const selectedMethod = calcResult.methods.find(m => m.code === body.shippingMethodCode)
-          || calcResult.methods[0]
+    if (calcResult.success && calcResult.methods.length > 0) {
+      const selectedMethod = body.shippingMethodCode
+        ? calcResult.methods.find(m => m.code === body.shippingMethodCode) || calcResult.methods[0]
+        : calcResult.methods[0]
 
-        shippingCost = selectedMethod.cost
-        shippingMethodCode = selectedMethod.code
-        shippingMethodName = selectedMethod.name
-        estimatedShipDate = calcResult.estimatedShipDate
-        estimatedDeliveryDate = selectedMethod.estimatedDeliveryDate
-        totalWeight = calcResult.totalWeight
-      } else {
-        shippingCost = subtotal >= 200 ? 0 : 25
-      }
+      shippingCost = selectedMethod.cost
+      shippingMethodCode = selectedMethod.code
+      shippingMethodName = selectedMethod.name
+      estimatedShipDate = calcResult.estimatedShipDate
+      estimatedDeliveryDate = selectedMethod.estimatedDeliveryDate
+      totalWeight = calcResult.totalWeight
     } else {
-      shippingCost = subtotal >= 200 ? 0 : 25
+      shippingCost = subtotal >= FREE_SHIPPING_THRESHOLD_USD ? 0 : 25
     }
 
     shippingCost = Math.round(shippingCost * 100) / 100

@@ -1040,17 +1040,48 @@ export async function getProductShippingInfo(productId: string): Promise<{
   const pool = getPool()
   try {
     const result = await pool.query(
-      `SELECT shipping_info FROM products WHERE id::text = $1 OR sku = $1 LIMIT 1`,
+      `SELECT shipping_info, weight FROM products WHERE id::text = $1 OR sku = $1 LIMIT 1`,
       [productId]
     )
-    if (result.rows.length > 0 && result.rows[0].shipping_info) {
-      const info = result.rows[0].shipping_info as any
-      return {
-        weight: info?.weight || 0,
-        processingTime: info?.processingTime ?? 3,
+
+    const row = result.rows[0]
+    if (!row) {
+      return { weight: 0, processingTime: 3 }
+    }
+
+    let parsedShippingInfo: Record<string, unknown> | null = null
+    if (row.shipping_info) {
+      if (typeof row.shipping_info === 'string') {
+        try {
+          const parsed = JSON.parse(row.shipping_info)
+          if (parsed && typeof parsed === 'object') {
+            parsedShippingInfo = parsed as Record<string, unknown>
+          }
+        } catch {
+          parsedShippingInfo = null
+        }
+      } else if (typeof row.shipping_info === 'object') {
+        parsedShippingInfo = row.shipping_info as Record<string, unknown>
       }
     }
-    return { weight: 0, processingTime: 3 }
+
+    const rawWeight = parsedShippingInfo?.weight ?? row.weight
+    const normalizedWeight = typeof rawWeight === 'number' ? rawWeight : Number(rawWeight)
+    const rawProcessingTime =
+      parsedShippingInfo?.processingTime
+      ?? parsedShippingInfo?.processing_time
+      ?? parsedShippingInfo?.processingTimeDays
+      ?? parsedShippingInfo?.processing_time_days
+    const normalizedProcessingTime = typeof rawProcessingTime === 'number'
+      ? rawProcessingTime
+      : Number(rawProcessingTime)
+
+    return {
+      weight: Number.isFinite(normalizedWeight) && normalizedWeight > 0 ? normalizedWeight : 0,
+      processingTime: Number.isFinite(normalizedProcessingTime) && normalizedProcessingTime > 0
+        ? normalizedProcessingTime
+        : 3,
+    }
   } catch {
     return { weight: 0, processingTime: 3 }
   }

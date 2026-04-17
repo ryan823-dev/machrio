@@ -5,6 +5,10 @@ import {
   getFreeShippingRules,
   getProductShippingInfo
 } from '@/lib/db'
+import {
+  DEFAULT_SHIPPING_PROCESSING_DAYS,
+  FREE_SHIPPING_THRESHOLD_USD,
+} from '@/lib/shipping/rules'
 
 export interface ShippingItem {
   productId: string
@@ -66,7 +70,7 @@ export async function calculateShipping(
   try {
     // 1. Fetch product weights and processing times
     let totalWeight = 0
-    let maxProcessingTime = 3 // default
+    let maxProcessingTime = DEFAULT_SHIPPING_PROCESSING_DAYS
     let missingWeightCount = 0
 
     for (const item of items) {
@@ -75,7 +79,7 @@ export async function calculateShipping(
 
         if (shippingInfo) {
           const weight = shippingInfo.weight || 0
-          const processingTime = shippingInfo.processingTime ?? 3
+          const processingTime = shippingInfo.processingTime ?? DEFAULT_SHIPPING_PROCESSING_DAYS
 
           if (weight === 0) {
             missingWeightCount++
@@ -160,8 +164,11 @@ export async function calculateShipping(
         (rule.country_code === country || !rule.country_code)
       )
 
-      if (matchingRule) {
-        const threshold = toNumber(matchingRule.minimum_amount)
+      const threshold = matchingRule
+        ? toNumber(matchingRule.minimum_amount)
+        : FREE_SHIPPING_THRESHOLD_USD
+
+      if (threshold > 0) {
         freeShippingThreshold = threshold
         if (subtotal >= threshold) {
           isFreeShipping = true
@@ -210,8 +217,8 @@ export async function calculateShipping(
       success: false,
       country,
       totalWeight: 0,
-      maxProcessingTime: 3,
-      estimatedShipDate: formatDate(addDays(new Date(), 3)),
+      maxProcessingTime: DEFAULT_SHIPPING_PROCESSING_DAYS,
+      estimatedShipDate: formatDate(addDays(new Date(), DEFAULT_SHIPPING_PROCESSING_DAYS)),
       methods: [],
       warnings,
       error: err instanceof Error ? err.message : 'Shipping calculation failed',
