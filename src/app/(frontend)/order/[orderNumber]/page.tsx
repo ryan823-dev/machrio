@@ -14,6 +14,11 @@ import { PaymentReceiptUpload } from '@/components/order/PaymentReceiptUpload'
 
 export const dynamic = 'force-dynamic'
 
+function isStripeConfigured() {
+  const key = process.env.STRIPE_SECRET_KEY
+  return Boolean(key && !key.includes('placeholder'))
+}
+
 interface OrderPageProps {
   params: Promise<{ orderNumber: string }>
   searchParams: Promise<{ payment?: string; access?: string | string[] }>
@@ -65,15 +70,21 @@ export default async function OrderConfirmationPage({ params, searchParams }: Or
     || paymentInfo.method
     || (paymentInfo.paypal ? 'paypal' : paymentInfo.stripe ? 'stripe' : 'bank-transfer')
   const currency = order.currency || 'USD'
+  const stripeAvailable = isStripeConfigured()
   const paypalAvailable = isPayPalConfigured()
   const isBankTransfer = paymentMethod === 'bank-transfer'
   const isPaid = order.payment_status === 'paid'
   const retryPaymentMethod = paymentMethod === 'stripe' || paymentMethod === 'paypal'
     ? paymentMethod
     : null
-  const canRetryOnlinePayment = !isPaid
+  const availablePaymentMethods = [
+    stripeAvailable ? 'stripe' : null,
+    paypalAvailable ? 'paypal' : null,
+    'bank-transfer',
+  ].filter(Boolean) as Array<'stripe' | 'paypal' | 'bank-transfer'>
+  const canManageUnpaidPayment = !isPaid
     && Boolean(retryPaymentMethod)
-    && (retryPaymentMethod !== 'paypal' || paypalAvailable)
+    && availablePaymentMethods.length > 0
   const paymentSuccess = payment === 'success'
   const paymentMethodLabel = paymentMethod === 'paypal'
     ? 'PayPal'
@@ -248,13 +259,14 @@ export default async function OrderConfirmationPage({ params, searchParams }: Or
 
           {/* Actions */}
           <section className="rounded-lg border border-secondary-200 bg-white p-6 space-y-3">
-            {canRetryOnlinePayment && (
+            {canManageUnpaidPayment && (
               <OrderPaymentRetry
                 orderId={order.id}
                 orderNumber={canonicalOrderNumber}
                 orderPath={orderPath}
                 accessToken={accessResult.via === 'token' ? accessToken : undefined}
-                paymentMethod={retryPaymentMethod!}
+                currentPaymentMethod={retryPaymentMethod!}
+                availablePaymentMethods={availablePaymentMethods}
                 amount={totalAmount}
                 currency={currency}
               />
