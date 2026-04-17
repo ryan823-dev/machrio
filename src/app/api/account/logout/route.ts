@@ -1,23 +1,22 @@
-import { NextResponse } from 'next/server'
-import { getPool } from '@/lib/db'
+import { NextRequest, NextResponse } from 'next/server'
+import {
+  ACCOUNT_SESSION_COOKIE,
+  clearAccountSessionCookie,
+  deleteAccountSession,
+  ensureAccountAuthTables,
+} from '@/lib/account-session'
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
+    await ensureAccountAuthTables()
 
-    const token = authHeader.slice(7)
-    const pool = getPool()
+    const token = request.cookies.get(ACCOUNT_SESSION_COOKIE)?.value
+    await deleteAccountSession(token)
 
-    // Delete the session
-    await pool.query(
-      `DELETE FROM account_sessions WHERE token = $1`,
-      [token]
-    )
+    const response = NextResponse.json({ success: true })
+    clearAccountSessionCookie(response)
 
-    return NextResponse.json({ success: true })
+    return response
   } catch (err) {
     console.error('Logout error:', err)
     return NextResponse.json({ error: 'Logout failed' }, { status: 500 })

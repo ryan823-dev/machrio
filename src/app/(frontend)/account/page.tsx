@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 // 完全静态生成，构建时生成 HTML
 export const dynamic = 'force-static'
-import { getSession, setSession, clearSession, fetchWithAuth } from '@/lib/account'
+import { clearSession, fetchWithAuth } from '@/lib/account'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -20,7 +20,7 @@ interface OrderSummary {
   orderNumber: string
   status: string
   paymentStatus: string
-  total: number
+  total: number | string | null
   currency: string
   itemCount: number
   createdAt: string
@@ -37,6 +37,53 @@ interface AccountData {
   profile: Profile
   orders: OrderSummary[]
   rfqs: RFQSummary[]
+}
+
+interface SendCodeResult {
+  success: boolean
+  error?: string
+  message?: string
+  retryAfterSeconds?: number
+}
+
+async function requestVerificationCode(email: string): Promise<SendCodeResult> {
+  const res = await fetch('/api/account/send-code', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ email }),
+  })
+
+  const data = await res.json().catch(() => ({}))
+
+  if (!res.ok) {
+    return {
+      success: false,
+      error: data.error || 'Failed to send code',
+      retryAfterSeconds:
+        typeof data.retryAfterSeconds === 'number' ? data.retryAfterSeconds : undefined,
+    }
+  }
+
+  return {
+    success: true,
+    message: data.message || 'Verification code sent to your email',
+  }
+}
+
+function formatCooldown(seconds: number) {
+  if (seconds < 60) return `${seconds}s`
+
+  const minutes = Math.floor(seconds / 60)
+  const remainingSeconds = seconds % 60
+
+  return remainingSeconds > 0
+    ? `${minutes}m ${remainingSeconds}s`
+    : `${minutes}m`
+}
+
+function formatOrderTotal(value: number | string | null | undefined) {
+  const normalizedValue = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(normalizedValue) ? normalizedValue.toFixed(2) : '0.00'
 }
 
 // ─── Status Badges ───────────────────────────────────────────────────────────
@@ -86,19 +133,15 @@ function EmailStep({ onCodeSent }: { onCodeSent: (email: string) => void }) {
     setLoading(true)
 
     try {
-      const res = await fetch('/api/account/send-code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim() }),
-      })
-      const data = await res.json()
+      const normalizedEmail = email.trim().toLowerCase()
+      const result = await requestVerificationCode(normalizedEmail)
 
-      if (!res.ok) {
-        setError(data.error || 'Failed to send code')
+      if (!result.success) {
+        setError(result.error || 'Failed to send code')
         return
       }
 
-      onCodeSent(email.trim().toLowerCase())
+      onCodeSent(normalizedEmail)
     } catch {
       setError('Network error. Please try again.')
     } finally {
@@ -161,12 +204,14 @@ function CodeStep({
   onBack,
 }: {
   email: string
-  onVerified: (token: string, expiresAt: string) => void
+  onVerified: () => void
   onBack: () => void
 }) {
   const [code, setCode] = useState('')
   const [loading, setLoading] = useState(false)
+  const [resending, setResending] = useState(false)
   const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
   const [resendCooldown, setResendCooldown] = useState(0)
 
   useEffect(() => {
@@ -178,6 +223,7 @@ function CodeStep({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    setNotice('')
     setLoading(true)
 
     try {
@@ -193,7 +239,7 @@ function CodeStep({
         return
       }
 
-      onVerified(data.token, data.expiresAt)
+      onVerified()
     } catch {
       setError('Network error. Please try again.')
     } finally {
@@ -202,17 +248,29 @@ function CodeStep({
   }
 
   const handleResend = async () => {
-    if (resendCooldown > 0) return
-    setResendCooldown(60)
+    if (resendCooldown > 0 || resending) return
+    setError('')
+    setNotice('')
+    setResending(true)
 
     try {
-      await fetch('/api/account/send-code', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email }),
-      })
+      const result = await requestVerificationCode(email)
+
+      if (!result.success) {
+        if (typeof result.retryAfterSeconds === 'number') {
+          setResendCooldown(result.retryAfterSeconds)
+        }
+
+        setError(result.error || 'Failed to resend code')
+        return
+      }
+
+      setResendCooldown(60)
+      setNotice(result.message || 'A new verification code has been sent.')
     } catch {
-      // Silently fail - user can try again
+      setError('Network error. Please try again.')
+    } finally {
+      setResending(false)
     }
   }
 
@@ -229,6 +287,9 @@ function CodeStep({
       <h2 className="text-2xl font-bold text-secondary-900">Check Your Email</h2>
       <p className="mt-2 text-secondary-600">
         We sent a 6-digit code to <strong className="text-secondary-800">{email}</strong>
+      </p>
+      <p className="mt-2 text-xs text-secondary-400">
+        If you don&apos;t see it within a minute, check your spam folder or request a new code below.
       </p>
 
       <form onSubmit={handleSubmit} className="mt-8">
@@ -265,12 +326,18 @@ function CodeStep({
         </button>
         <button
           onClick={handleResend}
-          disabled={resendCooldown > 0}
+          disabled={resendCooldown > 0 || resending}
           className="text-primary-600 hover:text-primary-800 disabled:text-secondary-400"
         >
-          {resendCooldown > 0 ? `Resend in ${resendCooldown}s` : 'Resend code'}
+          {resending
+            ? 'Sending...'
+            : resendCooldown > 0
+              ? `Resend in ${formatCooldown(resendCooldown)}`
+              : 'Resend code'}
         </button>
       </div>
+
+      {notice && <p className="mt-3 text-sm text-green-600">{notice}</p>}
     </div>
   )
 }
@@ -413,7 +480,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
                     </td>
                     <td className="py-3 pr-4 text-secondary-600">{order.itemCount}</td>
                     <td className="py-3 text-right font-medium text-secondary-900">
-                      ${order.total.toFixed(2)} {order.currency}
+                      ${formatOrderTotal(order.total)} {order.currency}
                     </td>
                   </tr>
                 ))}
@@ -488,17 +555,29 @@ export default function AccountPage() {
   const [email, setEmail] = useState('')
   const [checking, setChecking] = useState(true)
 
-  // Check for existing session on mount
   useEffect(() => {
-    const session = getSession()
-    if (session) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setEmail(session.email)
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setStep('dashboard')
+    clearSession()
+
+    async function checkSession() {
+      try {
+        const res = await fetch('/api/account/me', {
+          credentials: 'same-origin',
+          cache: 'no-store',
+        })
+        const data = await res.json().catch(() => ({}))
+
+        if (res.ok && data.authenticated && data.email) {
+          setEmail(String(data.email))
+          setStep('dashboard')
+        }
+      } catch {
+        // Ignore initial session check errors and show sign-in flow
+      } finally {
+        setChecking(false)
+      }
     }
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setChecking(false)
+
+    checkSession()
   }, [])
 
   const handleCodeSent = (sentEmail: string) => {
@@ -506,8 +585,7 @@ export default function AccountPage() {
     setStep('code')
   }
 
-  const handleVerified = (token: string, expiresAt: string) => {
-    setSession(token, email, expiresAt)
+  const handleVerified = () => {
     setStep('dashboard')
   }
 

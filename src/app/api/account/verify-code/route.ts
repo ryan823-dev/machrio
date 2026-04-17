@@ -1,9 +1,15 @@
 import { NextResponse } from 'next/server'
 import { getPool } from '@/lib/db'
-import crypto from 'crypto'
+import {
+  createAccountSession,
+  ensureAccountAuthTables,
+  setAccountSessionCookie,
+} from '@/lib/account-session'
 
 export async function POST(request: Request) {
   try {
+    await ensureAccountAuthTables()
+
     const { email, code } = await request.json()
 
     if (!email || !code || !/^\d{6}$/.test(code)) {
@@ -47,18 +53,15 @@ export async function POST(request: Request) {
       [verification.id]
     )
 
-    // Generate session token
-    const token = crypto.randomBytes(32).toString('hex')
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    const session = await createAccountSession(normalizedEmail)
+    const response = NextResponse.json({
+      success: true,
+      expiresAt: session.expiresAt,
+    })
 
-    // Create session
-    await pool.query(
-      `INSERT INTO account_sessions (id, email, token, expires_at, created_at)
-       VALUES (gen_random_uuid(), $1, $2, $3, NOW())`,
-      [normalizedEmail, token, expiresAt]
-    )
+    setAccountSessionCookie(response, session)
 
-    return NextResponse.json({ success: true, token, expiresAt })
+    return response
   } catch (err) {
     console.error('Verify code error:', err)
     return NextResponse.json({ error: 'Verification failed' }, { status: 500 })

@@ -1,44 +1,90 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getPool } from '@/lib/db'
+import {
+  ensureAccountAuthTables,
+  getAccountSessionFromRequest,
+} from '@/lib/account-session'
 
-export async function GET(request: Request) {
+interface AccountRfqRow {
+  id: string
+  customer_name: string
+  customer_phone: string | null
+  customer_company: string | null
+  message: string
+  status: string | null
+  submitted_at: string | null
+  created_at: string | null
+}
+
+function toFiniteNumber(value: unknown, fallback = 0): number {
+  const numericValue = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(numericValue) ? numericValue : fallback
+}
+
+async function getRfqSummariesForAccount(email: string): Promise<AccountRfqRow[]> {
+  const pool = getPool()
+
   try {
-    const authHeader = request.headers.get('authorization')
-    if (!authHeader?.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    }
-
-    const token = authHeader.slice(7)
-    if (!token || token.length !== 64) {
-      return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
-    }
-
-    const pool = getPool()
-
-    // Validate session
-    const sessionResult = await pool.query(
-      `SELECT email FROM account_sessions
-       WHERE token = $1 AND expires_at > NOW()`,
-      [token]
+    const result = await pool.query<AccountRfqRow>(
+      `SELECT id::text AS id,
+              COALESCE(customer->>'name', '') AS customer_name,
+              NULLIF(customer->>'phone', '') AS customer_phone,
+              NULLIF(customer->>'company', '') AS customer_company,
+              COALESCE(inquiry->>'message', notes, '') AS message,
+              status,
+              submitted_at,
+              created_at
+       FROM rfq_submissions
+       WHERE LOWER(COALESCE(customer->>'email', '')) = $1
+       ORDER BY submitted_at DESC NULLS LAST, created_at DESC
+       LIMIT 50`,
+      [email],
     )
 
-    if (sessionResult.rows.length === 0) {
+    return result.rows
+  } catch {
+    const legacyResult = await pool.query<AccountRfqRow>(
+      `SELECT id::text AS id,
+              COALESCE(customer_name, '') AS customer_name,
+              customer_phone,
+              customer_company,
+              COALESCE(message, '') AS message,
+              status,
+              submitted_at,
+              created_at
+       FROM rfq_submissions
+       WHERE LOWER(customer_email) = $1
+       ORDER BY submitted_at DESC NULLS LAST, created_at DESC
+       LIMIT 50`,
+      [email],
+    )
+
+    return legacyResult.rows
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    await ensureAccountAuthTables()
+
+    const session = await getAccountSessionFromRequest(request)
+    if (!session) {
       return NextResponse.json({ error: 'Session expired. Please sign in again.' }, { status: 401 })
     }
 
-    const email = sessionResult.rows[0].email
+    const email = session.email
+    const pool = getPool()
 
-    // Fetch orders
-    const ordersResult = await pool.query(
-      `SELECT * FROM orders WHERE customer_email = $1 ORDER BY created_at DESC LIMIT 50`,
-      [email]
-    )
-
-    // Fetch RFQs
-    const rfqsResult = await pool.query(
-      `SELECT * FROM rfq_submissions WHERE customer_email = $1 ORDER BY submitted_at DESC NULLS LAST, created_at DESC LIMIT 50`,
-      [email]
-    )
+    const [ordersResult, rfqs] = await Promise.all([
+      pool.query(
+        `SELECT * FROM orders
+         WHERE LOWER(customer_email) = $1
+         ORDER BY created_at DESC
+         LIMIT 50`,
+        [email],
+      ),
+      getRfqSummariesForAccount(email),
+    ])
 
     // Build profile from most recent order or RFQ
     let profile = { name: '', company: '', phone: '', email }
@@ -50,8 +96,8 @@ export async function GET(request: Request) {
         phone: latestOrder.customer_phone || '',
         email,
       }
-    } else if (rfqsResult.rows.length > 0) {
-      const latestRfq = rfqsResult.rows[0]
+    } else if (rfqs.length > 0) {
+      const latestRfq = rfqs[0]
       profile = {
         name: latestRfq.customer_name || '',
         company: latestRfq.customer_company || '',
@@ -66,14 +112,14 @@ export async function GET(request: Request) {
       orderNumber: order.order_number,
       status: order.status,
       paymentStatus: order.payment_status,
-      total: order.total,
+      total: toFiniteNumber(order.total),
       currency: order.currency || 'USD',
       itemCount: order.items?.length || 0,
       createdAt: order.created_at,
     }))
 
     // Format RFQs for response
-    const formattedRfqs = rfqsResult.rows.map((rfq) => ({
+    const formattedRfqs = rfqs.map((rfq) => ({
       id: rfq.id,
       status: rfq.status || 'new',
       message: rfq.message
