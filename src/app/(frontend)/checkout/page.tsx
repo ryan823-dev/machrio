@@ -557,17 +557,11 @@ export default function CheckoutPage() {
 
   // 取消嵌入式支付，回退到跳转式支付
   function handleStripeCancel() {
-    if (!pendingOrder?.orderNumber) {
-      setShowStripePayment(false)
-      setError('Payment cancelled. Please try again.')
-      return
-    }
-
-    clearCart()
     setShowStripePayment(false)
-    router.push(appendQueryParamsToPath(pendingOrder.orderPath, {
+    router.push(appendQueryParamsToPath('/cart', {
       payment: 'cancelled',
       provider: 'stripe',
+      order: pendingOrder?.orderNumber,
     }))
   }
 
