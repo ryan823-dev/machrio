@@ -128,4 +128,144 @@
     font-weight: 600;
     color: #1f2937;
   }
+
+  .product-description-content {
+    font-size: 1rem;
+    line-height: 1.85;
+    color: #334155;
+  }
+
+  .product-description-content > :first-child {
+    margin-top: 0;
+  }
+
+  .product-description-content > :last-child {
+    margin-bottom: 0;
+  }
+
+  .product-description-content p {
+    margin: 1.1rem 0 0;
+  }
+
+  .product-description-content h2,
+  .product-description-content h3 {
+    color: #0f172a;
+    letter-spacing: -0.01em;
+  }
+
+  .product-description-content h2 {
+    margin-top: 2.5rem;
+    border-top: 1px solid #e2e8f0;
+    padding-top: 1.5rem;
+    font-size: 1.35rem;
+    font-weight: 700;
+    line-height: 1.35;
+  }
+
+  .product-description-content h3 {
+    margin-top: 2rem;
+    padding-left: 0.875rem;
+    border-left: 3px solid #60a5fa;
+    font-size: 1.125rem;
+    font-weight: 700;
+    line-height: 1.45;
+  }
+
+  .product-description-content h2:first-child,
+  .product-description-content h3:first-child {
+    margin-top: 0;
+  }
+
+  .product-description-content h2:first-child {
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  .product-description-content ul,
+  .product-description-content ol {
+    margin: 1.1rem 0 0;
+    padding-left: 1.35rem;
+  }
+
+  .product-description-content li {
+    margin: 0.7rem 0 0;
+    padding-left: 0.1rem;
+    line-height: 1.75;
+  }
+
+  .product-description-content li::marker {
+    color: #2563eb;
+  }
+
+  .product-description-content blockquote {
+    margin: 1.5rem 0 0;
+    border-left: 4px solid #93c5fd;
+    background: linear-gradient(135deg, rgba(239, 246, 255, 0.95), rgba(255, 255, 255, 0.98));
+    padding: 1rem 1.25rem;
+    border-radius: 0 1rem 1rem 0;
+    color: #1e3a8a;
+  }
+
+  .product-description-content a {
+    color: #1d4ed8;
+    text-decoration: none;
+    text-underline-offset: 0.2em;
+  }
+
+  .product-description-content a:hover {
+    color: #1e40af;
+    text-decoration: underline;
+  }
+
+  .product-description-content strong {
+    color: #0f172a;
+    font-weight: 700;
+  }
+
+  .product-description-content hr {
+    margin: 1.75rem 0;
+    border: 0;
+    border-top: 1px solid #e2e8f0;
+  }
+
+  .product-description-content table {
+    width: 100%;
+    margin-top: 1.5rem;
+    border-collapse: separate;
+    border-spacing: 0;
+    overflow: hidden;
+    border: 1px solid #e2e8f0;
+    border-radius: 1rem;
+    background: #ffffff;
+  }
+
+  .product-description-content th,
+  .product-description-content td {
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0.85rem 1rem;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  .product-description-content tr:last-child td {
+    border-bottom: 0;
+  }
+
+  .product-description-content th {
+    background: #f8fafc;
+    color: #0f172a;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+
+  .product-description-content td {
+    color: #475569;
+    font-size: 0.95rem;
+  }
+
+  .product-description-content img {
+    margin-top: 1.5rem;
+    border-radius: 1rem;
+  }
 }

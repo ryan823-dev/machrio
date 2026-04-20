@@ -527,6 +527,12 @@ export async function POST(req: NextRequest) {
         paymentInfoUpdate.stripePaymentIntentId = paymentIntent.id
 
         try {
+          const stripeCancelPath = appendQueryParamsToPath('/cart', {
+            payment: 'cancelled',
+            provider: 'stripe',
+            order: orderNumber,
+          })
+
           const session = await stripe.checkout.sessions.create({
             mode: 'payment',
             customer_email: normalizedCustomerEmail,
@@ -567,10 +573,7 @@ export async function POST(req: NextRequest) {
               serverUrl,
             ),
             cancel_url: toAbsoluteUrl(
-              appendQueryParamsToPath(orderAccess.orderPath, {
-                payment: 'cancelled',
-                provider: 'stripe',
-              }),
+              stripeCancelPath,
               serverUrl,
             ),
           })

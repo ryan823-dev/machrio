@@ -7,9 +7,10 @@ import { appendQueryParamsToPath } from '@/lib/order-access-links'
 
 interface StripeReturnHandlerProps {
   orderPath: string
+  cancelPath: string
 }
 
-export function StripeReturnHandler({ orderPath }: StripeReturnHandlerProps) {
+export function StripeReturnHandler({ orderPath, cancelPath }: StripeReturnHandlerProps) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { clearCart } = useCart()
@@ -49,11 +50,8 @@ export function StripeReturnHandler({ orderPath }: StripeReturnHandlerProps) {
       return
     }
 
-    router.replace(appendQueryParamsToPath(orderPath, {
-      payment: 'cancelled',
-      provider: 'stripe',
-    }))
-  }, [clearCart, orderPath, router, searchParams])
+    router.replace(cancelPath)
+  }, [cancelPath, clearCart, orderPath, router, searchParams])
 
   return null
 }

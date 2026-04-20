@@ -70,7 +70,7 @@ const faqSections = [
       },
       {
         q: 'What is the free shipping threshold?',
-        a: 'There is no single sitewide free-shipping threshold. Free-shipping rules are configured per shipping method and can be country-specific or global. When a route qualifies, the cart and checkout show the remaining amount needed.',
+        a: 'Orders over $200 qualify for free shipping on supported methods. The cart and checkout will show how much more is needed when your order is below the threshold.',
       },
       {
         q: 'Do you provide customs documentation?',

@@ -997,7 +997,8 @@ export default function CheckoutPage() {
                 <div className="mb-2 space-y-1">
                   <label className="block text-xs font-medium text-secondary-600">Shipping Method</label>
                   <p className="text-xs leading-relaxed text-secondary-500">
-                    Shipping is calculated from the total shipment weight and destination. Orders over {formatUsd(FREE_SHIPPING_THRESHOLD_USD)} ship free.
+                    Shipping is calculated from total shipment weight and destination. Orders over{' '}
+                    {formatUsd(FREE_SHIPPING_THRESHOLD_USD)} ship free.
                   </p>
                 </div>
                 <div className="space-y-1.5">

@@ -63,7 +63,7 @@ export default async function OrderConfirmationPage({ params, searchParams }: Or
   const paypalReturnToken = getQueryValue(token)
   const payerId = getQueryValue(PayerID)
 
-  let accessResult = await authorizeOrderAccess({
+  const accessResult = await authorizeOrderAccess({
     order,
     accessToken,
   })
@@ -92,6 +92,11 @@ export default async function OrderConfirmationPage({ params, searchParams }: Or
 
   const orderPath = buildOrderPath(canonicalOrderNumber, accessResult.via === 'token' ? accessToken : undefined)
   const invoicePath = buildInvoicePath(canonicalOrderNumber, accessResult.via === 'token' ? accessToken : undefined)
+  const stripeCancelCartPath = appendQueryParamsToPath('/cart', {
+    payment: 'cancelled',
+    provider: 'stripe',
+    order: canonicalOrderNumber,
+  })
   const orderEvents = await listOrderEvents(canonicalOrderNumber)
 
   const customer = {
@@ -141,7 +146,7 @@ export default async function OrderConfirmationPage({ params, searchParams }: Or
       {/* PayPal Capture Handler */}
       <PayPalCaptureHandler orderNumber={canonicalOrderNumber} accessToken={accessResult.via === 'token' ? accessToken : undefined} />
       <OrderPaymentFailureReporter orderNumber={canonicalOrderNumber} accessToken={accessResult.via === 'token' ? accessToken : undefined} />
-      <StripeReturnHandler orderPath={orderPath} />
+      <StripeReturnHandler orderPath={orderPath} cancelPath={stripeCancelCartPath} />
       
       {/* Status banner */}
       {paymentSuccess && paymentMethod !== 'paypal' && (

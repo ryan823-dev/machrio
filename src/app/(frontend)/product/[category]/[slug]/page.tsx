@@ -15,6 +15,7 @@ import { ImageZoom } from '@/components/product/ImageZoom'
 import { RecentlyViewed, TrackProductView } from '@/components/product/RecentlyViewed'
 import { AlsoViewed, TrackProductViewServer } from '@/components/product/AlsoViewed'
 import { BoughtTogether } from '@/components/product/BoughtTogether'
+import { ProductDescriptionSection } from '@/components/product/ProductDescriptionSection'
 import { RelatedGuide } from '@/components/shared/RelatedGuide'
 import { normalizeRichTextContent } from '@/lib/lexical-utils'
 import {
@@ -762,6 +763,11 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const purchaseMode = normalizePurchaseMode(product.purchase_mode)
   const availability = product.availability || 'contact'
   const leadTime = product.lead_time || ''
+  const availabilityLabel = availability === 'in-stock'
+    ? leadTime || 'In Stock'
+    : availability === 'made-to-order'
+    ? 'Made to Order'
+    : 'Contact for Availability'
   const moq = product.min_order_quantity || 1
 
   const canBuyOnline =
@@ -1035,7 +1041,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
       {/* Specs table */}
       {specifications.length > 0 && (
-        <section className="mt-12">
+        <section id="specifications" className="mt-12 scroll-mt-24">
           <h2 className="text-lg font-bold text-secondary-900">Technical Specifications</h2>
           <div className="mt-4 overflow-hidden rounded-lg border border-secondary-200">
             <table className="w-full">
@@ -1058,13 +1064,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
       {/* Description */}
       {descriptionHtml && (
-        <section className="mt-10">
-          <h2 className="text-lg font-bold text-secondary-900">Product Description</h2>
-          <div
-            className="mt-4 article-content max-w-none"
-            dangerouslySetInnerHTML={{ __html: descriptionHtml }}
-          />
-        </section>
+        <ProductDescriptionSection
+          descriptionHtml={descriptionHtml}
+          brandName={displayBrandName}
+          availabilityLabel={availabilityLabel}
+          leadTime={leadTime}
+          minOrderQuantity={moq}
+          hasSpecifications={specifications.length > 0}
+        />
       )}
 
       {/* Related Buying Guide */}
@@ -1095,7 +1102,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
       <RecentlyViewed excludeSlug={product.slug} />
 
       {/* FAQ Section */}
-      <FAQSection faqs={productFAQs} />
+      <div id="product-faq" className="scroll-mt-24">
+        <FAQSection faqs={productFAQs} />
+      </div>
     </div>
   )
 }

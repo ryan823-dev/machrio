@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useCart } from '@/contexts/CartContext'
 // 完全静态生成，构建时生成 HTML
@@ -23,6 +24,8 @@ const COUNTRIES = [
 ]
 
 export default function CartPage() {
+  const [cancelledOrderNumber, setCancelledOrderNumber] = useState<string | null>(null)
+  const [showCancelledBanner, setShowCancelledBanner] = useState(false)
   const {
     items, selectedItems, itemCount, subtotal, total,
     shippingCountry, shippingMethodCode, shippingQuotes, shippingLoading, estimatedShipDate,
@@ -50,6 +53,15 @@ export default function CartPage() {
         ? 'Updating...'
         : 'Awaiting quote'
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const isStripeCancelled =
+      params.get('provider') === 'stripe' && params.get('payment') === 'cancelled'
+
+    setShowCancelledBanner(isStripeCancelled)
+    setCancelledOrderNumber(isStripeCancelled ? params.get('order') : null)
+  }, [])
+
   if (items.length === 0) {
     return (
       <div className="container-main py-16 text-center">
@@ -67,6 +79,22 @@ export default function CartPage() {
 
   return (
     <div className="container-main py-8">
+      {showCancelledBanner && (
+        <div className="mb-6 rounded-lg border border-amber-200 bg-amber-50 p-4">
+          <div className="flex items-center gap-2">
+            <svg className="h-5 w-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+            <span className="font-semibold text-amber-800">Payment was cancelled</span>
+          </div>
+          <p className="mt-1 text-sm text-amber-700">
+            {cancelledOrderNumber
+              ? `Order ${cancelledOrderNumber} was left unpaid. Your items are still in the cart, so you can adjust products or quantities before checking out again.`
+              : 'Your items are still in the cart, so you can adjust products or quantities before checking out again.'}
+          </p>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-secondary-900">Shopping Cart ({items.length} items)</h1>
         <button onClick={clearCart} className="text-sm text-secondary-500 hover:text-red-600 transition-colors">
