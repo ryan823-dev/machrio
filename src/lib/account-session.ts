@@ -52,10 +52,56 @@ export async function ensureAccountAuthTables() {
     )
   `)
 
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS customer_accounts (
+      id UUID PRIMARY KEY,
+      customer_id UUID NOT NULL,
+      email TEXT NOT NULL UNIQUE,
+      password_hash TEXT,
+      email_verified_at TIMESTAMPTZ,
+      password_set_at TIMESTAMPTZ,
+      failed_login_attempts INTEGER NOT NULL DEFAULT 0,
+      locked_until TIMESTAMPTZ,
+      last_login_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `)
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS account_challenges (
+      id UUID PRIMARY KEY,
+      email TEXT NOT NULL,
+      purpose TEXT NOT NULL,
+      code_hash TEXT NOT NULL,
+      attempts INTEGER NOT NULL DEFAULT 0,
+      max_attempts INTEGER NOT NULL DEFAULT 5,
+      expires_at TIMESTAMPTZ NOT NULL,
+      consumed_at TIMESTAMPTZ,
+      metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `)
+
   await pool.query(`ALTER TABLE verification_codes ADD COLUMN IF NOT EXISTS attempts INTEGER NOT NULL DEFAULT 0`)
   await pool.query(`ALTER TABLE verification_codes ADD COLUMN IF NOT EXISTS verified BOOLEAN NOT NULL DEFAULT false`)
   await pool.query(`ALTER TABLE account_sessions ADD COLUMN IF NOT EXISTS token TEXT`)
   await pool.query(`ALTER TABLE account_sessions ADD COLUMN IF NOT EXISTS verification_code TEXT`)
+  await pool.query(`ALTER TABLE customer_accounts ADD COLUMN IF NOT EXISTS customer_id UUID`)
+  await pool.query(`ALTER TABLE customer_accounts ADD COLUMN IF NOT EXISTS password_hash TEXT`)
+  await pool.query(`ALTER TABLE customer_accounts ADD COLUMN IF NOT EXISTS email_verified_at TIMESTAMPTZ`)
+  await pool.query(`ALTER TABLE customer_accounts ADD COLUMN IF NOT EXISTS password_set_at TIMESTAMPTZ`)
+  await pool.query(`ALTER TABLE customer_accounts ADD COLUMN IF NOT EXISTS failed_login_attempts INTEGER NOT NULL DEFAULT 0`)
+  await pool.query(`ALTER TABLE customer_accounts ADD COLUMN IF NOT EXISTS locked_until TIMESTAMPTZ`)
+  await pool.query(`ALTER TABLE customer_accounts ADD COLUMN IF NOT EXISTS last_login_at TIMESTAMPTZ`)
+  await pool.query(`ALTER TABLE customer_accounts ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`)
+  await pool.query(`ALTER TABLE account_challenges ADD COLUMN IF NOT EXISTS purpose TEXT`)
+  await pool.query(`ALTER TABLE account_challenges ADD COLUMN IF NOT EXISTS code_hash TEXT`)
+  await pool.query(`ALTER TABLE account_challenges ADD COLUMN IF NOT EXISTS attempts INTEGER NOT NULL DEFAULT 0`)
+  await pool.query(`ALTER TABLE account_challenges ADD COLUMN IF NOT EXISTS max_attempts INTEGER NOT NULL DEFAULT 5`)
+  await pool.query(`ALTER TABLE account_challenges ADD COLUMN IF NOT EXISTS consumed_at TIMESTAMPTZ`)
+  await pool.query(`ALTER TABLE account_challenges ADD COLUMN IF NOT EXISTS metadata JSONB NOT NULL DEFAULT '{}'::jsonb`)
+  await pool.query(`ALTER TABLE account_challenges ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()`)
 
   await pool.query(`
     CREATE INDEX IF NOT EXISTS idx_verification_codes_email_created_at
@@ -73,6 +119,22 @@ export async function ensureAccountAuthTables() {
   await pool.query(`
     CREATE INDEX IF NOT EXISTS idx_account_sessions_email_created_at
     ON account_sessions(email, created_at DESC)
+  `)
+  await pool.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_customer_accounts_email
+    ON customer_accounts(email)
+  `)
+  await pool.query(`
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_customer_accounts_customer_id
+    ON customer_accounts(customer_id)
+  `)
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_account_challenges_email_purpose_created_at
+    ON account_challenges(email, purpose, created_at DESC)
+  `)
+  await pool.query(`
+    CREATE INDEX IF NOT EXISTS idx_account_challenges_email_purpose_expires_at
+    ON account_challenges(email, purpose, expires_at DESC)
   `)
 
   accountAuthTablesReady = true

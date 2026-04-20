@@ -385,6 +385,56 @@ export async function sendVerificationCodeEmail(email: string, code: string) {
   })
 }
 
+export async function sendRegisterVerificationEmail(email: string, code: string) {
+  return sendEmail({
+    to: email,
+    subject: `Verify your Machrio account: ${code}`,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#1e293b">
+        <div style="background:#1a3c6e;padding:20px 24px;border-radius:8px 8px 0 0">
+          <h1 style="margin:0;color:#fff;font-size:20px">Mach<span style="color:#f59e0b">rio</span></h1>
+        </div>
+        <div style="padding:24px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 8px 8px">
+          <h2 style="margin:0 0 16px;color:#1e293b;font-size:18px">Confirm Your New Account</h2>
+          <p style="margin:0 0 16px;color:#475569">Use the code below to verify your email address and finish creating your account:</p>
+          <div style="background:#f8fafc;border:2px solid #1a3c6e;border-radius:8px;padding:24px;margin:0 0 16px;text-align:center">
+            <span style="font-size:36px;font-weight:700;letter-spacing:8px;color:#1a3c6e">${code}</span>
+          </div>
+          <p style="margin:0 0 16px;color:#94a3b8;font-size:13px">This code expires in 5 minutes.</p>
+          <p style="margin:0;color:#94a3b8;font-size:12px">
+            If you did not attempt to create a Machrio account, you can safely ignore this email.
+          </p>
+        </div>
+      </div>
+    `,
+  })
+}
+
+export async function sendPasswordResetCodeEmail(email: string, code: string) {
+  return sendEmail({
+    to: email,
+    subject: `Reset your Machrio password: ${code}`,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#1e293b">
+        <div style="background:#1a3c6e;padding:20px 24px;border-radius:8px 8px 0 0">
+          <h1 style="margin:0;color:#fff;font-size:20px">Mach<span style="color:#f59e0b">rio</span></h1>
+        </div>
+        <div style="padding:24px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 8px 8px">
+          <h2 style="margin:0 0 16px;color:#1e293b;font-size:18px">Reset Your Password</h2>
+          <p style="margin:0 0 16px;color:#475569">Use this code to reset the password for your Machrio account:</p>
+          <div style="background:#f8fafc;border:2px solid #1a3c6e;border-radius:8px;padding:24px;margin:0 0 16px;text-align:center">
+            <span style="font-size:36px;font-weight:700;letter-spacing:8px;color:#1a3c6e">${code}</span>
+          </div>
+          <p style="margin:0 0 16px;color:#94a3b8;font-size:13px">This code expires in 5 minutes.</p>
+          <p style="margin:0;color:#94a3b8;font-size:12px">
+            If you did not request a password reset, you can ignore this email and your password will stay unchanged.
+          </p>
+        </div>
+      </div>
+    `,
+  })
+}
+
 // ==================== 外联邮件 (支持附件) ====================
 
 export interface EmailAttachment {

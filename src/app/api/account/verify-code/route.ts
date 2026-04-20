@@ -5,6 +5,10 @@ import {
   ensureAccountAuthTables,
   setAccountSessionCookie,
 } from '@/lib/account-session'
+import {
+  ensureCustomerLoginAccount,
+  markCustomerAccountEmailVerified,
+} from '@/lib/customer-auth'
 import { syncCustomerLinksByEmail } from '@/lib/customer-service'
 
 export async function POST(request: Request) {
@@ -53,6 +57,9 @@ export async function POST(request: Request) {
       `UPDATE verification_codes SET verified = true WHERE id = $1`,
       [verification.id]
     )
+
+    await ensureCustomerLoginAccount(normalizedEmail)
+    await markCustomerAccountEmailVerified(normalizedEmail)
 
     const session = await createAccountSession(normalizedEmail)
 

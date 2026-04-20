@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, type ReactNode } from 'react'
 import Link from 'next/link'
 // 完全静态生成，构建时生成 HTML
 export const dynamic = 'force-static'
@@ -58,6 +58,11 @@ interface AccountData {
   rfqs: RFQSummary[]
 }
 
+interface SecurityState {
+  hasPassword: boolean
+  emailVerified: boolean
+}
+
 interface SectionNotice {
   type: 'success' | 'error'
   message: string
@@ -68,13 +73,19 @@ interface SendCodeResult {
   error?: string
   message?: string
   retryAfterSeconds?: number
+  authenticated?: boolean
+  email?: string
+  expiresAt?: string
+  hasPassword?: boolean
+  emailVerified?: boolean
+  pendingVerification?: boolean
 }
 
-async function requestVerificationCode(email: string): Promise<SendCodeResult> {
-  const res = await fetch('/api/account/send-code', {
+async function postAccountAction(url: string, body: Record<string, unknown>, fallbackError: string): Promise<SendCodeResult> {
+  const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email }),
+    body: JSON.stringify(body),
   })
 
   const data = await res.json().catch(() => ({}))
@@ -82,7 +93,7 @@ async function requestVerificationCode(email: string): Promise<SendCodeResult> {
   if (!res.ok) {
     return {
       success: false,
-      error: data.error || 'Failed to send code',
+      error: typeof data.error === 'string' ? data.error : fallbackError,
       retryAfterSeconds:
         typeof data.retryAfterSeconds === 'number' ? data.retryAfterSeconds : undefined,
     }
@@ -90,8 +101,88 @@ async function requestVerificationCode(email: string): Promise<SendCodeResult> {
 
   return {
     success: true,
-    message: data.message || 'Verification code sent to your email',
+    message: typeof data.message === 'string' ? data.message : undefined,
+    authenticated: Boolean(data.authenticated),
+    email: typeof data.email === 'string' ? data.email : undefined,
+    expiresAt: typeof data.expiresAt === 'string' ? data.expiresAt : undefined,
+    hasPassword: typeof data.hasPassword === 'boolean' ? data.hasPassword : undefined,
+    emailVerified: typeof data.emailVerified === 'boolean' ? data.emailVerified : undefined,
+    pendingVerification: Boolean(data.pendingVerification),
   }
+}
+
+async function requestVerificationCode(email: string): Promise<SendCodeResult> {
+  return postAccountAction('/api/account/send-code', { email }, 'Failed to send code')
+}
+
+async function requestPasswordLogin(email: string, password: string): Promise<SendCodeResult> {
+  return postAccountAction('/api/account/login', { email, password }, 'Failed to sign in')
+}
+
+async function requestRegistration(
+  email: string,
+  password: string,
+  confirmPassword: string,
+): Promise<SendCodeResult> {
+  return postAccountAction(
+    '/api/account/register',
+    { email, password, confirmPassword },
+    'Failed to create account',
+  )
+}
+
+async function requestRegistrationVerification(email: string, code: string): Promise<SendCodeResult> {
+  return postAccountAction(
+    '/api/account/register/verify',
+    { email, code },
+    'Failed to verify account',
+  )
+}
+
+async function requestRegistrationResend(email: string): Promise<SendCodeResult> {
+  return postAccountAction(
+    '/api/account/register/resend',
+    { email },
+    'Failed to resend verification code',
+  )
+}
+
+async function requestForgotPassword(email: string): Promise<SendCodeResult> {
+  return postAccountAction(
+    '/api/account/password/forgot',
+    { email },
+    'Failed to send reset code',
+  )
+}
+
+async function requestPasswordReset(
+  email: string,
+  code: string,
+  newPassword: string,
+  confirmPassword: string,
+): Promise<SendCodeResult> {
+  return postAccountAction(
+    '/api/account/password/reset',
+    { email, code, newPassword, confirmPassword },
+    'Failed to reset password',
+  )
+}
+
+async function requestPasswordChange(
+  currentPassword: string,
+  newPassword: string,
+  confirmPassword: string,
+): Promise<SendCodeResult> {
+  return postAccountAction(
+    '/api/account/password/change',
+    { currentPassword, newPassword, confirmPassword },
+    'Failed to update password',
+  )
+}
+
+function buildRetryMessage(message: string, retryAfterSeconds?: number) {
+  if (!retryAfterSeconds) return message
+  return `${message} Try again in ${formatCooldown(retryAfterSeconds)}.`
 }
 
 function formatCooldown(seconds: number) {
@@ -236,15 +327,156 @@ function SectionNoticeMessage({ notice }: { notice: SectionNotice | null }) {
   )
 }
 
-// ─── Email Step ──────────────────────────────────────────────────────────────
+// ─── Auth Steps ──────────────────────────────────────────────────────────────
 
-function EmailStep({ onCodeSent }: { onCodeSent: (email: string) => void }) {
+function AuthShell({
+  title,
+  description,
+  iconBgClass,
+  icon,
+  children,
+}: {
+  title: string
+  description: string
+  iconBgClass: string
+  icon: ReactNode
+  children: ReactNode
+}) {
+  return (
+    <div className="mx-auto max-w-md text-center">
+      <div className="mb-6 flex justify-center">
+        <div className={`flex h-16 w-16 items-center justify-center rounded-full ${iconBgClass}`}>
+          {icon}
+        </div>
+      </div>
+
+      <h1 className="text-2xl font-bold text-secondary-900">{title}</h1>
+      <p className="mt-2 text-secondary-600">{description}</p>
+
+      {children}
+    </div>
+  )
+}
+
+function SignInStep({
+  onSignedIn,
+  onUseEmailCode,
+  onCreateAccount,
+  onForgotPassword,
+}: {
+  onSignedIn: (email: string) => void
+  onUseEmailCode: () => void
+  onCreateAccount: () => void
+  onForgotPassword: () => void
+}) {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault()
+    setError('')
+    setLoading(true)
+
+    try {
+      const normalizedEmail = email.trim().toLowerCase()
+      const result = await requestPasswordLogin(normalizedEmail, password)
+
+      if (!result.success) {
+        setError(buildRetryMessage(result.error || 'Failed to sign in', result.retryAfterSeconds))
+        return
+      }
+
+      onSignedIn(normalizedEmail)
+    } catch {
+      setError('Network error. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <AuthShell
+      title="Sign In to Your Account"
+      description="Use your email and password to access order history, quotes, and saved buyer details."
+      iconBgClass="bg-primary-100"
+      icon={(
+        <svg className="h-8 w-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11V7a3 3 0 10-6 0v4m-2 0h10a2 2 0 012 2v5a2 2 0 01-2 2H7a2 2 0 01-2-2v-5a2 2 0 012-2z" />
+        </svg>
+      )}
+    >
+      <form onSubmit={handleSubmit} className="mt-8 text-left">
+        <label htmlFor="sign-in-email" className="block text-sm font-medium text-secondary-700">
+          Email Address
+        </label>
+        <input
+          id="sign-in-email"
+          type="email"
+          required
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="you@company.com"
+          className="mt-1 w-full rounded-lg border border-secondary-300 px-4 py-3 text-secondary-900 placeholder:text-secondary-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+        />
+
+        <label htmlFor="sign-in-password" className="mt-4 block text-sm font-medium text-secondary-700">
+          Password
+        </label>
+        <input
+          id="sign-in-password"
+          type="password"
+          required
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          placeholder="Enter your password"
+          className="mt-1 w-full rounded-lg border border-secondary-300 px-4 py-3 text-secondary-900 placeholder:text-secondary-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+        />
+
+        {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="mt-4 w-full rounded-lg bg-primary-600 px-4 py-3 font-semibold text-white transition hover:bg-primary-700 disabled:opacity-50"
+        >
+          {loading ? 'Signing In...' : 'Sign In'}
+        </button>
+      </form>
+
+      <div className="mt-6 space-y-3 text-sm">
+        <button onClick={onForgotPassword} className="font-medium text-primary-600 hover:text-primary-800">
+          Forgot your password?
+        </button>
+        <div className="flex flex-wrap justify-center gap-4 text-secondary-500">
+          <button onClick={onUseEmailCode} className="hover:text-secondary-700">
+            Use email code instead
+          </button>
+          <button onClick={onCreateAccount} className="hover:text-secondary-700">
+            Create an account
+          </button>
+        </div>
+      </div>
+    </AuthShell>
+  )
+}
+
+function EmailCodeRequestStep({
+  onCodeSent,
+  onBackToSignIn,
+  onCreateAccount,
+}: {
+  onCodeSent: (email: string) => void
+  onBackToSignIn: () => void
+  onCreateAccount: () => void
+}) {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault()
     setError('')
     setLoading(true)
 
@@ -253,7 +485,7 @@ function EmailStep({ onCodeSent }: { onCodeSent: (email: string) => void }) {
       const result = await requestVerificationCode(normalizedEmail)
 
       if (!result.success) {
-        setError(result.error || 'Failed to send code')
+        setError(buildRetryMessage(result.error || 'Failed to send code', result.retryAfterSeconds))
         return
       }
 
@@ -266,35 +498,31 @@ function EmailStep({ onCodeSent }: { onCodeSent: (email: string) => void }) {
   }
 
   return (
-    <div className="mx-auto max-w-md text-center">
-      <div className="mb-6 flex justify-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary-100">
-          <svg className="h-8 w-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-          </svg>
-        </div>
-      </div>
-
-      <h1 className="text-2xl font-bold text-secondary-900">Sign In to Your Account</h1>
-      <p className="mt-2 text-secondary-600">
-        Enter your email to view order history and quote requests.
-      </p>
-
-      <form onSubmit={handleSubmit} className="mt-8">
-        <label htmlFor="email" className="block text-left text-sm font-medium text-secondary-700">
+    <AuthShell
+      title="Sign In with an Email Code"
+      description="We will send a one-time code to your email. No password is needed."
+      iconBgClass="bg-primary-100"
+      icon={(
+        <svg className="h-8 w-8 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+        </svg>
+      )}
+    >
+      <form onSubmit={handleSubmit} className="mt-8 text-left">
+        <label htmlFor="email-code-email" className="block text-sm font-medium text-secondary-700">
           Email Address
         </label>
         <input
-          id="email"
+          id="email-code-email"
           type="email"
           required
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(event) => setEmail(event.target.value)}
           placeholder="you@company.com"
           className="mt-1 w-full rounded-lg border border-secondary-300 px-4 py-3 text-secondary-900 placeholder:text-secondary-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
         />
 
-        {error && <p className="mt-2 text-left text-sm text-red-600">{error}</p>}
+        {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
 
         <button
           type="submit"
@@ -305,14 +533,17 @@ function EmailStep({ onCodeSent }: { onCodeSent: (email: string) => void }) {
         </button>
       </form>
 
-      <p className="mt-6 text-xs text-secondary-400">
-        We&apos;ll send a 6-digit code to your email. No password needed.
-      </p>
-    </div>
+      <div className="mt-6 flex flex-wrap justify-center gap-4 text-sm text-secondary-500">
+        <button onClick={onBackToSignIn} className="hover:text-secondary-700">
+          Back to password sign-in
+        </button>
+        <button onClick={onCreateAccount} className="hover:text-secondary-700">
+          Create an account
+        </button>
+      </div>
+    </AuthShell>
   )
 }
-
-// ─── Code Step ───────────────────────────────────────────────────────────────
 
 function CodeStep({
   email,
@@ -332,12 +563,12 @@ function CodeStep({
 
   useEffect(() => {
     if (resendCooldown <= 0) return
-    const timer = setTimeout(() => setResendCooldown((c) => c - 1), 1000)
+    const timer = setTimeout(() => setResendCooldown((current) => current - 1), 1000)
     return () => clearTimeout(timer)
   }, [resendCooldown])
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault()
     setError('')
     setNotice('')
     setLoading(true)
@@ -348,10 +579,10 @@ function CodeStep({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, code: code.trim() }),
       })
-      const data = await res.json()
+      const data = await res.json().catch(() => ({}))
 
       if (!res.ok) {
-        setError(data.error || 'Verification failed')
+        setError(typeof data.error === 'string' ? data.error : 'Verification failed')
         return
       }
 
@@ -377,7 +608,7 @@ function CodeStep({
           setResendCooldown(result.retryAfterSeconds)
         }
 
-        setError(result.error || 'Failed to resend code')
+        setError(buildRetryMessage(result.error || 'Failed to resend code', result.retryAfterSeconds))
         return
       }
 
@@ -391,41 +622,34 @@ function CodeStep({
   }
 
   return (
-    <div className="mx-auto max-w-md text-center">
-      <div className="mb-6 flex justify-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-          <svg className="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-          </svg>
-        </div>
-      </div>
-
-      <h2 className="text-2xl font-bold text-secondary-900">Check Your Email</h2>
-      <p className="mt-2 text-secondary-600">
-        We sent a 6-digit code to <strong className="text-secondary-800">{email}</strong>
-      </p>
-      <p className="mt-2 text-xs text-secondary-400">
-        If you don&apos;t see it within a minute, check your spam folder or request a new code below.
-      </p>
-
-      <form onSubmit={handleSubmit} className="mt-8">
-        <label htmlFor="code" className="block text-left text-sm font-medium text-secondary-700">
+    <AuthShell
+      title="Check Your Email"
+      description={`We sent a 6-digit sign-in code to ${email}.`}
+      iconBgClass="bg-green-100"
+      icon={(
+        <svg className="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+      )}
+    >
+      <form onSubmit={handleSubmit} className="mt-8 text-left">
+        <label htmlFor="email-code" className="block text-sm font-medium text-secondary-700">
           Verification Code
         </label>
         <input
-          id="code"
+          id="email-code"
           type="text"
           inputMode="numeric"
           maxLength={6}
           required
           value={code}
-          onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+          onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
           placeholder="123456"
           className="mt-1 w-full rounded-lg border border-secondary-300 px-4 py-3 text-center text-2xl font-bold tracking-[0.3em] text-secondary-900 placeholder:text-secondary-300 placeholder:tracking-[0.3em] focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
           autoFocus
         />
 
-        {error && <p className="mt-2 text-left text-sm text-red-600">{error}</p>}
+        {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
 
         <button
           type="submit"
@@ -454,7 +678,462 @@ function CodeStep({
       </div>
 
       {notice && <p className="mt-3 text-sm text-green-600">{notice}</p>}
-    </div>
+    </AuthShell>
+  )
+}
+
+function CreateAccountStep({
+  onRegistered,
+  onBackToSignIn,
+}: {
+  onRegistered: (email: string) => void
+  onBackToSignIn: () => void
+}) {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault()
+    setError('')
+    setLoading(true)
+
+    try {
+      const normalizedEmail = email.trim().toLowerCase()
+      const result = await requestRegistration(normalizedEmail, password, confirmPassword)
+
+      if (!result.success) {
+        setError(buildRetryMessage(result.error || 'Failed to create account', result.retryAfterSeconds))
+        return
+      }
+
+      onRegistered(normalizedEmail)
+    } catch {
+      setError('Network error. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <AuthShell
+      title="Create Your Account"
+      description="Set a password to manage orders, quotes, saved addresses, and billing details."
+      iconBgClass="bg-amber-100"
+      icon={(
+        <svg className="h-8 w-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4v16m8-8H4" />
+        </svg>
+      )}
+    >
+      <form onSubmit={handleSubmit} className="mt-8 text-left">
+        <label htmlFor="register-email" className="block text-sm font-medium text-secondary-700">
+          Email Address
+        </label>
+        <input
+          id="register-email"
+          type="email"
+          required
+          value={email}
+          onChange={(event) => setEmail(event.target.value)}
+          placeholder="you@company.com"
+          className="mt-1 w-full rounded-lg border border-secondary-300 px-4 py-3 text-secondary-900 placeholder:text-secondary-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+        />
+
+        <label htmlFor="register-password" className="mt-4 block text-sm font-medium text-secondary-700">
+          Password
+        </label>
+        <input
+          id="register-password"
+          type="password"
+          required
+          value={password}
+          onChange={(event) => setPassword(event.target.value)}
+          placeholder="At least 8 characters, with letters and numbers"
+          className="mt-1 w-full rounded-lg border border-secondary-300 px-4 py-3 text-secondary-900 placeholder:text-secondary-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+        />
+
+        <label htmlFor="register-confirm-password" className="mt-4 block text-sm font-medium text-secondary-700">
+          Confirm Password
+        </label>
+        <input
+          id="register-confirm-password"
+          type="password"
+          required
+          value={confirmPassword}
+          onChange={(event) => setConfirmPassword(event.target.value)}
+          placeholder="Re-enter your password"
+          className="mt-1 w-full rounded-lg border border-secondary-300 px-4 py-3 text-secondary-900 placeholder:text-secondary-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+        />
+
+        {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+
+        <button
+          type="submit"
+          disabled={loading}
+          className="mt-4 w-full rounded-lg bg-primary-600 px-4 py-3 font-semibold text-white transition hover:bg-primary-700 disabled:opacity-50"
+        >
+          {loading ? 'Creating Account...' : 'Create Account'}
+        </button>
+      </form>
+
+      <div className="mt-6 text-sm text-secondary-500">
+        Already have an account?{' '}
+        <button onClick={onBackToSignIn} className="font-medium text-primary-600 hover:text-primary-800">
+          Sign in
+        </button>
+      </div>
+    </AuthShell>
+  )
+}
+
+function RegisterVerificationStep({
+  email,
+  onVerified,
+  onBackToRegister,
+}: {
+  email: string
+  onVerified: () => void
+  onBackToRegister: () => void
+}) {
+  const [code, setCode] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [resending, setResending] = useState(false)
+  const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
+  const [resendCooldown, setResendCooldown] = useState(0)
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return
+    const timer = setTimeout(() => setResendCooldown((current) => current - 1), 1000)
+    return () => clearTimeout(timer)
+  }, [resendCooldown])
+
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault()
+    setError('')
+    setNotice('')
+    setLoading(true)
+
+    try {
+      const result = await requestRegistrationVerification(email, code)
+
+      if (!result.success) {
+        setError(result.error || 'Verification failed')
+        return
+      }
+
+      onVerified()
+    } catch {
+      setError('Network error. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleResend = async () => {
+    if (resending || resendCooldown > 0) return
+    setError('')
+    setNotice('')
+    setResending(true)
+
+    try {
+      const result = await requestRegistrationResend(email)
+
+      if (!result.success) {
+        if (typeof result.retryAfterSeconds === 'number') {
+          setResendCooldown(result.retryAfterSeconds)
+        }
+
+        setError(buildRetryMessage(result.error || 'Failed to resend code', result.retryAfterSeconds))
+        return
+      }
+
+      setResendCooldown(60)
+      setNotice(result.message || 'A new verification code has been sent.')
+    } catch {
+      setError('Network error. Please try again.')
+    } finally {
+      setResending(false)
+    }
+  }
+
+  return (
+    <AuthShell
+      title="Verify Your New Account"
+      description={`Enter the 6-digit code we sent to ${email}.`}
+      iconBgClass="bg-green-100"
+      icon={(
+        <svg className="h-8 w-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6-1a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      )}
+    >
+      <form onSubmit={handleSubmit} className="mt-8 text-left">
+        <label htmlFor="register-code" className="block text-sm font-medium text-secondary-700">
+          Verification Code
+        </label>
+        <input
+          id="register-code"
+          type="text"
+          inputMode="numeric"
+          maxLength={6}
+          required
+          value={code}
+          onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+          placeholder="123456"
+          className="mt-1 w-full rounded-lg border border-secondary-300 px-4 py-3 text-center text-2xl font-bold tracking-[0.3em] text-secondary-900 placeholder:text-secondary-300 placeholder:tracking-[0.3em] focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+          autoFocus
+        />
+
+        {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+
+        <button
+          type="submit"
+          disabled={loading || code.length !== 6}
+          className="mt-4 w-full rounded-lg bg-primary-600 px-4 py-3 font-semibold text-white transition hover:bg-primary-700 disabled:opacity-50"
+        >
+          {loading ? 'Verifying...' : 'Verify and Continue'}
+        </button>
+      </form>
+
+      <div className="mt-6 flex items-center justify-between text-sm">
+        <button onClick={onBackToRegister} className="text-secondary-500 hover:text-secondary-700">
+          &larr; Back to registration
+        </button>
+        <button
+          onClick={handleResend}
+          disabled={resending || resendCooldown > 0}
+          className="text-primary-600 hover:text-primary-800 disabled:text-secondary-400"
+        >
+          {resending
+            ? 'Sending...'
+            : resendCooldown > 0
+              ? `Resend in ${formatCooldown(resendCooldown)}`
+              : 'Resend code'}
+        </button>
+      </div>
+
+      {notice && <p className="mt-3 text-sm text-green-600">{notice}</p>}
+    </AuthShell>
+  )
+}
+
+function ForgotPasswordStep({
+  onResetComplete,
+  onBackToSignIn,
+}: {
+  onResetComplete: (email: string) => void
+  onBackToSignIn: () => void
+}) {
+  const [email, setEmail] = useState('')
+  const [code, setCode] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [stage, setStage] = useState<'request' | 'reset'>('request')
+  const [loading, setLoading] = useState(false)
+  const [resending, setResending] = useState(false)
+  const [error, setError] = useState('')
+  const [notice, setNotice] = useState('')
+  const [resendCooldown, setResendCooldown] = useState(0)
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return
+    const timer = setTimeout(() => setResendCooldown((current) => current - 1), 1000)
+    return () => clearTimeout(timer)
+  }, [resendCooldown])
+
+  const handleRequestCode = async (event: React.FormEvent) => {
+    event.preventDefault()
+    setError('')
+    setNotice('')
+    setLoading(true)
+
+    try {
+      const normalizedEmail = email.trim().toLowerCase()
+      const result = await requestForgotPassword(normalizedEmail)
+
+      if (!result.success) {
+        setError(buildRetryMessage(result.error || 'Failed to send reset code', result.retryAfterSeconds))
+        return
+      }
+
+      setEmail(normalizedEmail)
+      setStage('reset')
+      setNotice(result.message || 'If an account exists for this email, a reset code has been sent.')
+      setResendCooldown(60)
+    } catch {
+      setError('Network error. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleResetPassword = async (event: React.FormEvent) => {
+    event.preventDefault()
+    setError('')
+    setNotice('')
+    setLoading(true)
+
+    try {
+      const result = await requestPasswordReset(email.trim().toLowerCase(), code, newPassword, confirmPassword)
+
+      if (!result.success) {
+        setError(result.error || 'Failed to reset password')
+        return
+      }
+
+      onResetComplete(email.trim().toLowerCase())
+    } catch {
+      setError('Network error. Please try again.')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleResend = async () => {
+    if (resending || resendCooldown > 0) return
+    setError('')
+    setNotice('')
+    setResending(true)
+
+    try {
+      const result = await requestForgotPassword(email.trim().toLowerCase())
+
+      if (!result.success) {
+        if (typeof result.retryAfterSeconds === 'number') {
+          setResendCooldown(result.retryAfterSeconds)
+        }
+
+        setError(buildRetryMessage(result.error || 'Failed to resend reset code', result.retryAfterSeconds))
+        return
+      }
+
+      setResendCooldown(60)
+      setNotice(result.message || 'If an account exists for this email, a reset code has been sent.')
+    } catch {
+      setError('Network error. Please try again.')
+    } finally {
+      setResending(false)
+    }
+  }
+
+  return (
+    <AuthShell
+      title="Reset Your Password"
+      description={stage === 'request'
+        ? 'Enter your email and we will send you a reset code.'
+        : `Enter the reset code sent to ${email} and choose a new password.`}
+      iconBgClass="bg-secondary-100"
+      icon={(
+        <svg className="h-8 w-8 text-secondary-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 11c0-1.657 1.343-3 3-3s3 1.343 3 3c0 1.2-.703 2.235-1.72 2.718-.742.353-1.28 1.036-1.28 1.857V17M12 21h.01M7 11V9a5 5 0 1110 0v2" />
+        </svg>
+      )}
+    >
+      {stage === 'request' ? (
+        <form onSubmit={handleRequestCode} className="mt-8 text-left">
+          <label htmlFor="forgot-email" className="block text-sm font-medium text-secondary-700">
+            Email Address
+          </label>
+          <input
+            id="forgot-email"
+            type="email"
+            required
+            value={email}
+            onChange={(event) => setEmail(event.target.value)}
+            placeholder="you@company.com"
+            className="mt-1 w-full rounded-lg border border-secondary-300 px-4 py-3 text-secondary-900 placeholder:text-secondary-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+          />
+
+          {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+          {notice && <p className="mt-2 text-sm text-green-600">{notice}</p>}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="mt-4 w-full rounded-lg bg-primary-600 px-4 py-3 font-semibold text-white transition hover:bg-primary-700 disabled:opacity-50"
+          >
+            {loading ? 'Sending...' : 'Send Reset Code'}
+          </button>
+        </form>
+      ) : (
+        <form onSubmit={handleResetPassword} className="mt-8 text-left">
+          <label htmlFor="reset-code" className="block text-sm font-medium text-secondary-700">
+            Reset Code
+          </label>
+          <input
+            id="reset-code"
+            type="text"
+            inputMode="numeric"
+            maxLength={6}
+            required
+            value={code}
+            onChange={(event) => setCode(event.target.value.replace(/\D/g, '').slice(0, 6))}
+            placeholder="123456"
+            className="mt-1 w-full rounded-lg border border-secondary-300 px-4 py-3 text-center text-2xl font-bold tracking-[0.3em] text-secondary-900 placeholder:text-secondary-300 placeholder:tracking-[0.3em] focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+          />
+
+          <label htmlFor="reset-password" className="mt-4 block text-sm font-medium text-secondary-700">
+            New Password
+          </label>
+          <input
+            id="reset-password"
+            type="password"
+            required
+            value={newPassword}
+            onChange={(event) => setNewPassword(event.target.value)}
+            placeholder="At least 8 characters, with letters and numbers"
+            className="mt-1 w-full rounded-lg border border-secondary-300 px-4 py-3 text-secondary-900 placeholder:text-secondary-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+          />
+
+          <label htmlFor="reset-confirm-password" className="mt-4 block text-sm font-medium text-secondary-700">
+            Confirm New Password
+          </label>
+          <input
+            id="reset-confirm-password"
+            type="password"
+            required
+            value={confirmPassword}
+            onChange={(event) => setConfirmPassword(event.target.value)}
+            placeholder="Re-enter your new password"
+            className="mt-1 w-full rounded-lg border border-secondary-300 px-4 py-3 text-secondary-900 placeholder:text-secondary-400 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+          />
+
+          {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+          {notice && <p className="mt-2 text-sm text-green-600">{notice}</p>}
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="mt-4 w-full rounded-lg bg-primary-600 px-4 py-3 font-semibold text-white transition hover:bg-primary-700 disabled:opacity-50"
+          >
+            {loading ? 'Resetting...' : 'Reset Password'}
+          </button>
+        </form>
+      )}
+
+      <div className="mt-6 flex items-center justify-between text-sm">
+        <button onClick={onBackToSignIn} className="text-secondary-500 hover:text-secondary-700">
+          &larr; Back to sign-in
+        </button>
+        {stage === 'reset' ? (
+          <button
+            onClick={handleResend}
+            disabled={resending || resendCooldown > 0}
+            className="text-primary-600 hover:text-primary-800 disabled:text-secondary-400"
+          >
+            {resending
+              ? 'Sending...'
+              : resendCooldown > 0
+                ? `Resend in ${formatCooldown(resendCooldown)}`
+                : 'Resend code'}
+          </button>
+        ) : null}
+      </div>
+    </AuthShell>
   )
 }
 
@@ -462,47 +1141,60 @@ function CodeStep({
 
 function Dashboard({ onLogout }: { onLogout: () => void }) {
   const [data, setData] = useState<AccountData | null>(null)
+  const [security, setSecurity] = useState<SecurityState>({
+    hasPassword: false,
+    emailVerified: false,
+  })
   const [profileForm, setProfileForm] = useState<EditableProfile>(EMPTY_PROFILE)
   const [shippingAddresses, setShippingAddresses] = useState<ShippingAddress[]>([])
   const [billingInfo, setBillingInfo] = useState<BillingInfo>(EMPTY_BILLING_INFO)
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [profileSaving, setProfileSaving] = useState(false)
   const [addressesSaving, setAddressesSaving] = useState(false)
   const [billingSaving, setBillingSaving] = useState(false)
+  const [passwordSaving, setPasswordSaving] = useState(false)
   const [profileNotice, setProfileNotice] = useState<SectionNotice | null>(null)
   const [addressesNotice, setAddressesNotice] = useState<SectionNotice | null>(null)
   const [billingNotice, setBillingNotice] = useState<SectionNotice | null>(null)
+  const [passwordNotice, setPasswordNotice] = useState<SectionNotice | null>(null)
 
   const loadData = useCallback(async () => {
     setLoading(true)
     setError('')
 
     try {
-      const [dashboardRes, profileRes, addressesRes, billingRes] = await Promise.all([
+      const [dashboardRes, profileRes, addressesRes, billingRes, meRes] = await Promise.all([
         fetchWithAuth('/api/account/data'),
         fetchWithAuth('/api/account/profile'),
         fetchWithAuth('/api/account/addresses'),
         fetchWithAuth('/api/account/billing'),
+        fetchWithAuth('/api/account/me'),
       ])
 
-      const responses = [dashboardRes, profileRes, addressesRes, billingRes]
+      const responses = [dashboardRes, profileRes, addressesRes, billingRes, meRes]
 
       if (responses.some((response) => response.status === 401)) {
         onLogout()
         return
       }
 
-      const [dashboardJson, profileJson, addressesJson, billingJson] = await Promise.all(
+      const [dashboardJson, profileJson, addressesJson, billingJson, meJson] = await Promise.all(
         responses.map((response) => response.json().catch(() => ({}))),
       )
 
-      if (!dashboardRes.ok || !profileRes.ok || !addressesRes.ok || !billingRes.ok) {
+      if (!dashboardRes.ok || !profileRes.ok || !addressesRes.ok || !billingRes.ok || !meRes.ok) {
         setError(
           dashboardJson.error
           || profileJson.error
           || addressesJson.error
           || billingJson.error
+          || meJson.error
           || 'Failed to load account data',
         )
         return
@@ -512,6 +1204,10 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
       setProfileForm(buildEditableProfile(profileJson.profile || dashboardJson.profile))
       setShippingAddresses(buildShippingAddresses(addressesJson.addresses))
       setBillingInfo(buildBillingInfo(billingJson.billing))
+      setSecurity({
+        hasPassword: Boolean(meJson.hasPassword),
+        emailVerified: Boolean(meJson.emailVerified),
+      })
     } catch {
       setError('Failed to load account data')
     } finally {
@@ -566,6 +1262,17 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
       [field]: value,
     }))
     setBillingNotice(null)
+  }
+
+  const handlePasswordFieldChange = (
+    field: 'currentPassword' | 'newPassword' | 'confirmPassword',
+    value: string,
+  ) => {
+    setPasswordForm((current) => ({
+      ...current,
+      [field]: value,
+    }))
+    setPasswordNotice(null)
   }
 
   const handleSaveProfile = async () => {
@@ -702,6 +1409,51 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
       })
     } finally {
       setBillingSaving(false)
+    }
+  }
+
+  const handleSavePassword = async () => {
+    setPasswordSaving(true)
+    setPasswordNotice(null)
+
+    try {
+      const result = await requestPasswordChange(
+        passwordForm.currentPassword,
+        passwordForm.newPassword,
+        passwordForm.confirmPassword,
+      )
+
+      if (!result.success) {
+        setPasswordNotice({
+          type: 'error',
+          message: result.error || 'Failed to update password.',
+        })
+        return
+      }
+
+      setSecurity((current) => ({
+        ...current,
+        hasPassword: true,
+        emailVerified: true,
+      }))
+      setPasswordForm({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      })
+      setPasswordNotice({
+        type: 'success',
+        message: security.hasPassword
+          ? 'Password updated successfully.'
+          : 'Password set successfully. You can now use it to sign in.',
+      })
+    } catch {
+      setPasswordNotice({
+        type: 'error',
+        message: 'Failed to update password.',
+      })
+    } finally {
+      setPasswordSaving(false)
     }
   }
 
@@ -990,6 +1742,71 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
         <SectionNoticeMessage notice={billingNotice} />
       </section>
 
+      {/* Security */}
+      <section className="mt-8 rounded-lg border border-secondary-200 bg-white p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold text-secondary-900">Security</h2>
+            <p className="mt-1 text-sm text-secondary-500">
+              {security.hasPassword
+                ? 'Update your password here. Email code sign-in remains available as a backup option.'
+                : 'Set a password so you can sign in with email and password in addition to one-time email codes.'}
+            </p>
+          </div>
+          <button
+            onClick={handleSavePassword}
+            disabled={passwordSaving}
+            className="rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-primary-700 disabled:opacity-50"
+          >
+            {passwordSaving
+              ? (security.hasPassword ? 'Updating...' : 'Saving...')
+              : (security.hasPassword ? 'Update Password' : 'Set Password')}
+          </button>
+        </div>
+
+        <div className="mt-4 rounded-lg border border-secondary-200 bg-secondary-50 px-4 py-3 text-sm text-secondary-600">
+          <p>Email verified: <span className="font-medium text-secondary-900">{security.emailVerified ? 'Yes' : 'Pending'}</span></p>
+          <p className="mt-1">Password sign-in: <span className="font-medium text-secondary-900">{security.hasPassword ? 'Enabled' : 'Not set'}</span></p>
+        </div>
+
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          {security.hasPassword ? (
+            <div className="sm:col-span-2">
+              <label className="block text-sm font-medium text-secondary-700">Current Password</label>
+              <input
+                type="password"
+                value={passwordForm.currentPassword}
+                onChange={(event) => handlePasswordFieldChange('currentPassword', event.target.value)}
+                className="mt-1 w-full rounded-lg border border-secondary-300 px-4 py-3 text-secondary-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+                placeholder="Enter your current password"
+              />
+            </div>
+          ) : null}
+          <div>
+            <label className="block text-sm font-medium text-secondary-700">New Password</label>
+            <input
+              type="password"
+              value={passwordForm.newPassword}
+              onChange={(event) => handlePasswordFieldChange('newPassword', event.target.value)}
+              className="mt-1 w-full rounded-lg border border-secondary-300 px-4 py-3 text-secondary-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+              placeholder="At least 8 characters, with letters and numbers"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-secondary-700">Confirm New Password</label>
+            <input
+              type="password"
+              value={passwordForm.confirmPassword}
+              onChange={(event) => handlePasswordFieldChange('confirmPassword', event.target.value)}
+              className="mt-1 w-full rounded-lg border border-secondary-300 px-4 py-3 text-secondary-900 focus:border-primary-500 focus:outline-none focus:ring-2 focus:ring-primary-200"
+              placeholder="Re-enter your new password"
+            />
+          </div>
+        </div>
+
+        <SectionNoticeMessage notice={passwordNotice} />
+      </section>
+
       {/* Order History */}
       <section className="mt-8">
         <h2 className="text-lg font-semibold text-secondary-900">Order History</h2>
@@ -1110,7 +1927,15 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
 // ─── Main Account Page ───────────────────────────────────────────────────────
 
 export default function AccountPage() {
-  const [step, setStep] = useState<'email' | 'code' | 'dashboard'>('email')
+  const [step, setStep] = useState<
+    'sign-in'
+    | 'email-code'
+    | 'code'
+    | 'register'
+    | 'verify-register'
+    | 'forgot-password'
+    | 'dashboard'
+  >('sign-in')
   const [email, setEmail] = useState('')
   const [checking, setChecking] = useState(true)
 
@@ -1144,13 +1969,16 @@ export default function AccountPage() {
     setStep('code')
   }
 
-  const handleVerified = () => {
+  const handleAuthenticated = (nextEmail?: string) => {
+    if (nextEmail) {
+      setEmail(nextEmail)
+    }
     setStep('dashboard')
   }
 
   const handleLogout = () => {
     clearSession()
-    setStep('email')
+    setStep('sign-in')
     setEmail('')
   }
 
@@ -1164,9 +1992,45 @@ export default function AccountPage() {
 
   return (
     <div className="container-main py-12">
-      {step === 'email' && <EmailStep onCodeSent={handleCodeSent} />}
+      {step === 'sign-in' && (
+        <SignInStep
+          onSignedIn={handleAuthenticated}
+          onUseEmailCode={() => setStep('email-code')}
+          onCreateAccount={() => setStep('register')}
+          onForgotPassword={() => setStep('forgot-password')}
+        />
+      )}
+      {step === 'email-code' && (
+        <EmailCodeRequestStep
+          onCodeSent={handleCodeSent}
+          onBackToSignIn={() => setStep('sign-in')}
+          onCreateAccount={() => setStep('register')}
+        />
+      )}
       {step === 'code' && (
-        <CodeStep email={email} onVerified={handleVerified} onBack={() => setStep('email')} />
+        <CodeStep email={email} onVerified={() => handleAuthenticated()} onBack={() => setStep('email-code')} />
+      )}
+      {step === 'register' && (
+        <CreateAccountStep
+          onRegistered={(registeredEmail) => {
+            setEmail(registeredEmail)
+            setStep('verify-register')
+          }}
+          onBackToSignIn={() => setStep('sign-in')}
+        />
+      )}
+      {step === 'verify-register' && (
+        <RegisterVerificationStep
+          email={email}
+          onVerified={() => handleAuthenticated()}
+          onBackToRegister={() => setStep('register')}
+        />
+      )}
+      {step === 'forgot-password' && (
+        <ForgotPasswordStep
+          onResetComplete={handleAuthenticated}
+          onBackToSignIn={() => setStep('sign-in')}
+        />
       )}
       {step === 'dashboard' && <Dashboard onLogout={handleLogout} />}
     </div>
