@@ -79,6 +79,22 @@ interface ProductPageRecord {
   brand_name: string | null
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+function stripHtmlDocumentWrappers(value: string): string {
+  return value
+    .replace(/<!doctype[^>]*>/gi, '')
+    .replace(/<\/?(?:html|head|body)[^>]*>/gi, '')
+    .trim()
+}
+
 function parseFiniteNumber(value: unknown): number | undefined {
   if (typeof value === 'number') {
     return Number.isFinite(value) ? value : undefined
@@ -317,7 +333,9 @@ function extractChildren(children: unknown[]): string {
 
 function lexicalToHtml(richText: unknown): string {
   const normalized = normalizeRichTextContent(richText)
-  if (!normalized || typeof normalized !== 'object') return ''
+  if (!normalized) return ''
+  if (typeof normalized !== 'object') return renderLegacyDescriptionContent(normalized)
+  if (!('root' in normalized)) return renderLegacyDescriptionContent(normalized)
   const root = (normalized as Record<string, unknown>).root as Record<string, unknown> | undefined
   if (!root || !Array.isArray(root.children)) return ''
   return (root.children as Record<string, unknown>[])
@@ -377,6 +395,63 @@ function formatTextList(text: string): string {
     result += nonListLines.map(line => `<p>${line}</p>`).join('')
   }
   return result
+}
+
+function formatPlainDescription(text: string): string {
+  const normalized = text.replace(/\r\n?/g, '\n').trim()
+  if (!normalized) return ''
+
+  const escaped = escapeHtml(normalized)
+  const hasList = /^[\s]*[-*][\s]/m.test(normalized)
+  const hasSectionHeaders = SECTION_HEADERS.some((header) =>
+    new RegExp(
+      `(?:^|\\n)${header.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}(?:\\s*:)?(?:\\n|$)`,
+      'i',
+    ).test(normalized),
+  )
+
+  if (hasList) {
+    return formatTextList(escaped)
+  }
+
+  if (hasSectionHeaders) {
+    return formatTextWithHeaders(escaped)
+  }
+
+  return escaped
+    .split(/\n{2,}/)
+    .map((paragraph) => `<p>${paragraph.replace(/\n/g, '<br />')}</p>`)
+    .join('')
+}
+
+function renderLegacyDescriptionContent(value: unknown): string {
+  if (typeof value === 'string') {
+    const cleaned = stripHtmlDocumentWrappers(value)
+    if (!cleaned) return ''
+
+    if (/<\/?[a-z][\s\S]*>/i.test(cleaned)) {
+      return cleaned
+    }
+
+    return formatPlainDescription(cleaned)
+  }
+
+  if (!value || typeof value !== 'object') return ''
+
+  const legacy = value as Record<string, unknown>
+  const html = typeof legacy.html === 'string' ? legacy.html : ''
+  if (html.trim()) {
+    return renderLegacyDescriptionContent(html)
+  }
+
+  const text =
+    typeof legacy.text === 'string'
+      ? legacy.text
+      : typeof legacy.content === 'string'
+      ? legacy.content
+      : ''
+
+  return text ? formatPlainDescription(text) : ''
 }
 
 // Types for related products from PostgreSQL
