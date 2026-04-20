@@ -35,6 +35,8 @@ export async function middleware(request: NextRequest) {
   if (productMatch) {
     const category = productMatch[1]
     const slug = productMatch[2]
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 1500)
 
     try {
       const checkUrl = new URL('/api/internal/check-product', publicBaseUrl)
@@ -48,7 +50,10 @@ export async function middleware(request: NextRequest) {
           'Content-Type': 'application/json',
         },
         cache: 'no-store',
+        signal: controller.signal,
       })
+
+      clearTimeout(timeoutId)
 
       if (response.ok) {
         const data = (await response.json()) as {
@@ -120,7 +125,13 @@ export async function middleware(request: NextRequest) {
         }
       }
     } catch (error) {
-      console.error('[middleware] product existence check failed:', error)
+      clearTimeout(timeoutId)
+
+      if (error instanceof Error && error.name === 'AbortError') {
+        console.warn('[middleware] product existence check timed out, allowing request to continue')
+      } else {
+        console.error('[middleware] product existence check failed:', error)
+      }
     }
   }
 

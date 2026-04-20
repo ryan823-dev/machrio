@@ -430,15 +430,12 @@ export async function resolveProductPath(
   }
 
   try {
-    const managedRedirect = await getManagedRedirect(normalizedPath)
-    if (managedRedirect) {
-      return managedRedirect
-    }
-
     if (!process.env.DATABASE_URI) {
       return { exists: false, matchedBy: 'no-product-database' }
     }
 
+    // Exact published products should short-circuit before any redirect lookup so
+    // a slow redirects collection never blocks valid product pages.
     const exactProduct = await getPublishedProductBySlug(slug)
 
     if (exactProduct) {
@@ -453,6 +450,11 @@ export async function resolveProductPath(
       }
 
       return { exists: true, matchedBy: 'exact-product-slug' }
+    }
+
+    const managedRedirect = await getManagedRedirect(normalizedPath)
+    if (managedRedirect) {
+      return managedRedirect
     }
 
     const exactSourceMatches = await findProductsBySourcePath(normalizedPath)
