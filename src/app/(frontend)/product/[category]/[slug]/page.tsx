@@ -1,8 +1,8 @@
 import type { Metadata } from 'next'
 import { notFound, permanentRedirect } from 'next/navigation'
 import Link from 'next/link'
-import { getProductBySlug } from '@/lib/db-queries'
-import { getPool } from '@/lib/db'
+import { cache } from 'react'
+import { getPool, safeQuery } from '@/lib/db'
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 import { StructuredData } from '@/components/shared/StructuredData'
 import { FAQSchema, FAQSection } from '@/components/shared/FAQSchema'
@@ -51,6 +51,34 @@ interface ParsedPricing {
 interface ProductImageRecord {
   url?: string | null
 }
+
+interface ProductPageRecord {
+  id: string
+  name: string
+  slug: string
+  sku: string | null
+  short_description: string | null
+  full_description: unknown | null
+  pricing: unknown | null
+  images: unknown | null
+  specifications: unknown | null
+  status: string
+  availability: string | null
+  lead_time: string | null
+  min_order_quantity: number | null
+  package_qty: number | null
+  package_unit: string | null
+  purchase_mode: string | null
+  external_image_url: string | null
+  category_id: string | null
+  category_slug: string | null
+  category_name: string | null
+  parent_category_slug: string | null
+  parent_category_name: string | null
+  grandparent_category_slug: string | null
+  brand_name: string | null
+}
+
 function parseFiniteNumber(value: unknown): number | undefined {
   if (typeof value === 'number') {
     return Number.isFinite(value) ? value : undefined
@@ -120,9 +148,56 @@ function parsePricing(pricing: unknown): ParsedPricing | null {
   }
 }
 
-// 获取产品数据（纯数据库，无回退）
-async function getProductBySlugFromDB(slug: string) {
-  return await getProductBySlug(slug)
+// Reuse the product lookup across generateMetadata/page within the same request.
+const getProductBySlugFromDB = cache(async (slug: string) => {
+  const result = await safeQuery<ProductPageRecord>(
+    `SELECT
+       p.id, p.name, p.slug, p.sku, p.short_description, p.full_description,
+       p.pricing, p.images, p.specifications, p.status,
+       p.availability, p.lead_time, p.min_order_quantity,
+       p.package_qty, p.package_unit, p.purchase_mode, p.external_image_url,
+       NULLIF(TRIM(p.brand), '') AS brand_name,
+       c.id as category_id, c.slug as category_slug, c.name as category_name,
+       pc.slug as parent_category_slug, pc.name as parent_category_name,
+       gc.slug as grandparent_category_slug
+     FROM products p
+     LEFT JOIN categories c ON p.primary_category_id = c.id
+     LEFT JOIN categories pc ON c.parent_id = pc.id
+     LEFT JOIN categories gc ON pc.parent_id = gc.id
+     WHERE p.slug = $1 AND p.status = 'published'
+     LIMIT 1`,
+    [slug],
+  )
+
+  return { product: result.rows[0] || null }
+})
+
+async function withTimeout<T>(
+  promise: Promise<T>,
+  timeoutMs: number,
+  fallback: T,
+  label: string,
+): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | null = null
+
+  try {
+    return await Promise.race([
+      promise.catch((error) => {
+        console.error(label, error)
+        return fallback
+      }),
+      new Promise<T>((resolve) => {
+        timeoutId = setTimeout(() => {
+          console.warn(`${label}: timed out after ${timeoutMs}ms`)
+          resolve(fallback)
+        }, timeoutMs)
+      }),
+    ])
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId)
+    }
+  }
 }
 
 function extractProductImageUrls(
@@ -647,14 +722,19 @@ export default async function ProductPage({ params }: ProductPageProps) {
   })
 
   // Related products: same category
-  const relatedProducts = await getRelatedProductsFromDB({
-    id: product.id,
-    name: product.name,
-    slug: product.slug,
-    categoryId: product.category_id,
-    categorySlug: product.category_slug,
-    categoryName: product.category_name,
-  }, serverUrl)
+  const relatedProducts = await withTimeout(
+    getRelatedProductsFromDB({
+      id: product.id,
+      name: product.name,
+      slug: product.slug,
+      categoryId: product.category_id,
+      categorySlug: product.category_slug,
+      categoryName: product.category_name,
+    }, serverUrl),
+    1500,
+    [],
+    '[ProductPage] related products lookup failed',
+  )
 
   const schemaAvailability = mapAvailabilityToSchema(availability)
   const manufacturerPartNumber = getProductExactMatchToken(product.slug)
