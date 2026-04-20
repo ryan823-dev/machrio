@@ -10,6 +10,7 @@ import { CompareCheckbox } from '@/components/search/ProductCompare'
 import { normalizePublicAssetUrl } from '@/lib/public-asset-url'
 
 interface ProductCardData {
+  id: string
   name: string
   slug: string
   categorySlug: string
@@ -241,7 +242,7 @@ function SearchListRow({
         {(product.purchaseMode === 'both' || product.purchaseMode === 'buy-online') && product.pricing.basePrice && (
           <button
             onClick={() => onAddToCart({
-              productId: product.sku,
+              productId: product.id,
               sku: product.sku,
               name: product.name,
               slug: product.slug,

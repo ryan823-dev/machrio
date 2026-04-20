@@ -344,14 +344,24 @@ export function HeroAIChat() {
     } else if (action.type === 'add_to_cart') {
       const products = (action.data as Record<string, unknown>)?.products as ProductResult[] | undefined
       if (products && products.length > 0) {
-        // Actually add all products to cart
-        let addedCount = 0
-        for (const p of products) {
-          if (p.rawPrice && p.rawPrice > 0) {
-            handleAddToCart(p)
-            addedCount++
-          }
+        const cartProducts = products
+          .filter((product) => product.rawPrice && product.rawPrice > 0)
+          .map((product) => ({
+            productId: product.id,
+            sku: product.sku,
+            name: product.name,
+            slug: product.slug || product.sku,
+            categorySlug: product.categorySlug || 'products',
+            image: product.imageUrl,
+            price: product.rawPrice || 0,
+            priceUnit: product.priceUnit,
+          }))
+
+        if (cart && cartProducts.length > 0) {
+          cart.addItems(cartProducts)
         }
+
+        const addedCount = cartProducts.length
         setReqSheet(prev => ({ ...prev, purchaseMode: 'buy-online' }))
         const skippedCount = products.length - addedCount
         let msg = `Added ${addedCount} item(s) to your cart:\n${products.filter(p => p.rawPrice && p.rawPrice > 0).map(p => `  - ${p.name} (${p.sku}) - ${p.price}`).join('\n')}`

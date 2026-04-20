@@ -129,6 +129,7 @@ export default async function SearchPage({
     })
 
     return {
+      id: p.id,
       name: p.name,
       slug: p.slug,
       categorySlug: canonicalCategory.slug,

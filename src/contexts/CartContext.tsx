@@ -33,6 +33,16 @@ export interface ShippingMethodQuote {
   gapToFreeShipping?: number
 }
 
+export interface CartAddInput extends Omit<CartItem, 'quantity'> {
+  quantity?: number
+}
+
+export interface CartNotice {
+  id: number
+  title: string
+  message: string
+}
+
 interface CartState {
   items: CartItem[]
   selectedItems: Set<string>
@@ -49,7 +59,8 @@ interface CartState {
 }
 
 interface CartContextType extends CartState {
-  addItem: (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => void
+  addItem: (item: CartAddInput) => void
+  addItems: (items: CartAddInput[]) => void
   removeItem: (productId: string) => void
   updateQuantity: (productId: string, quantity: number) => void
   clearCart: () => void
@@ -59,6 +70,8 @@ interface CartContextType extends CartState {
   setShippingCountry: (country: string) => void
   setShippingMethod: (code: string) => void
   hasLiveShippingQuote: boolean
+  cartNotice: CartNotice | null
+  dismissCartNotice: () => void
 }
 
 const STORAGE_KEY = 'machrio_cart'
@@ -67,6 +80,76 @@ const SHIPPING_COUNTRY_KEY = 'machrio_shipping_country'
 const SHIPPING_METHOD_KEY = 'machrio_shipping_method'
 
 const CartContext = createContext<CartContextType | null>(null)
+
+interface CartAdditionSummary {
+  nextItems: CartItem[]
+  totalQuantity: number
+  totalQuantityAdded: number
+  addedProducts: number
+  updatedProducts: number
+  lastAddedItem: CartItem
+}
+
+function summarizeCartAddition(currentItems: CartItem[], additions: CartAddInput[]): CartAdditionSummary | null {
+  if (additions.length === 0) return null
+
+  const nextItems = currentItems.map((item) => ({ ...item }))
+  let totalQuantityAdded = 0
+  let addedProducts = 0
+  let updatedProducts = 0
+  let lastAddedItem: CartItem | null = null
+
+  for (const addition of additions) {
+    const quantity = addition.quantity && addition.quantity > 0 ? addition.quantity : 1
+    totalQuantityAdded += quantity
+    lastAddedItem = { ...addition, quantity }
+
+    const existingIndex = nextItems.findIndex((item) => item.productId === addition.productId)
+    if (existingIndex >= 0) {
+      nextItems[existingIndex] = {
+        ...nextItems[existingIndex],
+        quantity: nextItems[existingIndex].quantity + quantity,
+      }
+      updatedProducts += 1
+      continue
+    }
+
+    nextItems.push({ ...addition, quantity })
+    addedProducts += 1
+  }
+
+  if (!lastAddedItem) return null
+
+  return {
+    nextItems,
+    totalQuantity: nextItems.reduce((sum, item) => sum + item.quantity, 0),
+    totalQuantityAdded,
+    addedProducts,
+    updatedProducts,
+    lastAddedItem,
+  }
+}
+
+function buildCartNotice(summary: CartAdditionSummary, additionsCount: number): CartNotice {
+  if (additionsCount === 1) {
+    const title = summary.updatedProducts > 0 ? 'Updated cart quantity' : 'Added to cart'
+    const message = `${summary.lastAddedItem.name} x${summary.totalQuantityAdded}. Cart now has ${summary.totalQuantity} ${summary.totalQuantity === 1 ? 'item' : 'items'}.`
+
+    return {
+      id: Date.now(),
+      title,
+      message,
+    }
+  }
+
+  const message = `${additionsCount} ${additionsCount === 1 ? 'product' : 'products'} added. Cart now has ${summary.totalQuantity} ${summary.totalQuantity === 1 ? 'item' : 'items'}.`
+
+  return {
+    id: Date.now(),
+    title: 'Added items to cart',
+    message,
+  }
+}
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([])
@@ -78,7 +161,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [estimatedShipDate, setEstimatedShipDate] = useState('')
   const [totalWeight, setTotalWeight] = useState(0)
   const [hydrated, setHydrated] = useState(false)
+  const [cartNotice, setCartNotice] = useState<CartNotice | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const itemsRef = useRef<CartItem[]>([])
+  const selectedItemsRef = useRef<Set<string>>(new Set())
 
   // Hydrate from localStorage on mount
   useEffect(() => {
@@ -87,16 +173,21 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (stored) {
         const parsed = JSON.parse(stored)
         if (Array.isArray(parsed)) {
+          itemsRef.current = parsed
           setItems(parsed)
           // Hydrate selection: default all selected
           const storedSelection = localStorage.getItem(SELECTION_KEY)
           if (storedSelection) {
             const selParsed = JSON.parse(storedSelection)
             if (Array.isArray(selParsed)) {
-              setSelectedItems(new Set(selParsed))
+              const nextSelected = new Set(selParsed)
+              selectedItemsRef.current = nextSelected
+              setSelectedItems(nextSelected)
             }
           } else {
-            setSelectedItems(new Set(parsed.map((i: CartItem) => i.productId)))
+            const nextSelected = new Set(parsed.map((i: CartItem) => i.productId))
+            selectedItemsRef.current = nextSelected
+            setSelectedItems(nextSelected)
           }
         }
       }
@@ -107,6 +198,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } catch { /* ignore corrupt data */ }
     setHydrated(true)
   }, [])
+
+  useEffect(() => {
+    itemsRef.current = items
+  }, [items])
+
+  useEffect(() => {
+    selectedItemsRef.current = selectedItems
+  }, [selectedItems])
 
   // Persist to localStorage on change
   useEffect(() => {
@@ -197,43 +296,64 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [shippingQuotes, shippingMethodCode])
 
-  const addItem = useCallback((newItem: Omit<CartItem, 'quantity'> & { quantity?: number }) => {
-    const qty = newItem.quantity || 1
-    setItems(prev => {
-      const existing = prev.find(i => i.productId === newItem.productId)
-      if (existing) {
-        return prev.map(i =>
-          i.productId === newItem.productId
-            ? { ...i, quantity: i.quantity + qty }
-            : i
-        )
-      }
-      return [...prev, { ...newItem, quantity: qty }]
+  const addItem = useCallback((newItem: CartAddInput) => {
+    const summary = summarizeCartAddition(itemsRef.current, [newItem])
+    if (!summary) return
+
+    itemsRef.current = summary.nextItems
+    setItems(summary.nextItems)
+    setSelectedItems(prev => {
+      const next = new Set(prev)
+      next.add(newItem.productId)
+      selectedItemsRef.current = next
+      return next
     })
-    // Auto-select new item
-    setSelectedItems(prev => new Set([...prev, newItem.productId]))
+    setCartNotice(buildCartNotice(summary, 1))
+  }, [])
+
+  const addItems = useCallback((newItems: CartAddInput[]) => {
+    const summary = summarizeCartAddition(itemsRef.current, newItems)
+    if (!summary) return
+
+    itemsRef.current = summary.nextItems
+    setItems(summary.nextItems)
+    setSelectedItems(prev => {
+      const next = new Set(prev)
+      newItems.forEach((item) => next.add(item.productId))
+      selectedItemsRef.current = next
+      return next
+    })
+    setCartNotice(buildCartNotice(summary, newItems.length))
   }, [])
 
   const removeItem = useCallback((productId: string) => {
-    setItems(prev => prev.filter(i => i.productId !== productId))
+    const nextItems = itemsRef.current.filter(i => i.productId !== productId)
+    itemsRef.current = nextItems
+    setItems(nextItems)
     setSelectedItems(prev => {
       const next = new Set(prev)
       next.delete(productId)
+      selectedItemsRef.current = next
       return next
     })
   }, [])
 
   const updateQuantity = useCallback((productId: string, quantity: number) => {
     if (quantity < 1) return
-    setItems(prev => prev.map(i =>
+    const nextItems = itemsRef.current.map(i =>
       i.productId === productId ? { ...i, quantity } : i
-    ))
+    )
+    itemsRef.current = nextItems
+    setItems(nextItems)
   }, [])
 
   const clearCart = useCallback(() => {
+    itemsRef.current = []
+    selectedItemsRef.current = new Set()
     setItems([])
     setSelectedItems(new Set())
     setShippingQuotes([])
+    setCartNotice(null)
   }, [])
 
   const toggleItem = useCallback((productId: string) => {
@@ -244,15 +364,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
       } else {
         next.add(productId)
       }
+      selectedItemsRef.current = next
       return next
     })
   }, [])
 
   const selectAll = useCallback(() => {
-    setSelectedItems(new Set(items.map(i => i.productId)))
-  }, [items])
+    const next = new Set(itemsRef.current.map(i => i.productId))
+    selectedItemsRef.current = next
+    setSelectedItems(next)
+  }, [])
 
   const deselectAll = useCallback(() => {
+    selectedItemsRef.current = new Set()
     setSelectedItems(new Set())
   }, [])
 
@@ -262,6 +386,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const setShippingMethod = useCallback((code: string) => {
     setShippingMethodCodeState(code)
+  }, [])
+
+  const dismissCartNotice = useCallback(() => {
+    setCartNotice(null)
   }, [])
 
   return (
@@ -279,6 +407,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       estimatedShipDate,
       totalWeight,
       addItem,
+      addItems,
       removeItem,
       updateQuantity,
       clearCart,
@@ -288,6 +417,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setShippingCountry,
       setShippingMethod,
       hasLiveShippingQuote,
+      cartNotice,
+      dismissCartNotice,
     }}>
       {children}
     </CartContext.Provider>

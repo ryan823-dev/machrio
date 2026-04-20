@@ -5,6 +5,7 @@ import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
 import { WhatsAppButton } from '@/components/shared/WhatsAppButton'
 import { AIAssistant } from '@/components/shared/AIAssistant'
+import { CartToast } from '@/components/shared/CartToast'
 import { CartProvider } from '@/contexts/CartContext'
 import { CompareProvider } from '@/contexts/CompareContext'
 import { AIAssistantVisibilityProvider } from '@/contexts/AIAssistantVisibilityContext'
@@ -147,6 +148,7 @@ export default function FrontendLayout({ children }: { children: React.ReactNode
                 <Header />
                 <main className="flex-1">{children}</main>
                 <Footer />
+                <CartToast />
                 <WhatsAppButton />
                 <AIAssistant />
                 <WebVitalsReporter />
