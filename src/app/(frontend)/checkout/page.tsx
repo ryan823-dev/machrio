@@ -9,6 +9,7 @@ import { useCart } from '@/contexts/CartContext'
 import StripePayment from '@/components/StripePayment'
 import { FREE_SHIPPING_THRESHOLD_USD, formatUsd } from '@/lib/shipping/rules'
 import { fetchWithAuth } from '@/lib/account'
+import { clearCheckoutDraft, readCheckoutDraft, writeCheckoutDraft } from '@/lib/checkout-draft'
 import { appendQueryParamsToPath } from '@/lib/order-access-links'
 
 interface CheckoutForm {
@@ -206,6 +207,9 @@ export default function CheckoutPage() {
   const [selectedSavedAddressIndex, setSelectedSavedAddressIndex] = useState<number | null>(null)
   const [isPayPalAvailable, setIsPayPalAvailable] = useState(false)
   const [hasCheckedPayPalAvailability, setHasCheckedPayPalAvailability] = useState(false)
+  const [hasLoadedCheckoutDraft, setHasLoadedCheckoutDraft] = useState(false)
+  const [cancelledPaymentProvider, setCancelledPaymentProvider] = useState<string | null>(null)
+  const [cancelledOrderNumber, setCancelledOrderNumber] = useState<string | null>(null)
   const touchedFieldsRef = useRef<Set<keyof CheckoutForm>>(new Set())
   const accountPrefillRequestedRef = useRef(false)
 
@@ -226,6 +230,37 @@ export default function CheckoutPage() {
   const selectedSavedAddress = selectedSavedAddressIndex !== null
     ? savedShippingAddresses[selectedSavedAddressIndex] || null
     : null
+
+  useEffect(() => {
+    const draft = readCheckoutDraft()
+    if (!draft) {
+      setHasLoadedCheckoutDraft(true)
+      return
+    }
+
+    setForm((current) => ({
+      ...current,
+      ...draft,
+    }))
+
+    ;(Object.entries(draft) as Array<[keyof CheckoutForm, string]>).forEach(([field, value]) => {
+      if (value && value !== initialForm[field]) {
+        touchedFieldsRef.current.add(field)
+      }
+    })
+
+    setShippingCountry(draft.country)
+    setHasLoadedCheckoutDraft(true)
+  }, [setShippingCountry])
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const isCancelledPayment = params.get('payment') === 'cancelled'
+    const provider = isCancelledPayment ? params.get('provider') : null
+
+    setCancelledPaymentProvider(provider)
+    setCancelledOrderNumber(isCancelledPayment ? params.get('order') : null)
+  }, [])
 
   function applyShippingAddress(address: SavedShippingAddress, nextMode: 'saved' | 'new', index: number | null) {
     setShippingAddressMode(nextMode)
@@ -413,6 +448,12 @@ export default function CheckoutPage() {
     }
   }, [setShippingCountry])
 
+  useEffect(() => {
+    if (!hasLoadedCheckoutDraft) return
+
+    writeCheckoutDraft(form)
+  }, [form, hasLoadedCheckoutDraft])
+
   function updateField(field: keyof CheckoutForm, value: string) {
     touchedFieldsRef.current.add(field)
     if (field === 'country') {
@@ -451,6 +492,7 @@ export default function CheckoutPage() {
     }
 
     setSubmitting(true)
+    writeCheckoutDraft(form)
 
     try {
       const res = await fetch('/api/orders/create', {
@@ -540,6 +582,7 @@ export default function CheckoutPage() {
   // 嵌入式支付成功回调
   function handleStripeSuccess() {
     clearCart() // 支付成功后清空购物车
+    clearCheckoutDraft()
     setShowStripePayment(false)
     if (!pendingOrder) return
 
@@ -557,7 +600,7 @@ export default function CheckoutPage() {
   // 取消嵌入式支付，回退到跳转式支付
   function handleStripeCancel() {
     setShowStripePayment(false)
-    router.push(appendQueryParamsToPath('/cart', {
+    router.push(appendQueryParamsToPath('/checkout', {
       payment: 'cancelled',
       provider: 'stripe',
       order: pendingOrder?.orderNumber,
@@ -610,6 +653,22 @@ export default function CheckoutPage() {
   return (
     <div className="container-main py-8">
       <h1 className="text-2xl font-bold text-secondary-900">Checkout</h1>
+
+      {cancelledPaymentProvider && (cancelledPaymentProvider === 'stripe' || cancelledPaymentProvider === 'paypal') && (
+        <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-4">
+          <div className="flex items-center gap-2">
+            <svg className="h-5 w-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
+            </svg>
+            <span className="font-semibold text-amber-800">Payment was cancelled</span>
+          </div>
+          <p className="mt-1 text-sm text-amber-700">
+            {cancelledOrderNumber
+              ? `Order ${cancelledOrderNumber} was left unpaid. Your checkout details are still here, so you can review the address and choose another payment method.`
+              : 'Your checkout details are still here, so you can review the address and choose another payment method.'}
+          </p>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="mt-6 grid gap-8 lg:grid-cols-3">
         {/* Left: Form fields */}

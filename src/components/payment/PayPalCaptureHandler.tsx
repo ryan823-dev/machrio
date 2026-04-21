@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useCart } from '@/contexts/CartContext'
+import { clearCheckoutDraft } from '@/lib/checkout-draft'
 
 interface PayPalCaptureHandlerProps {
   orderNumber: string
@@ -73,6 +74,7 @@ export function PayPalCaptureHandler({ orderNumber, accessToken }: PayPalCapture
         }
 
         clearCart()
+        clearCheckoutDraft()
         setCaptured(true)
       } catch (err) {
         console.error('PayPal capture error:', err)

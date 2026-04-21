@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCart } from '@/contexts/CartContext'
+import { clearCheckoutDraft } from '@/lib/checkout-draft'
 import { appendQueryParamsToPath } from '@/lib/order-access-links'
 
 interface StripeReturnHandlerProps {
@@ -26,6 +27,7 @@ export function StripeReturnHandler({ orderPath, cancelPath }: StripeReturnHandl
 
     if (payment === 'success') {
       clearCart()
+      clearCheckoutDraft()
       return
     }
 
@@ -35,6 +37,7 @@ export function StripeReturnHandler({ orderPath, cancelPath }: StripeReturnHandl
 
     if (redirectStatus === 'succeeded') {
       clearCart()
+      clearCheckoutDraft()
       router.replace(appendQueryParamsToPath(orderPath, {
         payment: 'success',
         provider: 'stripe',

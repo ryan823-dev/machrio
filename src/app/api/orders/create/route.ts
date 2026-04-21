@@ -527,7 +527,7 @@ export async function POST(req: NextRequest) {
         paymentInfoUpdate.stripePaymentIntentId = paymentIntent.id
 
         try {
-          const stripeCancelPath = appendQueryParamsToPath('/cart', {
+          const stripeCancelPath = appendQueryParamsToPath('/checkout', {
             payment: 'cancelled',
             provider: 'stripe',
             order: orderNumber,
@@ -597,7 +597,7 @@ export async function POST(req: NextRequest) {
       }
     } else if (body.paymentMethod === 'paypal') {
       try {
-        const paypalCancelPath = appendQueryParamsToPath('/cart', {
+        const paypalCancelPath = appendQueryParamsToPath('/checkout', {
           payment: 'cancelled',
           provider: 'paypal',
           order: orderNumber,
