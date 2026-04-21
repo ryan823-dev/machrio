@@ -9,6 +9,12 @@ import {
   generateSessionId, 
   ConversationTracker 
 } from '@/lib/conversation-tracker'
+import {
+  getOrderLookupPrompt,
+  mergeOrderLookupDraft,
+  requestDirectOrderLookup,
+  type OrderLookupDraft,
+} from '@/lib/order-lookup-chat'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -109,6 +115,7 @@ export function HeroAIChat() {
   const [conversationHistory, setConversationHistory] = useState<ConversationMessage[]>([])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [orderLookupDraft, setOrderLookupDraft] = useState<OrderLookupDraft | null>(null)
   const [reqSheet, setReqSheet] = useState<RequirementSheet>({ shortlist: [] })
   const [showReqSheet, setShowReqSheet] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -182,6 +189,59 @@ export function HeroAIChat() {
       priceUnit: product.priceUnit,
     })
   }
+
+  const appendAssistantMessage = useCallback((content: string) => {
+    setMessages(prev => [...prev, { role: 'assistant', content }])
+
+    if (conversationTrackerRef.current) {
+      conversationTrackerRef.current.addMessage({
+        role: 'assistant',
+        content,
+      })
+    }
+  }, [])
+
+  const startOrderLookup = useCallback(() => {
+    setOrderLookupDraft({})
+    appendAssistantMessage(getOrderLookupPrompt())
+  }, [appendAssistantMessage])
+
+  const handleOrderLookupFlow = useCallback(async (userMessage: string) => {
+    const nextDraft = mergeOrderLookupDraft(orderLookupDraft, userMessage)
+
+    if (!nextDraft.orderNumber || !nextDraft.email) {
+      setOrderLookupDraft(nextDraft)
+      appendAssistantMessage(getOrderLookupPrompt(nextDraft))
+      return
+    }
+
+    setOrderLookupDraft(null)
+    setIsLoading(true)
+
+    try {
+      const result = await requestDirectOrderLookup({
+        orderNumber: nextDraft.orderNumber,
+        email: nextDraft.email,
+      })
+
+      if (!result.success) {
+        appendAssistantMessage(
+          `${result.error} Please double-check the order number and purchasing email, or try the secure email link flow on [Find Order](/find-order).`,
+        )
+        return
+      }
+
+      appendAssistantMessage(
+        `I found your order. [Open Order Details](${result.orderPath})`,
+      )
+    } catch {
+      appendAssistantMessage(
+        'I could not check that order right now. Please try again in a moment, or use [Find Order](/find-order) to request a secure link by email.',
+      )
+    } finally {
+      setIsLoading(false)
+    }
+  }, [appendAssistantMessage, orderLookupDraft])
   
   // Extract products from tool results
   const extractProducts = (toolResults: Record<string, unknown>[] | undefined): ProductResult[] => {
@@ -322,6 +382,21 @@ export function HeroAIChat() {
     if (!input.trim() || isLoading) return
     const userMessage = input.trim()
     setInput('')
+
+    if (orderLookupDraft) {
+      setMessages(prev => [...prev, { role: 'user', content: userMessage }])
+
+      if (conversationTrackerRef.current) {
+        conversationTrackerRef.current.addMessage({
+          role: 'user',
+          content: userMessage,
+        })
+      }
+
+      await handleOrderLookupFlow(userMessage)
+      return
+    }
+
     await sendMessage(userMessage)
   }
   
@@ -482,12 +557,12 @@ export function HeroAIChat() {
               >
                 Order Help
               </button>
-              <Link
-                href="/find-order"
+              <button
+                onClick={startOrderLookup}
                 className="rounded-full bg-amber-400/20 px-3 py-1.5 text-xs text-amber-200 hover:bg-amber-400/30 transition-colors"
               >
                 Find Order
-              </Link>
+              </button>
             </div>
           </div>
         ) : (

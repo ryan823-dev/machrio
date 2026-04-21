@@ -9,6 +9,12 @@ import {
   generateSessionId, 
   ConversationTracker,
 } from '@/lib/conversation-tracker'
+import {
+  getOrderLookupPrompt,
+  mergeOrderLookupDraft,
+  requestDirectOrderLookup,
+  type OrderLookupDraft,
+} from '@/lib/order-lookup-chat'
 
 interface ProductCard {
   id: string
@@ -28,6 +34,7 @@ interface Message {
   role: 'user' | 'assistant'
   content: string
   products?: ProductCard[]
+  includeInConversation?: boolean
 }
 
 const INITIAL_MESSAGE: Message = {
@@ -105,6 +112,7 @@ export function AIAssistant() {
   const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE])
   const [input, setInput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+  const [orderLookupDraft, setOrderLookupDraft] = useState<OrderLookupDraft | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const conversationTrackerRef = useRef<ConversationTracker | null>(null)
@@ -153,15 +161,77 @@ export function AIAssistant() {
     })
   }
 
+  function appendAssistantMessage(content: string, includeInConversation: boolean = false) {
+    const message: Message = {
+      id: (Date.now() + Math.random()).toString(),
+      role: 'assistant',
+      content,
+      includeInConversation,
+    }
+
+    setMessages((prev) => [...prev, message])
+
+    if (conversationTrackerRef.current) {
+      conversationTrackerRef.current.addMessage({
+        role: 'assistant',
+        content,
+      })
+    }
+  }
+
+  function startOrderLookup() {
+    setOrderLookupDraft({})
+    appendAssistantMessage(getOrderLookupPrompt())
+  }
+
+  async function handleOrderLookupSubmit(userInput: string) {
+    const nextDraft = mergeOrderLookupDraft(orderLookupDraft, userInput)
+
+    if (!nextDraft.orderNumber || !nextDraft.email) {
+      setOrderLookupDraft(nextDraft)
+      appendAssistantMessage(getOrderLookupPrompt(nextDraft))
+      return
+    }
+
+    setOrderLookupDraft(null)
+    setIsLoading(true)
+
+    try {
+      const result = await requestDirectOrderLookup({
+        orderNumber: nextDraft.orderNumber,
+        email: nextDraft.email,
+      })
+
+      if (!result.success) {
+        appendAssistantMessage(
+          `${result.error} Please double-check the order number and purchasing email, or use [Find Order](/find-order) if you want the secure link sent to your inbox.`,
+        )
+        return
+      }
+
+      appendAssistantMessage(`I found your order. [Open Order Details](${result.orderPath})`)
+    } catch {
+      appendAssistantMessage(
+        'I could not check that order right now. Please try again in a moment, or use [Find Order](/find-order) to request a secure link by email.',
+      )
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     const trimmed = input.trim()
     if (!trimmed || isLoading) return
 
-    const userMsg: Message = { id: Date.now().toString(), role: 'user', content: trimmed }
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: trimmed,
+      includeInConversation: !orderLookupDraft,
+    }
     setMessages((prev) => [...prev, userMsg])
     setInput('')
-    setIsLoading(true)
 
     // Track user message
     if (conversationTrackerRef.current) {
@@ -171,12 +241,23 @@ export function AIAssistant() {
       })
     }
 
+    if (orderLookupDraft) {
+      await handleOrderLookupSubmit(trimmed)
+      return
+    }
+
+    setIsLoading(true)
+
     try {
+      const aiMessages = [...messages, userMsg]
+        .filter((m) => m.includeInConversation !== false)
+        .map((m) => ({ role: m.role, content: m.content }))
+
       const res = await fetch('/api/ai-assistant', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          messages: [...messages, userMsg].map((m) => ({ role: m.role, content: m.content })),
+          messages: aiMessages,
         }),
       })
       const data = await res.json()
@@ -322,12 +403,12 @@ export function AIAssistant() {
                   </button>
                 ),
               )}
-              <Link
-                href="/find-order"
+              <button
+                onClick={startOrderLookup}
                 className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs text-amber-800 transition-colors hover:bg-amber-100"
               >
                 Find Order
-              </Link>
+              </button>
             </div>
           )}
 
