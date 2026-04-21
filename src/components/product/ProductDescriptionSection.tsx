@@ -216,30 +216,45 @@ export function ProductDescriptionSection({
 
   return (
     <section id="description" className="mt-12 scroll-mt-24">
-      <div className="overflow-hidden rounded-2xl border border-secondary-200 bg-white shadow-sm">
-        <div className="border-b border-secondary-200 px-6 py-5 md:px-8">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+      <div className="overflow-hidden rounded-2xl border border-secondary-200 bg-gradient-to-br from-white via-secondary-50/60 to-primary-50/30 shadow-sm shadow-secondary-900/5">
+        <div className="border-b border-secondary-200/80 bg-white/80 px-6 py-6 backdrop-blur md:px-8">
+          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
-              <span className="inline-flex items-center text-[11px] font-semibold uppercase tracking-[0.18em] text-secondary-500">
+              <span className="inline-flex items-center rounded-full border border-primary-200 bg-primary-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-700">
                 Product Details
               </span>
 
-              <h2 className="mt-2 text-lg font-bold tracking-tight text-secondary-900">
-                Full Description
-              </h2>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-secondary-600">
-                Application context, construction notes, and selection details for evaluating fit
-                before purchase or repeat ordering.
-              </p>
+              <div className="mt-4 flex items-start gap-4">
+                <div className="hidden h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl border border-primary-200 bg-primary-100 text-primary-700 shadow-sm shadow-primary-900/5 sm:flex">
+                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.8}
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                </div>
+
+                <div>
+                  <h2 className="text-2xl font-bold tracking-tight text-secondary-900">
+                    Full Description
+                  </h2>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-secondary-600">
+                    Application context, construction notes, and selection details for evaluating fit
+                    before purchase or repeat ordering.
+                  </p>
+                </div>
+              </div>
             </div>
 
-            {quickLinks.length > 1 && (
+            {quickLinks.length > 0 && (
               <div className="flex flex-wrap gap-2 lg:max-w-sm lg:justify-end">
                 {quickLinks.map((link) => (
                   <a
                     key={link.href}
                     href={link.href}
-                    className="inline-flex items-center rounded-full border border-secondary-200 bg-secondary-50 px-3 py-1.5 text-xs font-medium text-secondary-700 transition-colors hover:border-primary-300 hover:bg-primary-50 hover:text-primary-800"
+                    className="inline-flex items-center rounded-full border border-secondary-200 bg-white/90 px-3 py-1.5 text-xs font-medium text-secondary-700 transition-colors hover:border-primary-300 hover:bg-primary-50 hover:text-primary-800"
                   >
                     {link.label}
                   </a>
@@ -249,7 +264,7 @@ export function ProductDescriptionSection({
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-[minmax(0,1fr)_17rem]">
+        <div className="grid lg:grid-cols-[minmax(0,1fr)_19rem]">
           <div className="px-6 py-6 md:px-8 md:py-7">
             <div
               className="product-description-content max-w-none [&_h2]:scroll-mt-24 [&_h3]:scroll-mt-24"
@@ -257,9 +272,9 @@ export function ProductDescriptionSection({
             />
           </div>
 
-          <aside className="border-t border-secondary-200 bg-secondary-50/70 px-6 py-6 md:px-8 lg:border-l lg:border-t-0 lg:px-6">
-            <div className="space-y-5 lg:sticky lg:top-24">
-              <div className="rounded-xl border border-secondary-200 bg-white p-5">
+          <aside className="border-t border-secondary-200 bg-white/70 px-6 py-6 md:px-8 lg:border-l lg:border-t-0 lg:px-6">
+            <div className="space-y-6 lg:sticky lg:top-24">
+              <div className="rounded-xl border border-secondary-200 bg-white/90 p-5 shadow-sm shadow-secondary-900/5">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-secondary-500">
                   At a Glance
                 </p>
@@ -280,7 +295,7 @@ export function ProductDescriptionSection({
                 </dl>
               </div>
 
-              <div className="rounded-xl border border-secondary-200 bg-white p-5">
+              <div className="rounded-xl border border-primary-200 bg-gradient-to-br from-primary-50 via-white to-white p-5 shadow-sm shadow-primary-900/5">
                 <p className="text-sm font-semibold text-secondary-900">
                   Buying Note
                 </p>
@@ -291,7 +306,7 @@ export function ProductDescriptionSection({
               </div>
 
               {sectionLinks.length > 1 && (
-                <div className="rounded-xl border border-secondary-200 bg-white p-5">
+                <div className="rounded-xl border border-secondary-200 bg-white/90 p-5 shadow-sm shadow-secondary-900/5">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-secondary-500">
                     On This Section
                   </p>
@@ -300,7 +315,7 @@ export function ProductDescriptionSection({
                       <a
                         key={`${link.href}-nav`}
                         href={link.href}
-                        className="block rounded-lg px-3 py-2 text-sm text-secondary-600 transition-colors hover:bg-secondary-50 hover:text-primary-700"
+                        className="block rounded-lg px-3 py-2 text-sm text-secondary-600 transition-colors hover:bg-white hover:text-primary-700"
                       >
                         {link.label}
                       </a>
