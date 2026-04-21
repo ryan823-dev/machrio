@@ -13,6 +13,26 @@ interface DescriptionHeading {
   text: string
 }
 
+const INLINE_SECTION_HEADERS = [
+  'Technical Specifications',
+  'Size Specifications',
+  'Product Information',
+  'Product Description',
+  'Product Details',
+  'Technology & Construction',
+  'Important Notes',
+  'Key Features',
+  'Specifications',
+  'Applications',
+  'Benefits',
+  'Overview',
+  'Features',
+  'Description',
+  'Material',
+  'Details',
+  'Note',
+]
+
 function stripTags(value: string): string {
   return value.replace(/<[^>]+>/g, ' ')
 }
@@ -34,6 +54,91 @@ function slugify(value: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+function splitInlineSections(text: string): Array<{ title: string; body: string }> {
+  const pattern = INLINE_SECTION_HEADERS
+    .slice()
+    .sort((a, b) => b.length - a.length)
+    .map((header) => header.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    .join('|')
+
+  const regex = new RegExp(`\\b(${pattern})\\b\\s*:?(?=\\s|$)`, 'gi')
+  const matches = Array.from(text.matchAll(regex))
+
+  if (matches.length < 2) return []
+
+  return matches.map((match, index) => {
+    const start = match.index ?? 0
+    const end = index + 1 < matches.length
+      ? matches[index + 1]?.index ?? text.length
+      : text.length
+
+    return {
+      title: match[1]?.trim() || '',
+      body: text.slice(start + match[0].length, end).trim(),
+    }
+  }).filter((section) => section.title)
+}
+
+function formatSpecGrid(body: string): string | null {
+  const regex = /([A-Z][A-Za-z0-9 /&().-]{1,40}):\s*([^:]+?)(?=\s+[A-Z][A-Za-z0-9 /&().-]{1,40}:\s*|$)/g
+  const items = Array.from(body.matchAll(regex)).map((match) => ({
+    label: match[1]?.trim() || '',
+    value: match[2]?.trim() || '',
+  })).filter((item) => item.label && item.value)
+
+  if (items.length < 2) return null
+
+  return `
+    <dl class="product-inline-specs">
+      ${items.map((item) => `
+        <div class="product-inline-specs__row">
+          <dt>${escapeHtml(item.label)}</dt>
+          <dd>${escapeHtml(item.value)}</dd>
+        </div>
+      `).join('')}
+    </dl>
+  `
+}
+
+function formatSectionBody(title: string, body: string): string {
+  const normalizedBody = body.replace(/\s+/g, ' ').trim()
+  if (!normalizedBody) return ''
+
+  const normalizedTitle = title.toLowerCase()
+  const specGrid = normalizedTitle.includes('spec') ? formatSpecGrid(normalizedBody) : null
+  if (specGrid) return specGrid
+
+  return `<p>${escapeHtml(normalizedBody)}</p>`
+}
+
+function normalizeDescriptionHtml(descriptionHtml: string): string {
+  if (/<h[23][^>]*>/i.test(descriptionHtml)) return descriptionHtml
+
+  return descriptionHtml.replace(/<p([^>]*)>([\s\S]*?)<\/p>/gi, (match, rawAttrs: string, rawContent: string) => {
+    const text = decodeHtmlEntities(stripTags(rawContent)).replace(/\s+/g, ' ').trim()
+    if (!text) return match
+
+    const sections = splitInlineSections(text)
+    if (sections.length === 0) return match
+
+    return sections
+      .map((section) => {
+        const bodyHtml = formatSectionBody(section.title, section.body)
+        return `<h3>${escapeHtml(section.title)}</h3>${bodyHtml}`
+      })
+      .join('')
+  })
 }
 
 function withHeadingAnchors(descriptionHtml: string): {
@@ -81,7 +186,8 @@ export function ProductDescriptionSection({
   minOrderQuantity,
   hasSpecifications,
 }: ProductDescriptionSectionProps) {
-  const { html, headings } = withHeadingAnchors(descriptionHtml)
+  const normalizedHtml = normalizeDescriptionHtml(descriptionHtml)
+  const { html, headings } = withHeadingAnchors(normalizedHtml)
 
   const overviewItems = [
     { label: 'Brand', value: brandName },
@@ -103,47 +209,37 @@ export function ProductDescriptionSection({
     })),
   ]
 
+  const sectionLinks = headings.slice(0, 5).map((heading) => ({
+    href: `#${heading.id}`,
+    label: heading.text,
+  }))
+
   return (
     <section id="description" className="mt-12 scroll-mt-24">
-      <div className="overflow-hidden rounded-2xl border border-secondary-200 bg-gradient-to-br from-white via-secondary-50/60 to-primary-50/30 shadow-sm">
-        <div className="border-b border-secondary-200/80 bg-white/80 px-6 py-6 backdrop-blur md:px-8">
-          <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
+      <div className="overflow-hidden rounded-2xl border border-secondary-200 bg-white shadow-sm">
+        <div className="border-b border-secondary-200 px-6 py-5 md:px-8">
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl">
-              <span className="inline-flex items-center rounded-full border border-primary-200 bg-primary-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary-700">
+              <span className="inline-flex items-center text-[11px] font-semibold uppercase tracking-[0.18em] text-secondary-500">
                 Product Details
               </span>
 
-              <div className="mt-4 flex items-start gap-4">
-                <div className="hidden h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl border border-primary-200 bg-primary-100 text-primary-700 sm:flex">
-                  <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.8}
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                </div>
-
-                <div>
-                  <h2 className="text-2xl font-bold tracking-tight text-secondary-900">
-                    Product Description
-                  </h2>
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-secondary-600">
-                    Review application context, feature notes, and selection details in a layout
-                    designed to match the rest of the product page.
-                  </p>
-                </div>
-              </div>
+              <h2 className="mt-2 text-lg font-bold tracking-tight text-secondary-900">
+                Full Description
+              </h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-secondary-600">
+                Application context, construction notes, and selection details for evaluating fit
+                before purchase or repeat ordering.
+              </p>
             </div>
 
-            {quickLinks.length > 0 && (
+            {quickLinks.length > 1 && (
               <div className="flex flex-wrap gap-2 lg:max-w-sm lg:justify-end">
                 {quickLinks.map((link) => (
                   <a
                     key={link.href}
                     href={link.href}
-                    className="inline-flex items-center rounded-full border border-secondary-200 bg-white/90 px-3 py-1.5 text-xs font-medium text-secondary-700 transition-colors hover:border-primary-300 hover:bg-primary-50 hover:text-primary-800"
+                    className="inline-flex items-center rounded-full border border-secondary-200 bg-secondary-50 px-3 py-1.5 text-xs font-medium text-secondary-700 transition-colors hover:border-primary-300 hover:bg-primary-50 hover:text-primary-800"
                   >
                     {link.label}
                   </a>
@@ -153,58 +249,58 @@ export function ProductDescriptionSection({
           </div>
         </div>
 
-        <div className="grid lg:grid-cols-[minmax(0,1fr)_19rem]">
-          <div className="px-6 py-7 md:px-8 md:py-8">
+        <div className="grid lg:grid-cols-[minmax(0,1fr)_17rem]">
+          <div className="px-6 py-6 md:px-8 md:py-7">
             <div
               className="product-description-content max-w-none [&_h2]:scroll-mt-24 [&_h3]:scroll-mt-24"
               dangerouslySetInnerHTML={{ __html: html }}
             />
           </div>
 
-          <aside className="border-t border-secondary-200 bg-white/70 px-6 py-6 md:px-8 lg:border-l lg:border-t-0 lg:px-6">
-            <div className="space-y-6 lg:sticky lg:top-24">
-              <div>
+          <aside className="border-t border-secondary-200 bg-secondary-50/70 px-6 py-6 md:px-8 lg:border-l lg:border-t-0 lg:px-6">
+            <div className="space-y-5 lg:sticky lg:top-24">
+              <div className="rounded-xl border border-secondary-200 bg-white p-5">
                 <p className="text-xs font-semibold uppercase tracking-[0.18em] text-secondary-500">
                   At a Glance
                 </p>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                <dl className="mt-4 space-y-3">
                   {overviewItems.map((item) => (
                     <div
                       key={item.label}
-                      className="rounded-xl border border-secondary-200 bg-white/90 p-4 shadow-sm shadow-secondary-900/5"
+                      className="border-t border-secondary-200 pt-3 first:border-t-0 first:pt-0"
                     >
-                      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-secondary-500">
+                      <dt className="text-[11px] font-semibold uppercase tracking-[0.16em] text-secondary-500">
                         {item.label}
-                      </p>
-                      <p className="mt-2 text-sm font-semibold leading-6 text-secondary-900">
+                      </dt>
+                      <dd className="mt-1 text-sm font-semibold leading-6 text-secondary-900">
                         {item.value}
-                      </p>
+                      </dd>
                     </div>
                   ))}
-                </div>
+                </dl>
               </div>
 
-              <div className="rounded-xl border border-primary-200 bg-gradient-to-br from-primary-50 to-white p-4">
+              <div className="rounded-xl border border-secondary-200 bg-white p-5">
                 <p className="text-sm font-semibold text-secondary-900">
                   Buying Note
                 </p>
                 <p className="mt-2 text-sm leading-6 text-secondary-600">
-                  Use this section to confirm fit and application details, then cross-check the
-                  specification table before placing larger or repeat orders.
+                  Use the description to confirm application fit and material context, then verify
+                  exact dimensions, load ratings, and ordering details in the specification table.
                 </p>
               </div>
 
-              {quickLinks.length > 0 && (
-                <div>
+              {sectionLinks.length > 1 && (
+                <div className="rounded-xl border border-secondary-200 bg-white p-5">
                   <p className="text-xs font-semibold uppercase tracking-[0.18em] text-secondary-500">
                     On This Section
                   </p>
                   <nav className="mt-3 space-y-2">
-                    {quickLinks.map((link) => (
+                    {sectionLinks.map((link) => (
                       <a
                         key={`${link.href}-nav`}
                         href={link.href}
-                        className="block rounded-lg px-3 py-2 text-sm text-secondary-600 transition-colors hover:bg-white hover:text-primary-700"
+                        className="block rounded-lg px-3 py-2 text-sm text-secondary-600 transition-colors hover:bg-secondary-50 hover:text-primary-700"
                       >
                         {link.label}
                       </a>
