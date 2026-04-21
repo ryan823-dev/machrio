@@ -13,39 +13,6 @@ import { CategoryDrawerMenu } from './CategoryDrawerMenu'
 const HISTORY_KEY = 'machrio_search_history'
 const MAX_HISTORY = 5
 
-// Accessibility: Focus trap utility for mega-menu
-function useFocusTrap(isActive: boolean, containerRef: React.RefObject<HTMLElement | null>) {
-  useEffect(() => {
-    if (!isActive || !containerRef.current) return
-
-    const container = containerRef.current
-    const focusableElements = container.querySelectorAll<HTMLElement>(
-      'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
-    )
-    const firstElement = focusableElements[0]
-    const lastElement = focusableElements[focusableElements.length - 1]
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key !== 'Tab') return
-
-      if (e.shiftKey) {
-        if (document.activeElement === firstElement) {
-          e.preventDefault()
-          lastElement?.focus()
-        }
-      } else {
-        if (document.activeElement === lastElement) {
-          e.preventDefault()
-          firstElement?.focus()
-        }
-      }
-    }
-
-    container.addEventListener('keydown', handleKeyDown)
-    return () => container.removeEventListener('keydown', handleKeyDown)
-  }, [isActive, containerRef])
-}
-
 const mainNav = [
   { label: 'Industries', href: '/industry/manufacturing' },
   { label: 'New Arrivals', href: '/new-arrivals' },
@@ -302,6 +269,15 @@ export function Header() {
               </svg>
               sales@machrio.com
             </a>
+            <Link
+              href="/find-order"
+              className="hidden md:flex items-center gap-1.5 text-white/90 transition-colors hover:text-amber-300"
+            >
+              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 5h6m-8 4h10m-5 4h5m-9.5 6.5a2.5 2.5 0 113.536-3.536 2.5 2.5 0 01-3.536 3.536zm0 0L4 22" />
+              </svg>
+              Find Order
+            </Link>
             <Link href="/rfq" className="rounded-full bg-amber-500 px-4 py-1 font-semibold text-primary-900 hover:bg-amber-400 transition-colors">
               Get a Quote
             </Link>

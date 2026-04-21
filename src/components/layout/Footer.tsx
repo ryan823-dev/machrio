@@ -18,6 +18,7 @@ const footerLinks = {
   support: [
     { label: 'How To Order', href: '/how-to-order' },
     { label: 'Payment Methods', href: '/payment-methods' },
+    { label: 'Find Order', href: '/find-order' },
     { label: 'Shipping Policy', href: '/shipping-policy' },
     { label: 'Return & Refund', href: '/return-refund' },
     { label: 'FAQ', href: '/faq' },
