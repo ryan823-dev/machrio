@@ -64,6 +64,7 @@ interface CartContextType extends CartState {
   removeItem: (productId: string) => void
   updateQuantity: (productId: string, quantity: number) => void
   clearCart: () => void
+  resetCartSession: () => void
   toggleItem: (productId: string) => void
   selectAll: () => void
   deselectAll: () => void
@@ -356,6 +357,27 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setCartNotice(null)
   }, [])
 
+  const resetCartSession = useCallback(() => {
+    itemsRef.current = []
+    selectedItemsRef.current = new Set()
+    setItems([])
+    setSelectedItems(new Set())
+    setShippingCountryState('US')
+    setShippingMethodCodeState('')
+    setShippingQuotes([])
+    setShippingLoading(false)
+    setEstimatedShipDate('')
+    setTotalWeight(0)
+    setCartNotice(null)
+
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem(STORAGE_KEY)
+      window.localStorage.removeItem(SELECTION_KEY)
+      window.localStorage.removeItem(SHIPPING_COUNTRY_KEY)
+      window.localStorage.removeItem(SHIPPING_METHOD_KEY)
+    }
+  }, [])
+
   const toggleItem = useCallback((productId: string) => {
     setSelectedItems(prev => {
       const next = new Set(prev)
@@ -411,6 +433,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       removeItem,
       updateQuantity,
       clearCart,
+      resetCartSession,
       toggleItem,
       selectAll,
       deselectAll,

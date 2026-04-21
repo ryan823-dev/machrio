@@ -5,6 +5,8 @@ import Link from 'next/link'
 // 完全静态生成，构建时生成 HTML
 export const dynamic = 'force-static'
 import { clearSession, fetchWithAuth } from '@/lib/account'
+import { clearCheckoutDraft } from '@/lib/checkout-draft'
+import { useCart } from '@/contexts/CartContext'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -1140,6 +1142,7 @@ function ForgotPasswordStep({
 // ─── Dashboard ───────────────────────────────────────────────────────────────
 
 function Dashboard({ onLogout }: { onLogout: () => void }) {
+  const { resetCartSession } = useCart()
   const [data, setData] = useState<AccountData | null>(null)
   const [security, setSecurity] = useState<SecurityState>({
     hasPassword: false,
@@ -1225,6 +1228,8 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     } catch {
       // Proceed with local logout even if API fails
     }
+    resetCartSession()
+    clearCheckoutDraft()
     clearSession()
     onLogout()
   }
