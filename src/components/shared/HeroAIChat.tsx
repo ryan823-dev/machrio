@@ -4,6 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import { useOptionalCart } from '@/contexts/CartContext'
 import { useAIAssistantVisibility } from '@/contexts/AIAssistantVisibilityContext'
+import { AIMessageContent } from './AIMessageContent'
 import { 
   generateSessionId, 
   ConversationTracker 
@@ -492,7 +493,11 @@ export function HeroAIChat() {
                     ? 'bg-amber-400 text-primary-900' 
                     : 'bg-white/10 text-white'
                 }`}>
-                  <div className="whitespace-pre-wrap">{msg.content}</div>
+                  {msg.role === 'assistant' ? (
+                    <AIMessageContent content={msg.content} />
+                  ) : (
+                    <div className="whitespace-pre-wrap">{msg.content}</div>
+                  )}
                   {/* Batch action buttons */}
                   {msg.actions && msg.actions.length > 0 && (
                     <div className="mt-2 flex flex-wrap gap-1.5">

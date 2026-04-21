@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { useOptionalCart } from '@/contexts/CartContext'
 import { useAIAssistantVisibility } from '@/contexts/AIAssistantVisibilityContext'
+import { AIMessageContent } from './AIMessageContent'
 import { 
   generateSessionId, 
   ConversationTracker,
@@ -273,7 +274,11 @@ export function AIAssistant() {
                         : 'bg-secondary-100 text-secondary-800'
                     }`}
                   >
-                    {msg.content}
+                    {msg.role === 'assistant' ? (
+                      <AIMessageContent content={msg.content} />
+                    ) : (
+                      msg.content
+                    )}
                   </div>
                 </div>
                 {/* Product cards */}

@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
+import { AIMessageContent } from '@/components/shared/AIMessageContent'
 
 interface EmptyStateAIDialogProps {
   categoryName: string
@@ -20,7 +21,7 @@ interface UploadedFile {
   file: File
 }
 
-export function EmptyStateAIDialog({ categoryName, categorySlug, parentCategories }: EmptyStateAIDialogProps) {
+export function EmptyStateAIDialog({ categoryName, parentCategories }: EmptyStateAIDialogProps) {
   const [mode, setMode] = useState<'ai' | 'rfq'>('ai')
   const [message, setMessage] = useState('')
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([
@@ -258,7 +259,11 @@ export function EmptyStateAIDialog({ categoryName, categorySlug, parentCategorie
                         : 'bg-white text-secondary-800 shadow-sm'
                     }`}
                   >
-                    <div className="whitespace-pre-wrap">{msg.content}</div>
+                    {msg.role === 'assistant' ? (
+                      <AIMessageContent content={msg.content} />
+                    ) : (
+                      <div className="whitespace-pre-wrap">{msg.content}</div>
+                    )}
                   </div>
                 </div>
               ))}
