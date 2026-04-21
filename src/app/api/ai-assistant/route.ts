@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { processConversation, ChatMessage } from '@/lib/ai/chat'
+import { getProviderConfig } from '@/lib/ai/config'
 
 export async function POST(request: Request) {
   try {
@@ -44,8 +45,9 @@ export async function POST(request: Request) {
       history = [categoryContext, ...history]
     }
 
-    // Check if API key is configured
-    const apiKey = process.env.OPENROUTER_API_KEY || process.env.OPENAI_API_KEY || process.env.ANTHROPIC_API_KEY
+    // Check the active provider's API key instead of any AI key in the environment.
+    const providerConfig = getProviderConfig()
+    const apiKey = providerConfig.apiKey
     
     if (!apiKey) {
       // Fall back to mock response if no API key
@@ -55,15 +57,25 @@ export async function POST(request: Request) {
       })
     }
 
-    // Process with real AI
-    const result = await processConversation(userMessage, history)
+    try {
+      // Process with real AI
+      const result = await processConversation(userMessage, history)
 
-    return NextResponse.json({
-      reply: result.response,
-      response: result.response,
-      toolResults: result.toolResults,
-      mode: 'ai',
-    })
+      return NextResponse.json({
+        reply: result.response,
+        response: result.response,
+        toolResults: result.toolResults,
+        mode: 'ai',
+      })
+    } catch (error) {
+      console.error('AI assistant provider error:', error)
+
+      return NextResponse.json({
+        reply: generateFallbackResponse(userMessage, source),
+        mode: 'fallback',
+        warning: error instanceof Error ? error.message : 'Unknown AI provider error',
+      })
+    }
   } catch (error) {
     console.error('AI assistant error:', error)
     
