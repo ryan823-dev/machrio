@@ -322,6 +322,12 @@ export function AIAssistant() {
                   </button>
                 ),
               )}
+              <Link
+                href="/find-order"
+                className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs text-amber-800 transition-colors hover:bg-amber-100"
+              >
+                Find Order
+              </Link>
             </div>
           )}
 
