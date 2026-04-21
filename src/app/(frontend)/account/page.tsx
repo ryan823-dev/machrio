@@ -5,6 +5,7 @@ import Link from 'next/link'
 // 完全静态生成，构建时生成 HTML
 export const dynamic = 'force-static'
 import { clearSession, fetchWithAuth } from '@/lib/account'
+import { readAccountCartSnapshot, writeAccountCartSnapshot } from '@/lib/account-cart-snapshot'
 import { clearCheckoutDraft } from '@/lib/checkout-draft'
 import { useCart } from '@/contexts/CartContext'
 
@@ -1142,7 +1143,7 @@ function ForgotPasswordStep({
 // ─── Dashboard ───────────────────────────────────────────────────────────────
 
 function Dashboard({ onLogout }: { onLogout: () => void }) {
-  const { resetCartSession } = useCart()
+  const { items, selectedItems, shippingCountry, shippingMethodCode, resetCartSession } = useCart()
   const [data, setData] = useState<AccountData | null>(null)
   const [security, setSecurity] = useState<SecurityState>({
     hasPassword: false,
@@ -1228,6 +1229,22 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
     } catch {
       // Proceed with local logout even if API fails
     }
+
+    const accountEmail = (
+      profileForm.email
+      || data?.profile?.email
+      || ''
+    ).trim().toLowerCase()
+
+    if (accountEmail) {
+      writeAccountCartSnapshot(accountEmail, {
+        items,
+        selectedProductIds: [...selectedItems],
+        shippingCountry,
+        shippingMethodCode,
+      })
+    }
+
     resetCartSession()
     clearCheckoutDraft()
     clearSession()
@@ -1932,6 +1949,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
 // ─── Main Account Page ───────────────────────────────────────────────────────
 
 export default function AccountPage() {
+  const { items, restoreCartSession } = useCart()
   const [step, setStep] = useState<
     'sign-in'
     | 'email-code'
@@ -1975,7 +1993,18 @@ export default function AccountPage() {
   }
 
   const handleAuthenticated = (nextEmail?: string) => {
-    if (nextEmail) {
+    const authenticatedEmail = (nextEmail || email).trim().toLowerCase()
+
+    if (authenticatedEmail && items.length === 0) {
+      const snapshot = readAccountCartSnapshot(authenticatedEmail)
+      if (snapshot) {
+        restoreCartSession(snapshot)
+      }
+    }
+
+    if (authenticatedEmail) {
+      setEmail(authenticatedEmail)
+    } else if (nextEmail) {
       setEmail(nextEmail)
     }
     setStep('dashboard')

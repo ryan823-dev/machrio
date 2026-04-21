@@ -1,6 +1,7 @@
 'use client'
 
 import { createContext, useContext, useState, useEffect, useCallback, useRef, type ReactNode } from 'react'
+import type { AccountCartSnapshot } from '@/lib/account-cart-snapshot'
 
 export interface CartItem {
   productId: string
@@ -65,6 +66,7 @@ interface CartContextType extends CartState {
   updateQuantity: (productId: string, quantity: number) => void
   clearCart: () => void
   resetCartSession: () => void
+  restoreCartSession: (snapshot: AccountCartSnapshot) => void
   toggleItem: (productId: string) => void
   selectAll: () => void
   deselectAll: () => void
@@ -378,6 +380,25 @@ export function CartProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  const restoreCartSession = useCallback((snapshot: AccountCartSnapshot) => {
+    const nextItems = Array.isArray(snapshot.items) ? snapshot.items : []
+    const nextSelected = Array.isArray(snapshot.selectedProductIds) && snapshot.selectedProductIds.length > 0
+      ? new Set(snapshot.selectedProductIds)
+      : new Set(nextItems.map((item) => item.productId))
+
+    itemsRef.current = nextItems
+    selectedItemsRef.current = nextSelected
+    setItems(nextItems)
+    setSelectedItems(nextSelected)
+    setShippingCountryState(snapshot.shippingCountry || 'US')
+    setShippingMethodCodeState(snapshot.shippingMethodCode || '')
+    setShippingQuotes([])
+    setShippingLoading(false)
+    setEstimatedShipDate('')
+    setTotalWeight(0)
+    setCartNotice(null)
+  }, [])
+
   const toggleItem = useCallback((productId: string) => {
     setSelectedItems(prev => {
       const next = new Set(prev)
@@ -434,6 +455,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       updateQuantity,
       clearCart,
       resetCartSession,
+      restoreCartSession,
       toggleItem,
       selectAll,
       deselectAll,
