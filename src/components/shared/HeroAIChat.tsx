@@ -559,7 +559,7 @@ export function HeroAIChat() {
               </button>
               <button
                 onClick={startOrderLookup}
-                className="rounded-full bg-amber-400/20 px-3 py-1.5 text-xs text-amber-200 hover:bg-amber-400/30 transition-colors"
+                className="rounded-full bg-white/10 px-3 py-1.5 text-xs text-white hover:bg-white/20 transition-colors"
               >
                 Find Order
               </button>

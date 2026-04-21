@@ -405,7 +405,7 @@ export function AIAssistant() {
               )}
               <button
                 onClick={startOrderLookup}
-                className="rounded-full border border-amber-200 bg-amber-50 px-2.5 py-1 text-xs text-amber-800 transition-colors hover:bg-amber-100"
+                className="rounded-full border border-primary-200 bg-primary-50 px-2.5 py-1 text-xs text-primary-700 transition-colors hover:bg-primary-100"
               >
                 Find Order
               </button>
