@@ -1949,7 +1949,7 @@ function Dashboard({ onLogout }: { onLogout: () => void }) {
 // ─── Main Account Page ───────────────────────────────────────────────────────
 
 export default function AccountPage() {
-  const { items, restoreCartSession } = useCart()
+  const { restoreCartSession } = useCart()
   const [step, setStep] = useState<
     'sign-in'
     | 'email-code'
@@ -1974,7 +1974,13 @@ export default function AccountPage() {
         const data = await res.json().catch(() => ({}))
 
         if (res.ok && data.authenticated && data.email) {
-          setEmail(String(data.email))
+          const authenticatedEmail = String(data.email).trim().toLowerCase()
+          const snapshot = readAccountCartSnapshot(authenticatedEmail)
+          if (snapshot) {
+            restoreCartSession(snapshot)
+          }
+
+          setEmail(authenticatedEmail)
           setStep('dashboard')
         }
       } catch {
@@ -1985,7 +1991,7 @@ export default function AccountPage() {
     }
 
     checkSession()
-  }, [])
+  }, [restoreCartSession])
 
   const handleCodeSent = (sentEmail: string) => {
     setEmail(sentEmail)
@@ -1995,7 +2001,7 @@ export default function AccountPage() {
   const handleAuthenticated = (nextEmail?: string) => {
     const authenticatedEmail = (nextEmail || email).trim().toLowerCase()
 
-    if (authenticatedEmail && items.length === 0) {
+    if (authenticatedEmail) {
       const snapshot = readAccountCartSnapshot(authenticatedEmail)
       if (snapshot) {
         restoreCartSession(snapshot)
