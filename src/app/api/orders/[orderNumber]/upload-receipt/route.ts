@@ -4,7 +4,8 @@ import config from '@payload-config'
 import { writeFile, mkdir } from 'fs/promises'
 import { join } from 'path'
 import { v4 as uuidv4 } from 'uuid'
-import { getOrderByNumber } from '@/lib/db'
+import { getOrderByNumber, getPool } from '@/lib/db'
+import { getBankTransferReference, getBankTransferSubmission } from '@/lib/bank-transfer'
 import { authorizeOrderAccess } from '@/lib/order-access'
 import { recordOrderEvent } from '@/lib/order-events'
 
@@ -20,6 +21,25 @@ export async function OPTIONS() {
       'Access-Control-Allow-Headers': 'Content-Type',
     },
   })
+}
+
+const ALLOWED_MIME_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/gif',
+  'application/pdf',
+]
+
+function getOptionalFormValue(formData: FormData, key: string): string | null {
+  const value = formData.get(key)
+  if (typeof value !== 'string') return null
+
+  const normalized = value.trim()
+  return normalized ? normalized : null
+}
+
+function isValidTransferDate(value: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}$/.test(value)
 }
 
 export async function POST(
@@ -52,43 +72,59 @@ export async function POST(
     }
 
     const formData = await req.formData()
-    const file = formData.get('receipt') as File
+    const amountPaidRaw = getOptionalFormValue(formData, 'amountPaid')
+    const transferDate = getOptionalFormValue(formData, 'transferDate')
+    const senderName = getOptionalFormValue(formData, 'senderName')
+    const bankName = getOptionalFormValue(formData, 'bankName')
+    const senderCountry = getOptionalFormValue(formData, 'senderCountry')
+    const notes = getOptionalFormValue(formData, 'notes')
+    const paymentReference = getBankTransferReference(orderRecord.order_number)
+    const receiptValue = formData.get('receipt')
+    const file = receiptValue instanceof File && receiptValue.size > 0 ? receiptValue : null
 
-    if (!file) {
+    if (!amountPaidRaw || !transferDate || !senderName) {
       return NextResponse.json(
-        { error: 'No file provided' },
+        { error: 'Amount paid, transfer date, and sender name are required.' },
         { status: 400 }
       )
     }
 
-    // Validate file type
-    const allowedMimeTypes = [
-      'image/jpeg',
-      'image/png',
-      'image/gif',
-      'application/pdf',
-    ]
-
-    if (!allowedMimeTypes.includes(file.type)) {
+    const amountPaid = Number(amountPaidRaw)
+    if (!Number.isFinite(amountPaid) || amountPaid <= 0) {
       return NextResponse.json(
-        { error: 'Invalid file type. Allowed: JPEG, PNG, GIF, PDF' },
+        { error: 'Amount paid must be a valid number greater than zero.' },
         { status: 400 }
       )
     }
 
-    // Validate file size (max 10MB)
-    const maxSize = 10 * 1024 * 1024 // 10MB
-    if (file.size > maxSize) {
+    if (!isValidTransferDate(transferDate)) {
       return NextResponse.json(
-        { error: 'File size exceeds 10MB limit' },
+        { error: 'Transfer date must use the YYYY-MM-DD format.' },
         { status: 400 }
       )
+    }
+
+    if (file) {
+      if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+        return NextResponse.json(
+          { error: 'Invalid file type. Allowed: JPEG, PNG, GIF, PDF' },
+          { status: 400 }
+        )
+      }
+
+      const maxSize = 10 * 1024 * 1024
+      if (file.size > maxSize) {
+        return NextResponse.json(
+          { error: 'File size exceeds 10MB limit' },
+          { status: 400 }
+        )
+      }
     }
 
     const payload = await getPayload({ config })
+    const pool = getPool()
     const canonicalOrderNumber = orderRecord.order_number
 
-    // Get the order
     const orderResult = await payload.find({
       collection: 'orders',
       where: { orderNumber: { equals: canonicalOrderNumber } },
@@ -103,53 +139,130 @@ export async function POST(
     }
 
     const order = orderResult.docs[0]
+    const existingSubmission = getBankTransferSubmission(orderRecord.payment_info, canonicalOrderNumber)
+    const existingPayment = order.payment && typeof order.payment === 'object' && !Array.isArray(order.payment)
+      ? order.payment as Record<string, unknown>
+      : {}
+    const submittedAt = new Date().toISOString()
+    let receiptId: number | null = null
+    let filename: string | null = null
 
-    // Read file as buffer
-    const arrayBuffer = await file.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
+    if (file) {
+      const arrayBuffer = await file.arrayBuffer()
+      const buffer = Buffer.from(arrayBuffer)
+      const uploadDir = join(process.cwd(), 'public', 'payment-receipts')
+      await mkdir(uploadDir, { recursive: true })
 
-    // Create upload directory if not exists
-    const uploadDir = join(process.cwd(), 'public', 'payment-receipts')
-    await mkdir(uploadDir, { recursive: true })
+      const fileExtension = file.type === 'application/pdf'
+        ? 'pdf'
+        : file.type === 'image/png'
+          ? 'png'
+          : file.type === 'image/gif'
+            ? 'gif'
+            : 'jpg'
+      filename = `receipt-${canonicalOrderNumber}-${uuidv4()}.${fileExtension}`
+      const filepath = join(uploadDir, filename)
 
-    // Generate unique filename
-    const fileExtension = file.type === 'application/pdf' ? 'pdf' : 
-                         file.type === 'image/png' ? 'png' :
-                         file.type === 'image/gif' ? 'gif' : 'jpg'
-    const filename = `receipt-${canonicalOrderNumber}-${uuidv4()}.${fileExtension}`
-    const filepath = join(uploadDir, filename)
+      await writeFile(filepath, buffer)
 
-    // Save file
-    await writeFile(filepath, buffer)
+      const receiptSummary = [
+        `Payment Reference: ${paymentReference}`,
+        `Amount Paid: ${amountPaid.toFixed(2)} ${orderRecord.currency || ''}`.trim(),
+        `Transfer Date: ${transferDate}`,
+        `Sender Name: ${senderName}`,
+        bankName ? `Sending Bank: ${bankName}` : null,
+        senderCountry ? `Sender Country: ${senderCountry}` : null,
+        notes ? `Notes: ${notes}` : null,
+      ].filter(Boolean).join('\n')
 
-    // Create payment receipt record
-    const receipt = await payload.create({
-      collection: 'payment-receipts',
-      data: {
-        filename: filename,
-        orderNumber: canonicalOrderNumber,
-        orderId: order.id,
-        uploadedBy: (order.customer as Record<string, unknown>)?.email as string || 'unknown',
-        fileSize: file.size,
-        fileType: file.type,
-        notes: formData.get('notes') as string || undefined,
+      const receipt = await payload.create({
+        collection: 'payment-receipts',
+        data: {
+          filename,
+          orderNumber: canonicalOrderNumber,
+          orderId: order.id,
+          uploadedBy: orderRecord.customer_email || 'unknown',
+          fileSize: file.size,
+          fileType: file.type,
+          notes: receiptSummary || undefined,
+        },
+      })
+
+      receiptId = Number(receipt.id)
+    }
+
+    const nextSubmission = {
+      status: 'submitted',
+      paymentReference,
+      submittedAt,
+      amountPaid,
+      transferDate,
+      senderName,
+      bankName,
+      senderCountry,
+      notes,
+      proofUploaded: Boolean(file) || Boolean(existingSubmission?.proofUploaded),
+      proofFilename: filename || existingSubmission?.proofFilename || null,
+    }
+
+    const orderUpdateData: Record<string, unknown> = {
+      payment: {
+        ...existingPayment,
+        method: 'bank-transfer',
+        receiptUploaded: Boolean(file) || existingPayment.receiptUploaded === true,
+        receiptUploadDate: file ? submittedAt : existingPayment.receiptUploadDate || null,
+        bankTransferSubmissionStatus: 'submitted',
+        bankTransferSubmittedAt: submittedAt,
+        bankTransferAmountPaid: amountPaid,
+        bankTransferTransferDate: transferDate,
+        bankTransferSenderName: senderName,
+        bankTransferBankName: bankName,
+        bankTransferSenderCountry: senderCountry,
+        bankTransferReference: paymentReference,
+        bankTransferNotes: notes,
       },
-    })
+    }
 
-    // Update order with receipt reference
+    if (receiptId) {
+      orderUpdateData.paymentReceipt = receiptId
+    }
+
     await payload.update({
       collection: 'orders',
       id: order.id,
-      data: {
-        paymentReceipt: receipt.id,
-        payment: {
-          ...(order.payment as Record<string, unknown>),
-          receiptUploaded: true,
-          receiptUploadDate: new Date().toISOString(),
-        },
-      },
+      data: orderUpdateData,
     })
 
+    await pool.query(
+      `UPDATE orders
+       SET payment_info = COALESCE(payment_info, '{}'::jsonb) || $1::jsonb
+       WHERE order_number = $2`,
+      [
+        JSON.stringify({
+          method: 'bank-transfer',
+          bankTransferSubmission: nextSubmission,
+        }),
+        canonicalOrderNumber,
+      ],
+    )
+
+    await recordOrderEvent({
+      orderNumber: canonicalOrderNumber,
+      orderId: orderRecord.id,
+      type: 'payment.submitted',
+      data: {
+        paymentMethod: 'bank-transfer',
+        amountPaid,
+        currency: orderRecord.currency,
+        transferDate,
+        senderName,
+        proofUploaded: nextSubmission.proofUploaded,
+      },
+    }).catch((orderEventError) => {
+      console.error(`Failed to record payment.submitted event for order ${canonicalOrderNumber}:`, orderEventError)
+    })
+
+    if (filename && file) {
     await recordOrderEvent({
       orderNumber: canonicalOrderNumber,
       orderId: orderRecord.id,
@@ -161,12 +274,14 @@ export async function POST(
     }).catch((orderEventError) => {
       console.error(`Failed to record receipt upload event for order ${canonicalOrderNumber}:`, orderEventError)
     })
+    }
 
     return NextResponse.json({
       success: true,
-      message: 'Receipt uploaded successfully',
-      receiptId: receipt.id,
-      filename: filename,
+      message: 'Payment details submitted successfully',
+      receiptId,
+      filename,
+      paymentReference,
     })
   } catch (error) {
     console.error('Error uploading receipt:', error)

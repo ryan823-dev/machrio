@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@payload-config'
+import { getBankTransferReference, getBankTransferSubmission } from '@/lib/bank-transfer'
+import { getOrderById, getPool } from '@/lib/db'
 import { sendEmail } from '@/lib/email'
 import { recordOrderEvent } from '@/lib/order-events'
 import { syncPartnerCommissionForOrderId } from '@/lib/partner-program'
@@ -34,6 +36,7 @@ export async function POST(
     }
 
     // Update order payment status
+    const legacyOrder = await getOrderById(id)
     const order = await payload.update({
       collection: 'orders',
       id,
@@ -42,6 +45,30 @@ export async function POST(
         status: 'confirmed',
       },
     })
+
+    if (legacyOrder) {
+      const pool = getPool()
+      const existingSubmission = getBankTransferSubmission(legacyOrder.payment_info, legacyOrder.order_number)
+      const confirmedAt = new Date().toISOString()
+
+      await pool.query(
+        `UPDATE orders
+         SET payment_info = COALESCE(payment_info, '{}'::jsonb) || $1::jsonb
+         WHERE id::text = $2`,
+        [
+          JSON.stringify({
+            method: 'bank-transfer',
+            bankTransferSubmission: {
+              ...(existingSubmission || {}),
+              status: 'confirmed',
+              paymentReference: existingSubmission?.paymentReference || getBankTransferReference(legacyOrder.order_number),
+              submittedAt: existingSubmission?.submittedAt || confirmedAt,
+            },
+          }),
+          id,
+        ],
+      )
+    }
 
     await syncPartnerCommissionForOrderId(id)
 

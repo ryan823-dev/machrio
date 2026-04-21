@@ -1,4 +1,5 @@
 import { Resend } from 'resend'
+import { getBankTransferReference } from '@/lib/bank-transfer'
 import { issueOrderAccessLinks } from '@/lib/order-access'
 
 const resend = process.env.RESEND_API_KEY
@@ -112,8 +113,9 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData) {
     ? `<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;padding:16px;margin:16px 0">
          <p style="margin:0 0 8px"><strong>Payment Method:</strong> Bank Transfer / Wire</p>
          <p style="margin:0 0 8px">A Proforma Invoice with bank details has been generated for your order.</p>
+         <p style="margin:0 0 8px"><strong>Payment Reference:</strong> ${getBankTransferReference(data.orderNumber)}</p>
          <a href="${invoiceUrl}" style="display:inline-block;background:#f59e0b;color:#fff;padding:10px 20px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px;margin-top:8px">View Proforma Invoice</a>
-         <p style="margin:12px 0 0;font-size:13px;color:#92400e">Payment is due within 14 days. Please include order number <strong>${data.orderNumber}</strong> as payment reference.</p>
+         <p style="margin:12px 0 0;font-size:13px;color:#92400e">Payment is due within 14 days. After sending the transfer, return to your order page and submit the amount, transfer date, and sender name. Proof is optional.</p>
        </div>`
     : data.paymentMethod === 'paypal'
     ? `<p style="margin:0 0 8px"><strong>Payment Method:</strong> PayPal</p>

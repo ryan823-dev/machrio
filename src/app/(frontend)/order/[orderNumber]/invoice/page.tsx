@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import { getOrderByNumber, getBankAccounts } from '@/lib/db'
+import { getBankTransferReference } from '@/lib/bank-transfer'
 import { authorizeOrderAccess } from '@/lib/order-access'
 import { buildOrderPath } from '@/lib/order-access-links'
 import { OrderAccessRequired } from '@/components/order/OrderAccessRequired'
@@ -52,6 +53,7 @@ export default async function InvoicePage({ params, searchParams }: InvoicePageP
   const totalAmount = toDisplayAmount(order.total)
   const createdAt = new Date(order.created_at)
   const dueDate = new Date(createdAt.getTime() + 14 * 24 * 60 * 60 * 1000) // 14 days
+  const paymentReference = getBankTransferReference(canonicalOrderNumber)
 
   // Match bank accounts by currency, or show all if none match
   const currency = order.currency || 'USD'
@@ -156,8 +158,15 @@ export default async function InvoicePage({ params, searchParams }: InvoicePageP
           <div className="mt-10 border-t border-secondary-200 pt-6">
             <h3 className="text-sm font-bold text-secondary-800">Bank Transfer Details</h3>
             <p className="mt-1 text-xs text-secondary-500">
-              Please transfer the total amount to the following account and include the invoice number ({canonicalOrderNumber}) as payment reference.
+              Please transfer the total amount to the following account and use the payment reference below in your remittance note.
             </p>
+            <div className="mt-3 rounded-lg border border-primary-200 bg-primary-50 p-4">
+              <p className="text-xs font-semibold uppercase tracking-wide text-primary-700">Payment Reference</p>
+              <p className="mt-1 font-mono text-sm font-semibold text-secondary-900">{paymentReference}</p>
+              <p className="mt-2 text-xs text-primary-700">
+                After sending the transfer, return to your order page and submit the amount, transfer date, and sender name. Payment proof is optional.
+              </p>
+            </div>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               {displayAccounts.map((account) => (
                 <div key={account.id} className="rounded-lg border border-secondary-200 bg-secondary-50 p-4 text-xs">

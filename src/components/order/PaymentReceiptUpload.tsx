@@ -1,50 +1,167 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, type ChangeEvent, type FormEvent } from 'react'
+import { useRouter } from 'next/navigation'
 import { appendQueryParamsToPath } from '@/lib/order-access-links'
+import {
+  getBankTransferReference,
+  type BankTransferSubmission,
+} from '@/lib/bank-transfer'
 
 interface PaymentReceiptUploadProps {
   orderNumber: string
   accessToken?: string
-  onUploadSuccess?: () => void
+  currency: string
+  existingSubmission?: BankTransferSubmission | null
+}
+
+interface PaymentFormState {
+  amountPaid: string
+  transferDate: string
+  senderName: string
+  bankName: string
+  senderCountry: string
+  notes: string
+}
+
+const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf']
+const MAX_FILE_SIZE = 10 * 1024 * 1024
+
+function formatTransferDate(value: string | null | undefined): string {
+  if (!value) return 'Not provided'
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+
+  return date.toLocaleDateString('en-US', {
+    dateStyle: 'medium',
+  })
+}
+
+function formatSubmissionDate(value: string | null | undefined): string {
+  if (!value) return 'Just now'
+
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+
+  return date.toLocaleString('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  })
 }
 
 export function PaymentReceiptUpload({
   orderNumber,
   accessToken,
-  onUploadSuccess,
+  currency,
+  existingSubmission,
 }: PaymentReceiptUploadProps) {
+  const router = useRouter()
+  const paymentReference = getBankTransferReference(orderNumber)
   const [uploading, setUploading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [copiedReference, setCopiedReference] = useState(false)
+  const [editing, setEditing] = useState(!existingSubmission)
+  const [file, setFile] = useState<File | null>(null)
+  const [form, setForm] = useState<PaymentFormState>({
+    amountPaid: existingSubmission?.amountPaid !== null && existingSubmission?.amountPaid !== undefined
+      ? String(existingSubmission.amountPaid)
+      : '',
+    transferDate: existingSubmission?.transferDate?.slice(0, 10) || '',
+    senderName: existingSubmission?.senderName || '',
+    bankName: existingSubmission?.bankName || '',
+    senderCountry: existingSubmission?.senderCountry || '',
+    notes: existingSubmission?.notes || '',
+  })
 
   const uploadUrl = appendQueryParamsToPath(`/api/orders/${orderNumber}/upload-receipt`, {
     access: accessToken,
   })
 
-  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+  function updateField(field: keyof PaymentFormState, value: string) {
+    setForm((current) => ({
+      ...current,
+      [field]: value,
+    }))
+  }
 
-    // Validate file
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf']
-    if (!allowedTypes.includes(file.type)) {
+  async function handleCopyReference() {
+    try {
+      await navigator.clipboard.writeText(paymentReference)
+      setCopiedReference(true)
+      window.setTimeout(() => setCopiedReference(false), 1800)
+    } catch {
+      setError('Could not copy the payment reference. Please copy it manually.')
+    }
+  }
+
+  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const selectedFile = event.target.files?.[0] || null
+    if (!selectedFile) {
+      setFile(null)
+      return
+    }
+
+    if (!ALLOWED_FILE_TYPES.includes(selectedFile.type)) {
+      setFile(null)
       setError('Invalid file type. Please upload JPEG, PNG, GIF, or PDF.')
       return
     }
 
-    if (file.size > 10 * 1024 * 1024) {
+    if (selectedFile.size > MAX_FILE_SIZE) {
+      setFile(null)
       setError('File size exceeds 10MB limit.')
       return
     }
 
-    // Upload file
+    setError(null)
+    setFile(selectedFile)
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    const amountPaid = Number(form.amountPaid)
+    if (!Number.isFinite(amountPaid) || amountPaid <= 0) {
+      setError('Please enter a valid amount paid.')
+      return
+    }
+
+    if (!form.transferDate) {
+      setError('Please provide the transfer date.')
+      return
+    }
+
+    if (!form.senderName.trim()) {
+      setError('Please provide the sender name.')
+      return
+    }
+
     setUploading(true)
     setError(null)
 
     const formData = new FormData()
-    formData.append('receipt', file)
+    formData.append('amountPaid', form.amountPaid)
+    formData.append('transferDate', form.transferDate)
+    formData.append('senderName', form.senderName.trim())
+    formData.append('paymentReference', paymentReference)
+
+    if (form.bankName.trim()) {
+      formData.append('bankName', form.bankName.trim())
+    }
+    if (form.senderCountry.trim()) {
+      formData.append('senderCountry', form.senderCountry.trim())
+    }
+    if (form.notes.trim()) {
+      formData.append('notes', form.notes.trim())
+    }
+    if (file) {
+      formData.append('receipt', file)
+    }
 
     try {
       const response = await fetch(uploadUrl, {
@@ -52,162 +169,259 @@ export function PaymentReceiptUpload({
         body: formData,
       })
 
-      const data = await response.json()
-
+      const data = await response.json().catch(() => ({}))
       if (!response.ok) {
-        throw new Error(data.error || 'Failed to upload receipt')
+        throw new Error(data.error || 'Failed to submit payment details')
       }
 
-      setSuccess(true)
-      onUploadSuccess?.()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to upload receipt')
+      setFile(null)
+      setEditing(false)
+      router.refresh()
+    } catch (submitError) {
+      setError(submitError instanceof Error ? submitError.message : 'Failed to submit payment details')
     } finally {
       setUploading(false)
     }
-  }
-
-  const handleDrop = async (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
-    const file = e.dataTransfer.files?.[0]
-    if (!file) return
-
-    // Validate file
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf']
-    if (!allowedTypes.includes(file.type)) {
-      setError('Invalid file type. Please upload JPEG, PNG, GIF, or PDF.')
-      return
-    }
-
-    if (file.size > 10 * 1024 * 1024) {
-      setError('File size exceeds 10MB limit.')
-      return
-    }
-
-    // Upload file
-    setUploading(true)
-    setError(null)
-
-    const formData = new FormData()
-    formData.append('receipt', file)
-
-    try {
-      const response = await fetch(uploadUrl, {
-        method: 'POST',
-        body: formData,
-      })
-
-      const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to upload receipt')
-      }
-
-      setSuccess(true)
-      onUploadSuccess?.()
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to upload receipt')
-    } finally {
-      setUploading(false)
-    }
-  }
-
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault()
   }
 
   return (
-    <div className="w-full">
-      <div className="mb-4">
-        <h3 className="text-base font-semibold text-secondary-900">Upload Payment Receipt</h3>
+    <div className="w-full space-y-4">
+      <div>
+        <h3 className="text-base font-semibold text-secondary-900">I&apos;ve sent the payment</h3>
         <p className="mt-1 text-sm text-secondary-600">
-          Upload a photo or PDF of your bank transfer receipt as proof of payment.
+          Submit the key payment details so our finance team can match your transfer quickly. Proof is optional.
         </p>
       </div>
 
-      {success ? (
-        <div className="rounded-lg bg-green-50 border border-green-200 p-4">
-          <div className="flex items-start gap-3">
-            <svg className="h-5 w-5 text-green-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-            </svg>
+      <div className="rounded-lg border border-primary-200 bg-primary-50 p-4">
+        <p className="text-xs font-semibold uppercase tracking-wide text-primary-700">Order Number</p>
+        <p className="mt-1 font-mono text-sm font-semibold text-secondary-900">{orderNumber}</p>
+        <p className="mt-3 text-xs font-semibold uppercase tracking-wide text-primary-700">Payment Reference</p>
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          <span className="rounded-md bg-white px-3 py-2 font-mono text-sm font-semibold text-secondary-900">
+            {paymentReference}
+          </span>
+          <button
+            type="button"
+            onClick={handleCopyReference}
+            className="text-sm font-medium text-primary-700 hover:text-primary-900"
+          >
+            {copiedReference ? 'Copied' : 'Copy reference'}
+          </button>
+        </div>
+        <p className="mt-2 text-xs text-primary-700">
+          Please use this reference in your bank transfer note or remittance message.
+        </p>
+      </div>
+
+      {existingSubmission && !editing ? (
+        <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+          <div className="flex items-start justify-between gap-4">
             <div>
-              <p className="font-medium text-green-800">Receipt uploaded successfully!</p>
+              <p className="text-sm font-semibold text-green-800">Payment details submitted</p>
               <p className="mt-1 text-sm text-green-700">
-                Our finance team will review your payment receipt and confirm your order within 1-2 business days.
+                Submitted on {formatSubmissionDate(existingSubmission.submittedAt)}. Our finance team is now verifying the transfer.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
+              className="text-sm font-medium text-green-800 hover:underline"
+            >
+              Update details
+            </button>
+          </div>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-md bg-white/80 p-3">
+              <p className="text-xs uppercase tracking-wide text-secondary-500">Amount paid</p>
+              <p className="mt-1 text-sm font-semibold text-secondary-900">
+                {existingSubmission.amountPaid !== null && existingSubmission.amountPaid !== undefined
+                  ? `${existingSubmission.amountPaid.toFixed(2)} ${currency}`
+                  : 'Not provided'}
+              </p>
+            </div>
+            <div className="rounded-md bg-white/80 p-3">
+              <p className="text-xs uppercase tracking-wide text-secondary-500">Transfer date</p>
+              <p className="mt-1 text-sm font-semibold text-secondary-900">
+                {formatTransferDate(existingSubmission.transferDate)}
+              </p>
+            </div>
+            <div className="rounded-md bg-white/80 p-3">
+              <p className="text-xs uppercase tracking-wide text-secondary-500">Sender name</p>
+              <p className="mt-1 text-sm font-semibold text-secondary-900">
+                {existingSubmission.senderName || 'Not provided'}
+              </p>
+            </div>
+            <div className="rounded-md bg-white/80 p-3">
+              <p className="text-xs uppercase tracking-wide text-secondary-500">Proof</p>
+              <p className="mt-1 text-sm font-semibold text-secondary-900">
+                {existingSubmission.proofUploaded
+                  ? existingSubmission.proofFilename || 'Attached'
+                  : 'Not attached'}
               </p>
             </div>
           </div>
+
+          {(existingSubmission.bankName || existingSubmission.senderCountry || existingSubmission.notes) && (
+            <div className="mt-4 rounded-md bg-white/80 p-3 text-sm text-secondary-700">
+              {existingSubmission.bankName && (
+                <p>
+                  <span className="font-medium text-secondary-900">Sending bank:</span> {existingSubmission.bankName}
+                </p>
+              )}
+              {existingSubmission.senderCountry && (
+                <p className="mt-1">
+                  <span className="font-medium text-secondary-900">Sender country:</span> {existingSubmission.senderCountry}
+                </p>
+              )}
+              {existingSubmission.notes && (
+                <p className="mt-1">
+                  <span className="font-medium text-secondary-900">Notes:</span> {existingSubmission.notes}
+                </p>
+              )}
+            </div>
+          )}
         </div>
       ) : (
-        <div
-          onDrop={handleDrop}
-          onDragOver={handleDragOver}
-          className="relative border-2 border-dashed border-secondary-300 rounded-lg p-6 hover:border-primary-500 transition-colors cursor-pointer"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".jpg,.jpeg,.png,.gif,.pdf"
-            onChange={handleFileSelect}
-            className="hidden"
-            disabled={uploading}
-          />
+        <form onSubmit={handleSubmit} className="space-y-4 rounded-lg border border-secondary-200 bg-white p-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block">
+              <span className="text-sm font-medium text-secondary-700">Amount Paid ({currency})</span>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={form.amountPaid}
+                onChange={(event) => updateField('amountPaid', event.target.value)}
+                className="input-field mt-1 w-full"
+                placeholder="e.g. 1280.00"
+                disabled={uploading}
+                required
+              />
+            </label>
 
-          <div className="flex flex-col items-center justify-center text-center">
-            {uploading ? (
-              <>
-                <svg className="animate-spin h-10 w-10 text-primary-600 mb-3" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                </svg>
-                <p className="text-sm font-medium text-secondary-700">Uploading...</p>
-              </>
-            ) : (
-              <>
-                <svg className="h-10 w-10 text-secondary-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                </svg>
-                <p className="text-sm font-medium text-secondary-700 mb-1">
-                  Click to upload or drag and drop
-                </p>
-                <p className="text-xs text-secondary-500">
-                  JPEG, PNG, GIF or PDF (max 10MB)
-                </p>
-              </>
+            <label className="block">
+              <span className="text-sm font-medium text-secondary-700">Transfer Date</span>
+              <input
+                type="date"
+                value={form.transferDate}
+                onChange={(event) => updateField('transferDate', event.target.value)}
+                className="input-field mt-1 w-full"
+                disabled={uploading}
+                required
+              />
+            </label>
+          </div>
+
+          <label className="block">
+            <span className="text-sm font-medium text-secondary-700">Sender Name</span>
+            <input
+              type="text"
+              value={form.senderName}
+              onChange={(event) => updateField('senderName', event.target.value)}
+              className="input-field mt-1 w-full"
+              placeholder="Company or individual name shown on the transfer"
+              disabled={uploading}
+              required
+            />
+          </label>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="block">
+              <span className="text-sm font-medium text-secondary-700">Sending Bank (optional)</span>
+              <input
+                type="text"
+                value={form.bankName}
+                onChange={(event) => updateField('bankName', event.target.value)}
+                className="input-field mt-1 w-full"
+                placeholder="Bank of China, HSBC, Citi..."
+                disabled={uploading}
+              />
+            </label>
+
+            <label className="block">
+              <span className="text-sm font-medium text-secondary-700">Sender Country (optional)</span>
+              <input
+                type="text"
+                value={form.senderCountry}
+                onChange={(event) => updateField('senderCountry', event.target.value)}
+                className="input-field mt-1 w-full"
+                placeholder="Country where the transfer was sent"
+                disabled={uploading}
+              />
+            </label>
+          </div>
+
+          <label className="block">
+            <span className="text-sm font-medium text-secondary-700">Notes (optional)</span>
+            <textarea
+              rows={3}
+              value={form.notes}
+              onChange={(event) => updateField('notes', event.target.value)}
+              className="input-field mt-1 w-full"
+              placeholder="Any remittance note, sender details, or bank fee comments"
+              disabled={uploading}
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-sm font-medium text-secondary-700">Payment Proof (optional)</span>
+            <input
+              type="file"
+              accept=".jpg,.jpeg,.png,.gif,.pdf"
+              onChange={handleFileChange}
+              className="mt-1 block w-full text-sm text-secondary-600 file:mr-4 file:rounded-md file:border-0 file:bg-secondary-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-secondary-700 hover:file:bg-secondary-200"
+              disabled={uploading}
+            />
+            <p className="mt-1 text-xs text-secondary-500">
+              Optional screenshot or bank advice. JPEG, PNG, GIF, or PDF up to 10MB.
+            </p>
+            {file && (
+              <p className="mt-1 text-xs text-secondary-600">
+                Selected file: <span className="font-medium">{file.name}</span>
+              </p>
+            )}
+          </label>
+
+          {error && (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="submit"
+              disabled={uploading}
+              className="btn-primary disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {uploading ? 'Submitting...' : 'Submit Payment Details'}
+            </button>
+            {existingSubmission && (
+              <button
+                type="button"
+                onClick={() => {
+                  setEditing(false)
+                  setError(null)
+                  setFile(null)
+                }}
+                className="btn-secondary"
+                disabled={uploading}
+              >
+                Cancel
+              </button>
             )}
           </div>
-        </div>
+        </form>
       )}
 
-      {error && (
-        <div className="mt-4 rounded-lg bg-red-50 border border-red-200 p-4">
-          <div className="flex items-start gap-3">
-            <svg className="h-5 w-5 text-red-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <div>
-              <p className="font-medium text-red-800">Upload failed</p>
-              <p className="mt-1 text-sm text-red-700">{error}</p>
-            </div>
-          </div>
-          <button
-            onClick={() => setError(null)}
-            className="mt-2 text-xs font-medium text-red-700 hover:underline"
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
-
-      <div className="mt-4 rounded-lg bg-blue-50 border border-blue-200 p-4">
-        <h4 className="text-sm font-semibold text-blue-900 mb-2">What happens next?</h4>
-        <ol className="space-y-1 text-sm text-blue-800">
-          <li>1. Upload your bank transfer receipt</li>
-          <li>2. Our finance team reviews the payment (1-2 business days)</li>
-          <li>3. Once confirmed, your order status will be updated to "Paid"</li>
-          <li>4. We'll send you a confirmation email and begin processing your order</li>
+      <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+        <h4 className="text-sm font-semibold text-blue-900">What happens next?</h4>
+        <ol className="mt-2 space-y-1 text-sm text-blue-800">
+          <li>1. Submit your amount, transfer date, and sender name.</li>
+          <li>2. Our finance team matches the transfer with your order and payment reference.</li>
+          <li>3. Once confirmed, your order status changes to Paid and processing begins.</li>
         </ol>
       </div>
     </div>

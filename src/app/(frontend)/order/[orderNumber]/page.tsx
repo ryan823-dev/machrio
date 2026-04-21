@@ -4,6 +4,7 @@ import { getOrderByNumber } from '@/lib/db'
 import { getOrderEventDescription, getOrderEventTitle, listOrderEvents } from '@/lib/order-events'
 import { authorizeOrderAccess, createOrderAccessToken } from '@/lib/order-access'
 import { appendQueryParamsToPath, buildInvoicePath, buildOrderPath } from '@/lib/order-access-links'
+import { getBankTransferReference, getBankTransferSubmission } from '@/lib/bank-transfer'
 import { isPayPalConfigured } from '@/lib/paypal'
 import { OrderPaymentFailureReporter } from '@/components/order/OrderPaymentFailureReporter'
 import { PayPalCaptureHandler } from '@/components/payment/PayPalCaptureHandler'
@@ -110,6 +111,7 @@ export default async function OrderConfirmationPage({ params, searchParams }: Or
     method?: string
     paypal?: unknown
     stripe?: unknown
+    bankTransferSubmission?: unknown
   }
   const items = (order.items as Record<string, unknown>[]) || []
   const subtotalAmount = toDisplayAmount(order.subtotal)
@@ -123,6 +125,14 @@ export default async function OrderConfirmationPage({ params, searchParams }: Or
   const paypalAvailable = isPayPalConfigured()
   const isBankTransfer = paymentMethod === 'bank-transfer'
   const isPaid = order.payment_status === 'paid'
+  const bankTransferSubmission = isBankTransfer
+    ? getBankTransferSubmission(paymentInfo, canonicalOrderNumber)
+    : null
+  const awaitingBankTransferVerification = Boolean(
+    isBankTransfer
+    && !isPaid
+    && bankTransferSubmission?.status === 'submitted',
+  )
   const retryPaymentMethod = paymentMethod === 'stripe' || paymentMethod === 'paypal'
     ? paymentMethod
     : null
@@ -140,6 +150,12 @@ export default async function OrderConfirmationPage({ params, searchParams }: Or
     : isBankTransfer
       ? 'Bank Transfer'
       : 'Stripe (Online)'
+  const bankTransferReference = getBankTransferReference(canonicalOrderNumber)
+  const paymentStatusLabel = isPaid
+    ? 'Paid'
+    : awaitingBankTransferVerification
+      ? 'Awaiting Verification'
+      : 'Awaiting Payment'
 
   return (
     <div className="container-main py-8">
@@ -202,9 +218,13 @@ export default async function OrderConfirmationPage({ params, searchParams }: Or
             {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
           </span>
           <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${
-            isPaid ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
+            isPaid
+              ? 'bg-green-100 text-green-800'
+              : awaitingBankTransferVerification
+                ? 'bg-blue-100 text-blue-800'
+                : 'bg-amber-100 text-amber-800'
           }`}>
-            {isPaid ? 'Paid' : 'Unpaid'}
+            {paymentStatusLabel}
           </span>
         </div>
       </div>
@@ -300,10 +320,40 @@ export default async function OrderConfirmationPage({ params, searchParams }: Or
               Method: <span className="font-medium">{paymentMethodLabel}</span>
             </p>
             <p className="mt-1 text-sm text-secondary-600">
-              Status: <span className={`font-medium ${isPaid ? 'text-green-700' : 'text-amber-700'}`}>
-                {isPaid ? 'Paid' : 'Awaiting Payment'}
+              Status: <span className={`font-medium ${
+                isPaid
+                  ? 'text-green-700'
+                  : awaitingBankTransferVerification
+                    ? 'text-blue-700'
+                    : 'text-amber-700'
+              }`}>
+                {paymentStatusLabel}
               </span>
             </p>
+            {isBankTransfer && (
+              <div className="mt-4 rounded-lg border border-secondary-200 bg-secondary-50 p-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-secondary-500">
+                  Payment Reference
+                </p>
+                <p className="mt-1 font-mono text-sm font-semibold text-secondary-900">
+                  {bankTransferReference}
+                </p>
+                <p className="mt-2 text-xs text-secondary-500">
+                  Include this reference in your transfer note so we can match your payment faster.
+                </p>
+              </div>
+            )}
+            {awaitingBankTransferVerification && bankTransferSubmission && (
+              <div className="mt-4 rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
+                <p className="font-semibold">Payment details received</p>
+                <p className="mt-1">
+                  We&apos;re verifying the transfer from {bankTransferSubmission.senderName || 'your bank'}.
+                  {bankTransferSubmission.amountPaid !== null && bankTransferSubmission.amountPaid !== undefined
+                    ? ` Reported amount: ${bankTransferSubmission.amountPaid.toFixed(2)} ${currency}.`
+                    : ''}
+                </p>
+              </div>
+            )}
           </section>
 
           {/* Actions */}
@@ -335,6 +385,8 @@ export default async function OrderConfirmationPage({ params, searchParams }: Or
                   <PaymentReceiptUpload
                     orderNumber={canonicalOrderNumber}
                     accessToken={accessResult.via === 'token' ? accessToken : undefined}
+                    currency={currency}
+                    existingSubmission={bankTransferSubmission}
                   />
                 </div>
               </>

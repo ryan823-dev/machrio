@@ -902,7 +902,7 @@ export default function CheckoutPage() {
                 <div>
                   <span className="text-sm font-semibold text-secondary-900">Bank Transfer / Wire</span>
                   <p className="mt-0.5 text-xs text-secondary-500">
-                    A Proforma Invoice with bank details will be generated after order placement.
+                    A Proforma Invoice with bank details will be generated after order placement. After payment, you can submit the amount, transfer date, and sender name from your order page.
                   </p>
                 </div>
               </label>

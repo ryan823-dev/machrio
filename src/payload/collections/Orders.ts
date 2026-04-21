@@ -331,6 +331,77 @@ export const Orders: CollectionConfig = {
             date: { pickerAppearance: 'dayAndTime' },
           },
         },
+        {
+          name: 'bankTransferSubmissionStatus',
+          type: 'select',
+          options: [
+            { label: 'Not Submitted', value: 'not-submitted' },
+            { label: 'Submitted', value: 'submitted' },
+            { label: 'Confirmed', value: 'confirmed' },
+          ],
+          admin: {
+            description: 'Customer-submitted bank transfer details status',
+            position: 'sidebar',
+          },
+        },
+        {
+          name: 'bankTransferSubmittedAt',
+          type: 'date',
+          admin: {
+            description: 'When the customer submitted bank transfer details',
+            date: { pickerAppearance: 'dayAndTime' },
+          },
+        },
+        {
+          name: 'bankTransferAmountPaid',
+          type: 'number',
+          admin: {
+            description: 'Amount reported by the customer',
+          },
+        },
+        {
+          name: 'bankTransferTransferDate',
+          type: 'date',
+          admin: {
+            description: 'Transfer date reported by the customer',
+            date: { pickerAppearance: 'dayOnly' },
+          },
+        },
+        {
+          name: 'bankTransferSenderName',
+          type: 'text',
+          admin: {
+            description: 'Payer name reported by the customer',
+          },
+        },
+        {
+          name: 'bankTransferBankName',
+          type: 'text',
+          admin: {
+            description: 'Sending bank reported by the customer',
+          },
+        },
+        {
+          name: 'bankTransferSenderCountry',
+          type: 'text',
+          admin: {
+            description: 'Sender country reported by the customer',
+          },
+        },
+        {
+          name: 'bankTransferReference',
+          type: 'text',
+          admin: {
+            description: 'Payment reference shown to the customer',
+          },
+        },
+        {
+          name: 'bankTransferNotes',
+          type: 'textarea',
+          admin: {
+            description: 'Optional payment notes submitted by the customer',
+          },
+        },
       ],
     },
 

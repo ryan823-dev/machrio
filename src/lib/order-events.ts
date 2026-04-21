@@ -3,6 +3,7 @@ import { getPool } from '@/lib/db'
 export type OrderEventType =
   | 'order.created'
   | 'payment.pending'
+  | 'payment.submitted'
   | 'payment.paid'
   | 'payment.failed'
   | 'receipt.uploaded'
@@ -21,6 +22,7 @@ export interface OrderEventRow {
 const ORDER_EVENT_TITLES: Record<OrderEventType, string> = {
   'order.created': 'Order created',
   'payment.pending': 'Payment pending',
+  'payment.submitted': 'Payment submitted',
   'payment.paid': 'Payment paid',
   'payment.failed': 'Payment failed',
   'receipt.uploaded': 'Receipt uploaded',
@@ -192,6 +194,33 @@ export function getOrderEventDescription(event: Pick<OrderEventRow, 'event_type'
       return eventData.paymentMethod
         ? `Waiting for ${getPaymentMethodLabel(eventData.paymentMethod).toLowerCase()} confirmation.`
         : 'Payment is awaiting confirmation.'
+    case 'payment.submitted': {
+      const amountPaid = typeof eventData.amountPaid === 'number' ? eventData.amountPaid : Number(eventData.amountPaid)
+      const currency = typeof eventData.currency === 'string' ? eventData.currency : ''
+      const senderName = typeof eventData.senderName === 'string' ? eventData.senderName.trim() : ''
+      const transferDate = typeof eventData.transferDate === 'string' ? eventData.transferDate.trim() : ''
+      const proofUploaded = eventData.proofUploaded === true
+      const segments: string[] = []
+
+      if (Number.isFinite(amountPaid)) {
+        segments.push(`amount: ${amountPaid.toFixed(2)}${currency ? ` ${currency}` : ''}`)
+      }
+      if (transferDate) {
+        segments.push(`transfer date: ${transferDate}`)
+      }
+      if (senderName) {
+        segments.push(`sender: ${senderName}`)
+      }
+      if (proofUploaded) {
+        segments.push('proof attached')
+      }
+
+      if (segments.length > 0) {
+        return `Customer submitted bank transfer details (${segments.join('; ')}). Awaiting verification.`
+      }
+
+      return 'Customer submitted bank transfer details for verification.'
+    }
     case 'payment.paid':
       return eventData.paymentMethod
         ? `${getPaymentMethodLabel(eventData.paymentMethod)} payment was confirmed.`

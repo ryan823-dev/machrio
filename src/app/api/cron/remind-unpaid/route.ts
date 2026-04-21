@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@payload-config'
+import { getBankTransferReference } from '@/lib/bank-transfer'
 import { sendEmail } from '@/lib/email'
 import { issueOrderAccessLinks } from '@/lib/order-access'
 
@@ -121,7 +122,11 @@ export async function GET(req: NextRequest) {
                 </a>
                 
                 <p style="margin:0 0 16px;color:#475569">
-                  Please include order number <strong>${orderNumber}</strong> as payment reference.
+                  Please use payment reference <strong>${getBankTransferReference(orderNumber)}</strong> when sending the transfer.
+                </p>
+
+                <p style="margin:0 0 16px;color:#475569">
+                  After payment is sent, return to your order page and submit the amount, transfer date, and sender name. Uploading proof is optional.
                 </p>
                 
                 <div style="background:#f0f9ff;border:1px solid #0ea5e9;border-radius:6px;padding:16px;margin:0 0 16px">
