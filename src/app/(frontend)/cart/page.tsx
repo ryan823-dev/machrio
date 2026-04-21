@@ -55,11 +55,13 @@ export default function CartPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
-    const isStripeCancelled =
-      params.get('provider') === 'stripe' && params.get('payment') === 'cancelled'
+    const paymentProvider = params.get('provider')
+    const isCancelledPayment =
+      (paymentProvider === 'stripe' || paymentProvider === 'paypal')
+      && params.get('payment') === 'cancelled'
 
-    setShowCancelledBanner(isStripeCancelled)
-    setCancelledOrderNumber(isStripeCancelled ? params.get('order') : null)
+    setShowCancelledBanner(isCancelledPayment)
+    setCancelledOrderNumber(isCancelledPayment ? params.get('order') : null)
   }, [])
 
   if (items.length === 0) {

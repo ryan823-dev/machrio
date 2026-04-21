@@ -522,12 +522,11 @@ export default function CheckoutPage() {
             throw new Error('Failed to initialize PayPal payment')
           }
 
-          // Redirect to PayPal for payment
-          clearCart()
+          // Preserve the cart until PayPal confirms payment.
           window.location.href = data.approvalUrl
         } else {
-          // Bank transfer - go to order confirmation with invoice
-          clearCart()
+          // Keep the cart intact for unpaid bank transfer orders so the customer can
+          // adjust products or switch payment methods without rebuilding the cart.
           router.push(data.orderPath)
         }
       }

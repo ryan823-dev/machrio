@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
+import { useCart } from '@/contexts/CartContext'
 
 interface PayPalCaptureHandlerProps {
   orderNumber: string
@@ -10,6 +11,7 @@ interface PayPalCaptureHandlerProps {
 
 export function PayPalCaptureHandler({ orderNumber, accessToken }: PayPalCaptureHandlerProps) {
   const searchParams = useSearchParams()
+  const { clearCart } = useCart()
   const [capturing, setCapturing] = useState(false)
   const [captured, setCaptured] = useState(false)
   const [error, setError] = useState('')
@@ -70,6 +72,7 @@ export function PayPalCaptureHandler({ orderNumber, accessToken }: PayPalCapture
           throw new Error(data.error || 'Failed to capture payment')
         }
 
+        clearCart()
         setCaptured(true)
       } catch (err) {
         console.error('PayPal capture error:', err)
@@ -82,7 +85,7 @@ export function PayPalCaptureHandler({ orderNumber, accessToken }: PayPalCapture
     }
 
     capturePayment()
-  }, [searchParams, orderNumber, accessToken, captured, capturing])
+  }, [searchParams, orderNumber, accessToken, captured, capturing, clearCart])
 
   // Don't render anything if not PayPal
   const payment = searchParams.get('payment')

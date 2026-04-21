@@ -597,6 +597,12 @@ export async function POST(req: NextRequest) {
       }
     } else if (body.paymentMethod === 'paypal') {
       try {
+        const paypalCancelPath = appendQueryParamsToPath('/cart', {
+          payment: 'cancelled',
+          provider: 'paypal',
+          order: orderNumber,
+        })
+
         const paypalOrder = await createPayPalOrder({
           orderNumber,
           orderId: order.id,
@@ -619,10 +625,7 @@ export async function POST(req: NextRequest) {
             serverUrl,
           ),
           cancelUrl: toAbsoluteUrl(
-            appendQueryParamsToPath(orderAccess.orderPath, {
-              payment: 'cancelled',
-              provider: 'paypal',
-            }),
+            paypalCancelPath,
             serverUrl,
           ),
         })
