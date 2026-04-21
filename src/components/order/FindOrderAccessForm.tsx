@@ -1,16 +1,21 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { useState, type FormEvent } from 'react'
 
 interface FindOrderAccessFormProps {
   initialOrderNumber?: string
 }
 
+type AccessRequestMode = 'direct' | 'email'
+
 interface RequestAccessResponse {
   success?: boolean
   message?: string
   error?: string
   retryAfterSeconds?: number
+  orderPath?: string
+  orderUrl?: string
 }
 
 function formatCooldown(seconds: number) {
@@ -25,15 +30,16 @@ function formatCooldown(seconds: number) {
 }
 
 export function FindOrderAccessForm({ initialOrderNumber = '' }: FindOrderAccessFormProps) {
+  const router = useRouter()
   const [orderNumber, setOrderNumber] = useState(initialOrderNumber)
   const [email, setEmail] = useState('')
-  const [submitting, setSubmitting] = useState(false)
+  const [submittingMode, setSubmittingMode] = useState<AccessRequestMode | null>(null)
   const [successMessage, setSuccessMessage] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const submitting = submittingMode !== null
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-    setSubmitting(true)
+  async function submitRequest(mode: AccessRequestMode) {
+    setSubmittingMode(mode)
     setSuccessMessage(null)
     setErrorMessage(null)
 
@@ -44,6 +50,7 @@ export function FindOrderAccessForm({ initialOrderNumber = '' }: FindOrderAccess
         body: JSON.stringify({
           orderNumber,
           email,
+          mode,
         }),
       })
 
@@ -56,21 +63,35 @@ export function FindOrderAccessForm({ initialOrderNumber = '' }: FindOrderAccess
         throw new Error((data.error || 'Failed to request access link.') + retryHint)
       }
 
+      if (mode === 'direct' && (data.orderPath || data.orderUrl)) {
+        const nextPath = data.orderPath || data.orderUrl
+
+        if (nextPath) {
+          router.push(nextPath)
+          return
+        }
+      }
+
       setSuccessMessage(
         data.message || 'If the order number and email match, we have sent a secure access link.',
       )
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Failed to request access link.')
     } finally {
-      setSubmitting(false)
+      setSubmittingMode(null)
     }
+  }
+
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    await submitRequest('direct')
   }
 
   return (
     <div className="rounded-2xl border border-secondary-200 bg-white p-8 shadow-sm">
       <h2 className="text-2xl font-bold text-secondary-900">Find Your Order</h2>
       <p className="mt-3 text-sm leading-6 text-secondary-600">
-        Enter your order number and the purchasing email address. We&apos;ll send a secure access link so you can reopen the protected order page without signing in.
+        Enter your order number and the purchasing email address. You can open the protected order page right away, or send a secure access link to that inbox and reopen it later.
       </p>
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-4">
@@ -121,7 +142,15 @@ export function FindOrderAccessForm({ initialOrderNumber = '' }: FindOrderAccess
           disabled={submitting}
           className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {submitting ? 'Sending Link...' : 'Email Secure Order Link'}
+          {submittingMode === 'direct' ? 'Opening Order...' : 'Open Order Now'}
+        </button>
+        <button
+          type="button"
+          disabled={submitting}
+          onClick={() => void submitRequest('email')}
+          className="btn-secondary w-full disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {submittingMode === 'email' ? 'Sending Link...' : 'Email Secure Order Link'}
         </button>
       </form>
 
@@ -129,7 +158,8 @@ export function FindOrderAccessForm({ initialOrderNumber = '' }: FindOrderAccess
         <h3 className="text-sm font-semibold text-primary-900">Tips</h3>
         <ul className="mt-2 space-y-1 text-sm text-primary-800">
           <li>Use the same email address that received the order confirmation.</li>
-          <li>The secure link opens the protected order page directly.</li>
+          <li>Open Order Now will take you straight to the protected order page when the details match.</li>
+          <li>The email option is still available if you want the secure link in your inbox.</li>
           <li>For bank transfer orders, you can submit payment details from that page after sending the transfer.</li>
         </ul>
       </div>

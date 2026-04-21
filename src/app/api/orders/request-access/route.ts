@@ -5,6 +5,7 @@ import { ensureOrderAccessTables, issueOrderAccessLinks } from '@/lib/order-acce
 
 const ACCESS_LINK_WINDOW_MS = 15 * 60 * 1000
 const ACCESS_LINK_REQUEST_LIMIT = 3
+type AccessRequestMode = 'email' | 'direct'
 
 function normalizeEmail(value: unknown): string {
   return typeof value === 'string' ? value.trim().toLowerCase() : ''
@@ -12,6 +13,10 @@ function normalizeEmail(value: unknown): string {
 
 function normalizeOrderNumber(value: unknown): string {
   return typeof value === 'string' ? value.trim().toUpperCase() : ''
+}
+
+function normalizeMode(value: unknown): AccessRequestMode {
+  return value === 'direct' ? 'direct' : 'email'
 }
 
 function isValidEmail(email: string) {
@@ -23,6 +28,7 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => ({}))
     const orderNumber = normalizeOrderNumber(body.orderNumber)
     const email = normalizeEmail(body.email)
+    const mode = normalizeMode(body.mode)
 
     if (!orderNumber || !email || !isValidEmail(email)) {
       return NextResponse.json(
@@ -57,6 +63,15 @@ export async function POST(request: Request) {
 
     const order = await getOrderByNumber(orderNumber)
     if (!order || order.customer_email.trim().toLowerCase() !== email) {
+      if (mode === 'direct') {
+        return NextResponse.json(
+          {
+            error: 'We could not verify that order number and purchasing email combination. Please double-check the details or request a secure link by email.',
+          },
+          { status: 404 },
+        )
+      }
+
       return NextResponse.json({
         success: true,
         message: 'If the order number and email match, we have sent a secure access link.',
@@ -64,11 +79,20 @@ export async function POST(request: Request) {
     }
 
     const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'https://machrio.com'
-    const { orderUrl } = await issueOrderAccessLinks({
+    const { orderPath, orderUrl } = await issueOrderAccessLinks({
       orderNumber: order.order_number,
       email,
       baseUrl: serverUrl,
     })
+
+    if (mode === 'direct') {
+      return NextResponse.json({
+        success: true,
+        message: 'Secure order access granted.',
+        orderPath,
+        orderUrl,
+      })
+    }
 
     const emailResult = await sendOrderAccessLinkEmail({
       email,

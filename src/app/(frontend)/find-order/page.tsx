@@ -14,7 +14,7 @@ function getSearchValue(value: string | string[] | undefined): string {
 
 export const metadata: Metadata = {
   title: 'Find Your Order | Machrio',
-  description: 'Request a secure access link for your Machrio order using your order number and purchasing email.',
+  description: 'Open your protected Machrio order page directly or request a secure access link using your order number and purchasing email.',
   robots: {
     index: false,
     follow: false,
@@ -32,7 +32,7 @@ export default async function FindOrderPage({ searchParams }: FindOrderPageProps
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-secondary-900">Need to reopen an order?</h1>
           <p className="mt-2 text-secondary-600">
-            We&apos;ll email you a secure order link so you can view your protected order page, invoice, and bank transfer instructions without signing in.
+            Enter your order number and purchasing email to open the protected order page immediately, or send yourself a secure link for later.
           </p>
         </div>
 
@@ -45,7 +45,7 @@ export default async function FindOrderPage({ searchParams }: FindOrderPageProps
               <ul className="mt-4 space-y-2 text-sm text-secondary-600">
                 <li>Your order number</li>
                 <li>The purchasing email used at checkout</li>
-                <li>Access to that inbox</li>
+                <li>Access to that inbox if you prefer the emailed secure link</li>
               </ul>
             </div>
 
