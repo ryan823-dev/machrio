@@ -1,5 +1,10 @@
 // AI Chat Service - handles communication with LLM providers
-import { getProviderConfig, SYSTEM_PROMPT, getToolDefinitions } from './config'
+import {
+  getConfiguredProviderConfigs,
+  SYSTEM_PROMPT,
+  getToolDefinitions,
+  type ProviderConfig,
+} from './config'
 import { searchProducts, getPool } from '@/lib/db'
 
 export interface ChatMessage {
@@ -22,6 +27,11 @@ export interface ChatCompletionResponse {
   content: string
   tool_calls?: ToolCall[]
   finish_reason: string
+}
+
+interface AnthropicMessage {
+  role: 'user' | 'assistant'
+  content: string
 }
 
 // Fallback product data (used when database returns no results)
@@ -201,7 +211,7 @@ export async function executeToolCall(name: string, args: Record<string, unknown
         return JSON.stringify({ success: false, error: 'Product not found' })
       }
 
-      const unitPrice = parseFloat(String((product as any).price || '0').replace('$', ''))
+      const unitPrice = parseFloat(String(product.price || '0').replace('$', ''))
 
       return JSON.stringify({
         success: true,
@@ -268,10 +278,34 @@ export async function createChatCompletion(
   messages: ChatMessage[],
   useTools: boolean = true
 ): Promise<ChatCompletionResponse> {
-  const config = getProviderConfig()
+  const configuredProviders = getConfiguredProviderConfigs()
 
-  if (!config.apiKey) {
+  if (configuredProviders.length === 0) {
     throw new Error('AI API key not configured')
+  }
+
+  const providerErrors: string[] = []
+
+  for (const config of configuredProviders) {
+    try {
+      return await createChatCompletionForProvider(config, messages, useTools)
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : 'Unknown provider error'
+      providerErrors.push(`${config.provider}: ${detail}`)
+      console.error(`[AI] Provider ${config.provider} failed:`, error)
+    }
+  }
+
+  throw new Error(`All AI providers failed: ${providerErrors.join(' | ')}`)
+}
+
+async function createChatCompletionForProvider(
+  config: ProviderConfig,
+  messages: ChatMessage[],
+  useTools: boolean,
+): Promise<ChatCompletionResponse> {
+  if (config.provider === 'anthropic') {
+    return createAnthropicChatCompletion(config, messages)
   }
 
   const requestBody: Record<string, unknown> = {
@@ -317,6 +351,84 @@ export async function createChatCompletion(
     content: choice.message?.content || '',
     tool_calls: choice.message?.tool_calls,
     finish_reason: choice.finish_reason,
+  }
+}
+
+function buildAnthropicRequest(messages: ChatMessage[]) {
+  const systemMessages = [SYSTEM_PROMPT]
+  const anthropicMessages: AnthropicMessage[] = []
+
+  for (const message of messages) {
+    if (message.role === 'system') {
+      systemMessages.push(message.content)
+      continue
+    }
+
+    if (message.role === 'tool') {
+      anthropicMessages.push({
+        role: 'user',
+        content: `Tool result:\n${message.content}`,
+      })
+      continue
+    }
+
+    anthropicMessages.push({
+      role: message.role,
+      content: message.content,
+    })
+  }
+
+  return {
+    system: systemMessages.join('\n\n'),
+    messages: anthropicMessages,
+  }
+}
+
+async function createAnthropicChatCompletion(
+  config: ProviderConfig,
+  messages: ChatMessage[],
+): Promise<ChatCompletionResponse> {
+  const anthropicRequest = buildAnthropicRequest(messages)
+
+  const response = await fetch(`${config.baseURL}/messages`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': config.apiKey,
+      'anthropic-version': '2023-06-01',
+      ...config.headers,
+    },
+    body: JSON.stringify({
+      model: config.model,
+      max_tokens: 1024,
+      temperature: 0.7,
+      system: anthropicRequest.system,
+      messages: anthropicRequest.messages,
+    }),
+  })
+
+  if (!response.ok) {
+    const error = await response.text()
+    console.error('Anthropic API error:', error)
+    throw new Error(`AI API error: ${response.status}`)
+  }
+
+  const data = await response.json()
+  const content = Array.isArray(data.content)
+    ? data.content
+        .filter((part: Record<string, unknown>) => part.type === 'text')
+        .map((part: Record<string, unknown>) => String(part.text || ''))
+        .join('\n')
+        .trim()
+    : ''
+
+  if (!content) {
+    throw new Error('No response from AI')
+  }
+
+  return {
+    content,
+    finish_reason: data.stop_reason || 'stop',
   }
 }
 

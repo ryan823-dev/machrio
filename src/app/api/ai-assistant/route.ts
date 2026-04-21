@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { processConversation, ChatMessage } from '@/lib/ai/chat'
-import { getProviderConfig } from '@/lib/ai/config'
+import { getConfiguredProviderConfigs } from '@/lib/ai/config'
 
 export async function POST(request: Request) {
   try {
@@ -45,11 +45,10 @@ export async function POST(request: Request) {
       history = [categoryContext, ...history]
     }
 
-    // Check the active provider's API key instead of any AI key in the environment.
-    const providerConfig = getProviderConfig()
-    const apiKey = providerConfig.apiKey
+    // If any provider is configured, we will try them in order in the chat layer.
+    const configuredProviders = getConfiguredProviderConfigs()
     
-    if (!apiKey) {
+    if (configuredProviders.length === 0) {
       // Fall back to mock response if no API key
       return NextResponse.json({
         reply: generateFallbackResponse(userMessage, source),

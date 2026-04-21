@@ -3,22 +3,46 @@
 
 export type AIProvider = 'openrouter' | 'openai' | 'anthropic'
 
-interface ProviderConfig {
+export interface ProviderConfig {
+  provider: AIProvider
   baseURL: string
   apiKey: string
   model: string
   headers?: Record<string, string>
 }
 
-export function getProviderConfig(): ProviderConfig {
+const PROVIDER_ORDER: AIProvider[] = ['openrouter', 'openai', 'anthropic']
+
+function getPreferredProvider(): AIProvider {
   const provider = (process.env.AI_PROVIDER || 'openrouter').trim() as AIProvider
-  
+  return PROVIDER_ORDER.includes(provider) ? provider : 'openrouter'
+}
+
+function getDefaultModel(provider: AIProvider): string {
+  switch (provider) {
+    case 'openrouter':
+      return 'anthropic/claude-3.5-sonnet'
+    case 'openai':
+      return 'gpt-4o'
+    case 'anthropic':
+      return 'claude-3-5-sonnet-20241022'
+  }
+}
+
+export function getProviderConfig(provider: AIProvider = getPreferredProvider()): ProviderConfig {
+  const preferredProvider = getPreferredProvider()
+  const preferredModel = process.env.AI_MODEL?.trim()
+  const model = preferredProvider === provider && preferredModel
+    ? preferredModel
+    : getDefaultModel(provider)
+
   switch (provider) {
     case 'openrouter':
       return {
+        provider,
         baseURL: 'https://openrouter.ai/api/v1',
         apiKey: process.env.OPENROUTER_API_KEY || '',
-        model: process.env.AI_MODEL || 'anthropic/claude-3.5-sonnet',
+        model,
         headers: {
           'HTTP-Referer': process.env.NEXT_PUBLIC_SERVER_URL || 'http://localhost:3000',
           'X-Title': 'Machrio AI Assistant',
@@ -26,19 +50,33 @@ export function getProviderConfig(): ProviderConfig {
       }
     case 'openai':
       return {
+        provider,
         baseURL: 'https://api.openai.com/v1',
         apiKey: process.env.OPENAI_API_KEY || '',
-        model: process.env.AI_MODEL || 'gpt-4o',
+        model,
       }
     case 'anthropic':
       return {
+        provider,
         baseURL: 'https://api.anthropic.com/v1',
         apiKey: process.env.ANTHROPIC_API_KEY || '',
-        model: process.env.AI_MODEL || 'claude-3-5-sonnet-20241022',
+        model,
       }
     default:
       throw new Error(`Unknown AI provider: ${provider}`)
   }
+}
+
+export function getConfiguredProviderConfigs(): ProviderConfig[] {
+  const preferredProvider = getPreferredProvider()
+  const providerOrder = [
+    preferredProvider,
+    ...PROVIDER_ORDER.filter((provider) => provider !== preferredProvider),
+  ]
+
+  return providerOrder
+    .map((provider) => getProviderConfig(provider))
+    .filter((config) => config.apiKey.trim().length > 0)
 }
 
 // System prompt for the Machrio Procurement Assistant
