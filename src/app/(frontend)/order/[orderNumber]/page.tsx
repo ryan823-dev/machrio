@@ -88,7 +88,7 @@ export default async function OrderConfirmationPage({ params, searchParams }: Or
   }
 
   if (!accessResult) {
-    return <OrderAccessRequired />
+    return <OrderAccessRequired orderNumber={canonicalOrderNumber} />
   }
 
   const orderPath = buildOrderPath(canonicalOrderNumber, accessResult.via === 'token' ? accessToken : undefined)

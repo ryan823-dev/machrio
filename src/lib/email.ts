@@ -437,6 +437,39 @@ export async function sendPasswordResetCodeEmail(email: string, code: string) {
   })
 }
 
+export async function sendOrderAccessLinkEmail(input: {
+  email: string
+  orderNumber: string
+  orderUrl: string
+}) {
+  return sendEmail({
+    to: input.email,
+    subject: `Secure access link for order ${input.orderNumber}`,
+    html: `
+      <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;color:#1e293b">
+        <div style="background:#1a3c6e;padding:20px 24px;border-radius:8px 8px 0 0">
+          <h1 style="margin:0;color:#fff;font-size:20px">Mach<span style="color:#f59e0b">rio</span></h1>
+        </div>
+        <div style="padding:24px;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 8px 8px">
+          <h2 style="margin:0 0 16px;color:#1e293b;font-size:18px">Your Secure Order Link</h2>
+          <p style="margin:0 0 12px;color:#475569">
+            Use the button below to open your protected order page for <strong>${input.orderNumber}</strong>.
+          </p>
+          <a href="${input.orderUrl}" style="display:inline-block;background:#1a3c6e;color:#fff;padding:10px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px">
+            Open Order Details
+          </a>
+          <p style="margin:16px 0 0;color:#475569">
+            If you paid by bank transfer, you can submit your payment details from that order page.
+          </p>
+          <p style="margin:16px 0 0;color:#94a3b8;font-size:12px">
+            If you did not request this link, you can safely ignore this email.
+          </p>
+        </div>
+      </div>
+    `,
+  })
+}
+
 // ==================== 外联邮件 (支持附件) ====================
 
 export interface EmailAttachment {

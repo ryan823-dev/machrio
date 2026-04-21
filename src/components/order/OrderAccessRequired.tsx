@@ -1,6 +1,14 @@
 import Link from 'next/link'
 
-export function OrderAccessRequired() {
+interface OrderAccessRequiredProps {
+  orderNumber?: string
+}
+
+export function OrderAccessRequired({ orderNumber }: OrderAccessRequiredProps) {
+  const findOrderHref = orderNumber
+    ? `/find-order?orderNumber=${encodeURIComponent(orderNumber)}`
+    : '/find-order'
+
   return (
     <div className="container-main py-16">
       <div className="mx-auto max-w-lg rounded-2xl border border-secondary-200 bg-white p-8 text-center shadow-sm">
@@ -21,9 +29,16 @@ export function OrderAccessRequired() {
           Order and invoice pages are no longer accessible with the order number alone.
         </p>
 
+        <p className="mt-3 text-sm leading-6 text-secondary-600">
+          If you no longer have the original email, we can send a fresh secure order link to the purchasing inbox.
+        </p>
+
         <div className="mt-6 flex flex-wrap justify-center gap-3">
           <Link href="/account" className="btn-primary">
             Sign In to Account
+          </Link>
+          <Link href={findOrderHref} className="btn-secondary">
+            Email Secure Link
           </Link>
           <Link href="/contact" className="btn-secondary">
             Contact Support

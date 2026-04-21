@@ -34,7 +34,7 @@ export default async function InvoicePage({ params, searchParams }: InvoicePageP
   })
 
   if (!accessResult) {
-    return <OrderAccessRequired />
+    return <OrderAccessRequired orderNumber={canonicalOrderNumber} />
   }
 
   const canonicalOrderNumber = order.order_number
