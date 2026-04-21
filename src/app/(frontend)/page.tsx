@@ -106,7 +106,7 @@ export default async function HomePage() {
             </div>
             <div>
               <p className="text-sm font-semibold text-secondary-800">Flexible Shipping</p>
-              <p className="text-xs text-secondary-500">Air, sea, and U.S. warehouse options</p>
+              <p className="text-xs text-secondary-500">Air and sea shipping options</p>
             </div>
           </div>
           <div className="flex items-center gap-3">

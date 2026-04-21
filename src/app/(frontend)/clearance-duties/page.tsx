@@ -25,7 +25,7 @@ export default function ClearanceDutiesPage() {
       {/* Options */}
       <section className="mt-10">
         <h2 className="text-xl font-semibold text-secondary-900">Shipping &amp; Duty Options</h2>
-        <div className="mt-4 grid gap-4 sm:grid-cols-3">
+        <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div className="rounded-lg border-2 border-green-200 bg-green-50 p-5">
             <span className="rounded bg-green-600 px-2 py-0.5 text-xs font-semibold text-white">RECOMMENDED</span>
             <h3 className="mt-3 font-semibold text-secondary-800">Economy DDP (Sea)</h3>
@@ -47,17 +47,6 @@ export default function ClearanceDutiesPage() {
               <li>Shipping fee at checkout</li>
             </ul>
             <p className="mt-3 text-xs text-secondary-500 font-medium">Good balance of speed and cost</p>
-          </div>
-
-          <div className="rounded-lg border border-secondary-200 p-5">
-            <h3 className="font-semibold text-secondary-800">U.S. Warehouse</h3>
-            <ul className="mt-3 space-y-2 text-sm text-secondary-600">
-              <li>Fastest delivery: 2&ndash;7 days</li>
-              <li>No customs clearance needed</li>
-              <li>FedEx / UPS / USPS</li>
-              <li>Select items only</li>
-            </ul>
-            <p className="mt-3 text-xs text-secondary-500 font-medium">For urgent U.S. orders</p>
           </div>
         </div>
       </section>

@@ -119,6 +119,7 @@ async function upsertShippingMethods(
   methods: ShippingMethodConfig[],
 ): Promise<Map<string, string>> {
   const methodIds = new Map<string, string>()
+  const methodCodes = methods.map((method) => method.code)
 
   for (const method of methods) {
     if (!method.code || !method.name) {
@@ -168,6 +169,16 @@ async function upsertShippingMethods(
     )
 
     methodIds.set(method.code, inserted.rows[0].id)
+  }
+
+  if (methodCodes.length > 0) {
+    await client.query(
+      `UPDATE shipping_methods
+       SET is_active = FALSE,
+           updated_at = NOW()
+       WHERE NOT (code = ANY($1::text[]))`,
+      [methodCodes],
+    )
   }
 
   return methodIds

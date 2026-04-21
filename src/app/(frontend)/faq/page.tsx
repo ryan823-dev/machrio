@@ -62,7 +62,7 @@ const faqSections = [
     items: [
       {
         q: 'What shipping methods are available?',
-        a: 'Available shipping methods depend on the destination and the active rate configuration. Common options include U.S. warehouse delivery, DDP air, DDP sea freight, and courier routes where supported.',
+        a: 'Available shipping methods depend on the destination and the active rate configuration. Current checkout options focus on DDP air and DDP sea freight.',
       },
       {
         q: 'Is shipping duty-free?',

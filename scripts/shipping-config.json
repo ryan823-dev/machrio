@@ -1,19 +1,11 @@
 {
   "methods": [
     {
-      "code": "us-warehouse",
-      "name": "U.S. Warehouse",
-      "description": "Domestic fulfillment for stocked U.S. inventory.",
-      "transitDays": 5,
-      "sortOrder": 1,
-      "isActive": true
-    },
-    {
       "code": "ddp-air",
       "name": "DDP Air",
       "description": "Air freight with duties and taxes prepaid where offered.",
       "transitDays": 10,
-      "sortOrder": 2,
+      "sortOrder": 1,
       "isActive": true
     },
     {
@@ -21,21 +13,11 @@
       "name": "DDP Sea",
       "description": "Sea freight for planned bulk orders with duties and taxes prepaid where offered.",
       "transitDays": 30,
-      "sortOrder": 3,
+      "sortOrder": 2,
       "isActive": true
     }
   ],
   "rates": [
-    {
-      "shippingMethodCode": "us-warehouse",
-      "countryCode": "US",
-      "baseWeight": 2,
-      "baseRate": 12.2,
-      "additionalRate": 2.4,
-      "handlingFee": 2.5,
-      "isActive": true
-    },
-
     {
       "shippingMethodCode": "ddp-air",
       "countryCode": "US",

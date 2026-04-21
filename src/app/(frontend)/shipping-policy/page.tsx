@@ -7,11 +7,11 @@ export const dynamic = 'force-static'
 
 export const metadata: Metadata = {
   title: 'Shipping Policy | Machrio',
-  description: 'Machrio shipping policy - DDP duty-free delivery, U.S. warehouse fast shipping, and global logistics options for industrial supplies.',
+  description: 'Machrio shipping policy - DDP air and DDP sea shipping options for industrial supplies with live checkout rates.',
   alternates: { canonical: '/shipping-policy' },
   openGraph: {
     title: 'Shipping Policy | Machrio',
-    description: 'Machrio shipping policy - DDP duty-free delivery, U.S. warehouse fast shipping, and global logistics options for industrial supplies.',
+    description: 'Machrio shipping policy - DDP air and DDP sea shipping options for industrial supplies with live checkout rates.',
   },
 }
 
@@ -67,16 +67,6 @@ export default function ShippingPolicyPage() {
             </thead>
             <tbody className="divide-y divide-secondary-100">
               <tr>
-                <td className="px-4 py-3 font-medium text-secondary-800">U.S. Warehouse</td>
-                <td className="px-4 py-3 text-secondary-600">2&ndash;7 business days</td>
-                <td className="px-4 py-3">
-                  <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">Included</span>
-                </td>
-                <td className="px-4 py-3 text-secondary-600">
-                  Live quote at checkout, based on route setup and shipment weight.
-                </td>
-              </tr>
-              <tr>
                 <td className="px-4 py-3 font-medium text-secondary-800">China &mdash; DDP Air</td>
                 <td className="px-4 py-3 text-secondary-600">6&ndash;15 business days</td>
                 <td className="px-4 py-3">
@@ -94,16 +84,6 @@ export default function ShippingPolicyPage() {
                 </td>
                 <td className="px-4 py-3 text-secondary-600">
                   Live quote at checkout, optimized for heavier international shipments.
-                </td>
-              </tr>
-              <tr>
-                <td className="px-4 py-3 font-medium text-secondary-800">Express Courier</td>
-                <td className="px-4 py-3 text-secondary-600">3&ndash;10 business days</td>
-                <td className="px-4 py-3">
-                  <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-700">Buyer Paid</span>
-                </td>
-                <td className="px-4 py-3 text-secondary-600">
-                  Live quote at checkout for urgent shipments and courier-eligible destinations.
                 </td>
               </tr>
             </tbody>

@@ -1,5 +1,4 @@
 import {
-  getPool,
   getShippingMethods,
   getShippingRates,
   getFreeShippingRules,
@@ -44,6 +43,10 @@ export interface ShippingCalculationResult {
   warnings: string[]
   error?: string
 }
+
+const HIDDEN_SHIPPING_METHOD_CODES = new Set([
+  'us-warehouse',
+])
 
 function toNumber(value: unknown): number {
   const parsed = typeof value === 'number' ? value : Number(value)
@@ -102,7 +105,9 @@ export async function calculateShipping(
     const shipDate = addDays(now, maxProcessingTime)
 
     // 3. Fetch active shipping methods
-    const methods = await getShippingMethods()
+    const methods = (await getShippingMethods()).filter((method) => (
+      !HIDDEN_SHIPPING_METHOD_CODES.has(method.code)
+    ))
 
     if (methods.length === 0) {
       return {
