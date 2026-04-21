@@ -407,7 +407,7 @@ export function AIAssistant() {
                 onClick={startOrderLookup}
                 className="rounded-full border border-primary-200 bg-primary-50 px-2.5 py-1 text-xs text-primary-700 transition-colors hover:bg-primary-100"
               >
-                Find Order
+                Order Help
               </button>
             </div>
           )}

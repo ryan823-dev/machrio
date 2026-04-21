@@ -552,16 +552,10 @@ export function HeroAIChat() {
                 Request a Quote
               </button>
               <button 
-                onClick={() => handleQuickAction('I need help with my order')}
-                className="rounded-full bg-white/10 px-3 py-1.5 text-xs text-white hover:bg-white/20 transition-colors"
-              >
-                Order Help
-              </button>
-              <button
                 onClick={startOrderLookup}
                 className="rounded-full bg-white/10 px-3 py-1.5 text-xs text-white hover:bg-white/20 transition-colors"
               >
-                Find Order
+                Order Help
               </button>
             </div>
           </div>

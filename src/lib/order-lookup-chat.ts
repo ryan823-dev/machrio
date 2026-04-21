@@ -38,7 +38,7 @@ export function mergeOrderLookupDraft(
 
 export function getOrderLookupPrompt(draft?: OrderLookupDraft | null) {
   if (!draft?.orderNumber && !draft?.email) {
-    return 'Sure — send me your order number and the purchasing email address, and I will look up the order for you. You can send both in one message or one at a time.'
+    return 'Sure — if you need help with an order, send me your order number and the purchasing email address. I will look up the order and give you a secure link. You can send both in one message or one at a time.'
   }
 
   if (draft.orderNumber && !draft.email) {
