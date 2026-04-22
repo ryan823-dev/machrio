@@ -11,6 +11,7 @@ import { FREE_SHIPPING_THRESHOLD_USD, formatUsd } from '@/lib/shipping/rules'
 import { fetchWithAuth } from '@/lib/account'
 import { clearCheckoutDraft, readCheckoutDraft, writeCheckoutDraft } from '@/lib/checkout-draft'
 import { appendQueryParamsToPath } from '@/lib/order-access-links'
+import { preloadStripe } from '@/lib/stripe-client'
 
 interface CheckoutForm {
   name: string
@@ -453,6 +454,12 @@ export default function CheckoutPage() {
 
     writeCheckoutDraft(form)
   }, [form, hasLoadedCheckoutDraft])
+
+  useEffect(() => {
+    if (form.paymentMethod !== 'stripe') return
+
+    void preloadStripe()
+  }, [form.paymentMethod])
 
   function updateField(field: keyof CheckoutForm, value: string) {
     touchedFieldsRef.current.add(field)

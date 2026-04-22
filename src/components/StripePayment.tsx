@@ -1,29 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { loadStripe, Stripe } from '@stripe/stripe-js'
+import type { Stripe } from '@stripe/stripe-js'
 import {
   Elements,
   PaymentElement,
   useStripe,
   useElements,
 } from '@stripe/react-stripe-js'
-
-// 运行时获取 publishable key
-const fetchStripePublishableKey = async (): Promise<string | null> => {
-  try {
-    const res = await fetch('/api/stripe-config')
-    if (!res.ok) return null
-    const data = await res.json()
-    return data.publishableKey || null
-  } catch (err) {
-    console.error('Failed to fetch publishable key:', err)
-    return null
-  }
-}
-
-const isValidKey = (key: string | null | undefined): boolean =>
-  Boolean(key && key.startsWith('pk_'))
+import { getStripePromise } from '@/lib/stripe-client'
 
 interface CheckoutFormProps {
   returnPath: string
@@ -134,32 +119,32 @@ export default function StripePayment({
   const [initError, setInitError] = useState<string | null>(null)
 
   useEffect(() => {
+    let cancelled = false
+
     async function init() {
       try {
-        // 1. 获取 publishable key
-        let key = await fetchStripePublishableKey()
-        if (!isValidKey(key)) {
-          // Fallback to env variable
-          key = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || null
-        }
+        const nextStripePromise = await getStripePromise()
+        if (cancelled) return
 
-        if (!isValidKey(key)) {
-          setInitError('Stripe is not properly configured')
-          setLoading(false)
-          return
-        }
-
-        // 2. 初始化 Stripe.js
-        setStripePromise(loadStripe(key!))
-        setLoading(false)
+        setStripePromise(nextStripePromise)
+        setInitError(null)
       } catch (err) {
         console.error('Stripe initialization error:', err)
+        if (cancelled) return
+
         setInitError('Failed to initialize payment. Please try again.')
-        setLoading(false)
+      } finally {
+        if (!cancelled) {
+          setLoading(false)
+        }
       }
     }
 
     init()
+
+    return () => {
+      cancelled = true
+    }
   }, [])
 
   if (loading) {
@@ -215,6 +200,7 @@ export default function StripePayment({
         stripe={stripePromise}
         options={{
           clientSecret,
+          locale: 'en',
           appearance: {
             theme: 'stripe',
             variables: {
