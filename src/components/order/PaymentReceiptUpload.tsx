@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, type ChangeEvent, type FormEvent } from 'react'
+import { useRef, useState, type ChangeEvent, type FormEvent } from 'react'
 import { useRouter } from 'next/navigation'
 import { appendQueryParamsToPath } from '@/lib/order-access-links'
 import {
@@ -26,6 +26,27 @@ interface PaymentFormState {
 
 const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf']
 const MAX_FILE_SIZE = 10 * 1024 * 1024
+
+function normalizeTransferDateInput(value: string): string {
+  const digits = value.replace(/\D/g, '').slice(0, 8)
+  const parts = [digits.slice(0, 4), digits.slice(4, 6), digits.slice(6, 8)].filter(Boolean)
+  return parts.join('-')
+}
+
+function isValidTransferDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return false
+  }
+
+  const [year, month, day] = value.split('-').map(Number)
+  const date = new Date(Date.UTC(year, month - 1, day))
+
+  return (
+    date.getUTCFullYear() === year &&
+    date.getUTCMonth() === month - 1 &&
+    date.getUTCDate() === day
+  )
+}
 
 function formatTransferDate(value: string | null | undefined): string {
   if (!value) return 'Not provided'
@@ -67,6 +88,7 @@ export function PaymentReceiptUpload({
   const [copiedReference, setCopiedReference] = useState(false)
   const [editing, setEditing] = useState(!existingSubmission)
   const [file, setFile] = useState<File | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
   const [form, setForm] = useState<PaymentFormState>({
     amountPaid: existingSubmission?.amountPaid !== null && existingSubmission?.amountPaid !== undefined
       ? String(existingSubmission.amountPaid)
@@ -108,12 +130,14 @@ export function PaymentReceiptUpload({
 
     if (!ALLOWED_FILE_TYPES.includes(selectedFile.type)) {
       setFile(null)
+      event.target.value = ''
       setError('Invalid file type. Please upload JPEG, PNG, GIF, or PDF.')
       return
     }
 
     if (selectedFile.size > MAX_FILE_SIZE) {
       setFile(null)
+      event.target.value = ''
       setError('File size exceeds 10MB limit.')
       return
     }
@@ -133,6 +157,11 @@ export function PaymentReceiptUpload({
 
     if (!form.transferDate) {
       setError('Please provide the transfer date.')
+      return
+    }
+
+    if (!isValidTransferDate(form.transferDate)) {
+      setError('Please enter the transfer date in YYYY-MM-DD format.')
       return
     }
 
@@ -175,6 +204,9 @@ export function PaymentReceiptUpload({
       }
 
       setFile(null)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
       setEditing(false)
       router.refresh()
     } catch (submitError) {
@@ -304,13 +336,18 @@ export function PaymentReceiptUpload({
             <label className="block">
               <span className="text-sm font-medium text-secondary-700">Transfer Date</span>
               <input
-                type="date"
+                type="text"
                 value={form.transferDate}
-                onChange={(event) => updateField('transferDate', event.target.value)}
+                onChange={(event) => updateField('transferDate', normalizeTransferDateInput(event.target.value))}
                 className="input-field mt-1 w-full"
+                placeholder="YYYY-MM-DD"
+                inputMode="numeric"
+                autoComplete="off"
+                maxLength={10}
                 disabled={uploading}
                 required
               />
+              <p className="mt-1 text-xs text-secondary-500">Use the YYYY-MM-DD format.</p>
             </label>
           </div>
 
@@ -365,24 +402,50 @@ export function PaymentReceiptUpload({
             />
           </label>
 
-          <label className="block">
+          <div className="block">
             <span className="text-sm font-medium text-secondary-700">Payment Proof (optional)</span>
             <input
+              id={`payment-proof-${orderNumber}`}
+              ref={fileInputRef}
               type="file"
               accept=".jpg,.jpeg,.png,.gif,.pdf"
               onChange={handleFileChange}
-              className="mt-1 block w-full text-sm text-secondary-600 file:mr-4 file:rounded-md file:border-0 file:bg-secondary-100 file:px-3 file:py-2 file:text-sm file:font-medium file:text-secondary-700 hover:file:bg-secondary-200"
+              className="sr-only"
               disabled={uploading}
             />
+            <div className="mt-1 flex flex-wrap items-center gap-3">
+              <label
+                htmlFor={`payment-proof-${orderNumber}`}
+                className={`inline-flex cursor-pointer items-center rounded-md border border-secondary-300 bg-secondary-100 px-3 py-2 text-sm font-medium text-secondary-700 transition hover:bg-secondary-200 ${
+                  uploading ? 'pointer-events-none opacity-60' : ''
+                }`}
+              >
+                {file ? 'Choose Another File' : 'Choose File'}
+              </label>
+              <span className="text-sm text-secondary-600">
+                {file ? file.name : 'No file selected'}
+              </span>
+              {file && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFile(null)
+                    setError(null)
+                    if (fileInputRef.current) {
+                      fileInputRef.current.value = ''
+                    }
+                  }}
+                  className="text-sm font-medium text-primary-700 hover:text-primary-900"
+                  disabled={uploading}
+                >
+                  Remove
+                </button>
+              )}
+            </div>
             <p className="mt-1 text-xs text-secondary-500">
               Optional screenshot or bank advice. JPEG, PNG, GIF, or PDF up to 10MB.
             </p>
-            {file && (
-              <p className="mt-1 text-xs text-secondary-600">
-                Selected file: <span className="font-medium">{file.name}</span>
-              </p>
-            )}
-          </label>
+          </div>
 
           {error && (
             <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
@@ -405,6 +468,9 @@ export function PaymentReceiptUpload({
                   setEditing(false)
                   setError(null)
                   setFile(null)
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = ''
+                  }
                 }}
                 className="btn-secondary"
                 disabled={uploading}
