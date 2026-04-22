@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import configPromise from '@/payload/payload.config'
+import { normalizePackageUnit, normalizePackageUnitForPriceUnit } from '@/lib/package-units'
 import { normalizePublicAssetUrl } from '@/lib/public-asset-url'
 import * as XLSX from 'xlsx'
 
@@ -530,19 +531,21 @@ export async function POST(req: NextRequest) {
           faq: faq.length > 0 ? faq : undefined,
         }
 
+        const normalizedPackageUnit = normalizePackageUnit(row['Package Unit'])
+
         // Add package info
         if (packageQty && packageQty > 1) {
           productData.packageQty = packageQty
         }
-        if (row['Package Unit']) {
-          productData.packageUnit = row['Package Unit']
+        if (normalizedPackageUnit) {
+          productData.packageUnit = normalizedPackageUnit
         }
 
         // Add pricing
         if ((basePrice && !isNaN(basePrice)) || (costPrice && !isNaN(costPrice))) {
           productData.pricing = {
             currency: 'USD',
-            priceUnit: (row['Package Unit'] || 'each').toLowerCase(),
+            priceUnit: normalizePackageUnitForPriceUnit(row['Package Unit']) || 'each',
           }
           if (basePrice && !isNaN(basePrice)) {
             productData.pricing.basePrice = basePrice

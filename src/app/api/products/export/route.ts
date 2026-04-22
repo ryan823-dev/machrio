@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import configPromise from '@/payload/payload.config'
+import { normalizePackageUnit } from '@/lib/package-units'
 import * as XLSX from 'xlsx'
 
 export const dynamic = 'force-dynamic'
@@ -20,9 +21,6 @@ export async function GET() {
       return NextResponse.json({ error: '没有产品数据' }, { status: 404 })
     }
 
-    // Build category path lookup
-    const categoryPaths = new Map<string, { l1: string; l2: string; l3: string }>()
-    
     const buildCategoryPath = (cat: Record<string, unknown>): { l1: string; l2: string; l3: string } => {
       if (!cat) return { l1: '', l2: '', l3: '' }
       
@@ -83,7 +81,7 @@ export async function GET() {
         'Selling Price (USD)': pricing?.basePrice as number || '',
         'Min Order Qty': product.minOrderQuantity as number || 1,
         'Package Qty': product.packageQty as number || '',
-        'Package Unit': product.packageUnit as string || '',
+        'Package Unit': normalizePackageUnit(product.packageUnit as string | null) || '',
         'Lead Time': product.leadTime as string || '',
         'Availability': product.availability as string || '',
         'Status': product.status as string || '',

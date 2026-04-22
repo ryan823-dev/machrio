@@ -14,6 +14,7 @@
     "seed": "tsx src/scripts/seed.ts",
     "seed:shipping": "tsx scripts/seed-shipping-postgres.ts",
     "check:shipping": "npx tsx scripts/check-shipping-readiness.ts",
+    "normalize:package-units": "tsx scripts/normalize-package-units.ts",
     "check-links": "tsx scripts/check-links.ts",
     "sync:product-redirects": "tsx scripts/sync-product-source-redirects.ts",
     "sync:priority-seo": "tsx scripts/sync-priority-seo-content.ts"

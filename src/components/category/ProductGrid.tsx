@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { ProductImage } from '@/components/shared/ProductImage'
 import { useCart } from '@/contexts/CartContext'
+import { normalizePackageUnit } from '@/lib/package-units'
 
 interface ProductCardData {
   id: string
@@ -64,6 +65,8 @@ export function ProductGrid({ products, view = 'list' }: ProductGridProps) {
 }
 
 function GridCard({ product }: { product: ProductCardData }) {
+  const packageUnit = normalizePackageUnit(product.packageUnit)
+
   return (
     <Link
       href={`/product/${product.categorySlug}/${product.slug}`}
@@ -81,7 +84,7 @@ function GridCard({ product }: { product: ProductCardData }) {
       <h3 className="mt-1 line-clamp-2 text-sm font-medium text-secondary-800">{product.name}</h3>
       {product.packageQty && (
         <p className="mt-1 text-xs text-secondary-400">
-          Pkg Qty: {product.packageQty}{product.packageUnit ? ` / ${product.packageUnit}` : ''}
+          Pkg Qty: {product.packageQty}{packageUnit ? ` / ${packageUnit}` : ''}
         </p>
       )}
       <div className="mt-auto pt-3">
@@ -92,6 +95,8 @@ function GridCard({ product }: { product: ProductCardData }) {
 }
 
 function ListRow({ product, onAddToCart }: { product: ProductCardData; onAddToCart: (item: { productId: string; sku: string; name: string; slug: string; categorySlug: string; image?: string; price: number; priceUnit?: string }) => void }) {
+  const packageUnit = normalizePackageUnit(product.packageUnit)
+
   return (
     <div className="flex gap-4 rounded-lg border border-secondary-200 bg-white p-4 transition-shadow hover:shadow-sm">
       {/* Image */}
@@ -117,7 +122,7 @@ function ListRow({ product, onAddToCart }: { product: ProductCardData; onAddToCa
             <>
               <span>|</span>
               <span className="font-medium text-primary-600">
-                Pkg Qty: {product.packageQty}{product.packageUnit ? ` / ${product.packageUnit}` : ''}
+                Pkg Qty: {product.packageQty}{packageUnit ? ` / ${packageUnit}` : ''}
               </span>
             </>
           )}
