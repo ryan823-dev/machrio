@@ -18,7 +18,7 @@ export async function GET() {
     })
 
     if (products.docs.length === 0) {
-      return NextResponse.json({ error: '没有产品数据' }, { status: 404 })
+      return NextResponse.json({ error: 'No product data found' }, { status: 404 })
     }
 
     const buildCategoryPath = (cat: Record<string, unknown>): { l1: string; l2: string; l3: string } => {
@@ -192,7 +192,7 @@ export async function GET() {
   } catch (error) {
     console.error('Export error:', error)
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : '导出失败' },
+      { error: error instanceof Error ? error.message : 'Export failed' },
       { status: 500 }
     )
   }

@@ -8,7 +8,7 @@ export async function GET() {
 
   if (!fs.existsSync(templatePath)) {
     return NextResponse.json(
-      { error: '模板文件不存在' },
+      { error: 'Template file not found' },
       { status: 404 }
     )
   }

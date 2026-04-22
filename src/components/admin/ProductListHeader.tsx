@@ -45,7 +45,7 @@ export const ProductListHeader: React.FC = () => {
           <polyline points="17 8 12 3 7 8" />
           <line x1="12" y1="3" x2="12" y2="15" />
         </svg>
-        批量导入产品
+        Bulk Product Import
       </a>
       <a
         href="/api/products/bulk-import/template"
@@ -67,7 +67,7 @@ export const ProductListHeader: React.FC = () => {
           <polyline points="7 10 12 15 17 10" />
           <line x1="12" y1="15" x2="12" y2="3" />
         </svg>
-        下载导入模板
+        Download Import Template
       </a>
       <button
         onClick={handleExport}
@@ -91,7 +91,7 @@ export const ProductListHeader: React.FC = () => {
           <polyline points="7 10 12 15 17 10" />
           <line x1="12" y1="15" x2="12" y2="3" />
         </svg>
-        {exporting ? '导出中...' : '产品批量导出'}
+        {exporting ? 'Exporting...' : 'Bulk Product Export'}
       </button>
     </div>
   )

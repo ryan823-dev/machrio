@@ -21,13 +21,13 @@ export async function POST(request: NextRequest) {
     console.log('[API /api/upload/oss] File:', file?.name, 'Type:', file?.type, 'Size:', file?.size)
 
     if (!file) {
-      return NextResponse.json({ success: false, error: '未提供文件' }, { status: 400 })
+      return NextResponse.json({ success: false, error: 'No file was provided' }, { status: 400 })
     }
 
     // Validate file type
     if (!ALLOWED_TYPES.has(file.type)) {
       return NextResponse.json(
-        { success: false, error: `不支持的文件类型: ${file.type}。支持: JPEG, PNG, WebP, GIF, SVG` },
+        { success: false, error: `Unsupported file type: ${file.type}. Supported types: JPEG, PNG, WebP, GIF, SVG` },
         { status: 400 },
       )
     }
@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     // Validate file size
     if (file.size > MAX_SIZE) {
       return NextResponse.json(
-        { success: false, error: `文件过大 (${(file.size / 1024 / 1024).toFixed(1)}MB)。最大允许 10MB` },
+        { success: false, error: `File is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Maximum allowed size is 10MB` },
         { status: 413 },
       )
     }
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, url })
   } catch (error) {
     console.error('[OSS Upload Error]', error)
-    const errorMessage = error instanceof Error ? error.message : '上传失败，请重试'
+    const errorMessage = error instanceof Error ? error.message : 'Upload failed. Please try again.'
     const errorStack = error instanceof Error ? error.stack : ''
     console.error('[OSS Upload Error Stack]', errorStack)
     return NextResponse.json(

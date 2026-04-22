@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useCallback } from 'react'
+import React, { useCallback, useRef, useState } from 'react'
 
 interface ImportResult {
   success: number
@@ -14,6 +14,7 @@ export const BulkImportView: React.FC = () => {
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<ImportResult | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0]
@@ -48,20 +49,20 @@ export const BulkImportView: React.FC = () => {
       if (!contentType || !contentType.includes('application/json')) {
         const text = await response.text()
         console.error('Non-JSON response:', text.substring(0, 500))
-        throw new Error(`服务器返回了非 JSON 响应 (HTTP ${response.status}): ${text.substring(0, 200)}`)
+        throw new Error(`Server returned a non-JSON response (HTTP ${response.status}): ${text.substring(0, 200)}`)
       }
 
       const data = await response.json()
       console.log('Response data:', data)
 
       if (!response.ok) {
-        setError(data.error || '导入失败')
+        setError(data.error || 'Import failed')
       } else {
         setResult(data)
       }
     } catch (err) {
       console.error('Import error:', err)
-      setError(err instanceof Error ? err.message : '导入过程中发生错误')
+      setError(err instanceof Error ? err.message : 'An error occurred during import')
     } finally {
       setLoading(false)
     }
@@ -74,10 +75,10 @@ export const BulkImportView: React.FC = () => {
   return (
     <div style={{ padding: '40px', maxWidth: '800px', margin: '0 auto' }}>
       <h1 style={{ fontSize: '24px', fontWeight: 600, marginBottom: '8px' }}>
-        产品批量导入
+        Bulk Product Import
       </h1>
       <p style={{ color: '#666', marginBottom: '32px' }}>
-        通过 Excel 表格批量上传产品数据
+        Upload product data in bulk with an Excel spreadsheet.
       </p>
 
       {/* Template Download */}
@@ -89,10 +90,10 @@ export const BulkImportView: React.FC = () => {
         marginBottom: '24px',
       }}>
         <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '8px' }}>
-          第一步：下载模板
+          Step 1: Download the Template
         </h3>
         <p style={{ color: '#666', fontSize: '14px', marginBottom: '16px' }}>
-          请先下载 Excel 模板，按照模板格式填写产品数据。模板中包含字段说明。
+          Download the Excel template first, then fill in your product data using the required format. Field guidance is included in the file.
         </p>
         <button
           onClick={handleDownloadTemplate}
@@ -107,7 +108,7 @@ export const BulkImportView: React.FC = () => {
             cursor: 'pointer',
           }}
         >
-          下载导入模板
+          Download Import Template
         </button>
       </div>
 
@@ -120,24 +121,39 @@ export const BulkImportView: React.FC = () => {
         marginBottom: '24px',
       }}>
         <h3 style={{ fontSize: '16px', fontWeight: 600, marginBottom: '8px' }}>
-          第二步：上传文件
+          Step 2: Upload Your File
         </h3>
         <p style={{ color: '#666', fontSize: '14px', marginBottom: '16px' }}>
-          选择填写好的 Excel 文件 (.xlsx)，点击导入按钮开始批量上传。
+          Choose the completed Excel file (`.xlsx` or `.xls`) and start the bulk import.
         </p>
         
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap' }}>
           <input
+            ref={fileInputRef}
             type="file"
             accept=".xlsx,.xls"
             onChange={handleFileChange}
-            style={{
-              border: '1px solid #ddd',
-              borderRadius: '6px',
-              padding: '8px 12px',
-              fontSize: '14px',
-            }}
+            style={{ display: 'none' }}
           />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            style={{
+              background: '#eef2ff',
+              color: '#3730a3',
+              border: '1px solid #c7d2fe',
+              borderRadius: '6px',
+              padding: '10px 16px',
+              fontSize: '14px',
+              fontWeight: 500,
+              cursor: 'pointer',
+            }}
+          >
+            {file ? 'Choose Another File' : 'Choose File'}
+          </button>
+          <span style={{ fontSize: '14px', color: '#666' }}>
+            {file ? file.name : 'No file selected'}
+          </span>
           <button
             onClick={handleImport}
             disabled={!file || loading}
@@ -152,13 +168,13 @@ export const BulkImportView: React.FC = () => {
               cursor: file && !loading ? 'pointer' : 'not-allowed',
             }}
           >
-            {loading ? '导入中...' : '开始导入'}
+            {loading ? 'Importing...' : 'Start Import'}
           </button>
         </div>
         
         {file && (
           <p style={{ marginTop: '12px', fontSize: '14px', color: '#666' }}>
-            已选择: {file.name}
+            Selected file: {file.name}
           </p>
         )}
       </div>
@@ -173,7 +189,7 @@ export const BulkImportView: React.FC = () => {
           marginBottom: '24px',
           color: '#dc2626',
         }}>
-          <strong>错误：</strong> {error}
+          <strong>Error:</strong> {error}
         </div>
       )}
 
@@ -200,20 +216,20 @@ export const BulkImportView: React.FC = () => {
               <span style={{ color: '#16a34a', fontWeight: 600, fontSize: '24px' }}>
                 {result.success}
               </span>
-              <span style={{ color: '#666', marginLeft: '4px' }}>成功</span>
+              <span style={{ color: '#666', marginLeft: '4px' }}>Succeeded</span>
             </div>
             <div>
               <span style={{ color: '#dc2626', fontWeight: 600, fontSize: '24px' }}>
                 {result.failed}
               </span>
-              <span style={{ color: '#666', marginLeft: '4px' }}>失败</span>
+              <span style={{ color: '#666', marginLeft: '4px' }}>Failed</span>
             </div>
           </div>
 
           {result.errors.length > 0 && (
             <div>
               <h4 style={{ fontSize: '14px', fontWeight: 600, marginBottom: '8px' }}>
-                错误详情：
+                Error Details:
               </h4>
               <div style={{
                 background: 'white',
@@ -225,9 +241,9 @@ export const BulkImportView: React.FC = () => {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '13px' }}>
                   <thead>
                     <tr style={{ background: '#f9fafb' }}>
-                      <th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>行号</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Row</th>
                       <th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>SKU</th>
-                      <th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>错误</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'left', borderBottom: '1px solid #e5e7eb' }}>Error</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -254,13 +270,13 @@ export const BulkImportView: React.FC = () => {
         fontSize: '14px',
         color: '#475569',
       }}>
-        <h4 style={{ fontWeight: 600, marginBottom: '12px' }}>注意事项：</h4>
+        <h4 style={{ fontWeight: 600, marginBottom: '12px' }}>Notes:</h4>
         <ul style={{ paddingLeft: '20px', lineHeight: 1.8, margin: 0 }}>
-          <li>确保分类名称与系统中已有的 L1/L2/L3 三级分类名称完全一致</li>
-          <li>如果 SKU 已存在，将更新现有产品数据</li>
-          <li>如果 SKU 不存在，将创建新产品</li>
-          <li>规格参数支持最多 9 组 (Spec 1-9 Name/Value)</li>
-          <li>Source URL 字段用于记录产品来源链接</li>
+          <li>Category names must exactly match the existing L1/L2/L3 category names in the system.</li>
+          <li>If a SKU already exists, the importer updates the existing product.</li>
+          <li>If a SKU does not exist, the importer creates a new product.</li>
+          <li>Up to 9 specification pairs are supported (`Spec 1-9 Name/Value`).</li>
+          <li>The `Source URL` field stores the original product source link.</li>
         </ul>
       </div>
     </div>

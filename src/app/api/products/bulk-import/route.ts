@@ -245,13 +245,13 @@ export async function POST(req: NextRequest) {
     } catch (authError) {
       console.error('Auth error:', authError)
       return NextResponse.json({ 
-        error: '认证失败：数据库连接问题。请检查服务器配置。',
-        details: authError instanceof Error ? authError.message : 'Unknown auth error'
+        error: 'Authentication failed due to a database connection issue. Please check the server configuration.',
+        details: authError instanceof Error ? authError.message : 'Unknown authentication error'
       }, { status: 500 })
     }
     
     if (!user) {
-      return NextResponse.json({ error: '请先登录管理后台' }, { status: 401 })
+      return NextResponse.json({ error: 'Please sign in to the admin panel first' }, { status: 401 })
     }
 
     // Parse form data with error handling
@@ -261,15 +261,15 @@ export async function POST(req: NextRequest) {
     } catch (parseError) {
       console.error('Form data parse error:', parseError)
       return NextResponse.json({ 
-        error: '无法解析表单数据',
-        details: parseError instanceof Error ? parseError.message : 'Unknown parse error'
+        error: 'Unable to parse form data',
+        details: parseError instanceof Error ? parseError.message : 'Unknown form-data parsing error'
       }, { status: 400 })
     }
     
     const file = formData.get('file') as File
     
     if (!file) {
-      return NextResponse.json({ error: '请选择要上传的文件' }, { status: 400 })
+      return NextResponse.json({ error: 'Please choose a file to upload' }, { status: 400 })
     }
 
     console.log('File received:', file.name, 'Size:', file.size, 'Type:', file.type)
@@ -281,8 +281,8 @@ export async function POST(req: NextRequest) {
     } catch (readError) {
       console.error('File read error:', readError)
       return NextResponse.json({ 
-        error: '无法读取文件',
-        details: readError instanceof Error ? readError.message : 'Unknown read error'
+        error: 'Unable to read the uploaded file',
+        details: readError instanceof Error ? readError.message : 'Unknown file read error'
       }, { status: 500 })
     }
     
@@ -292,8 +292,8 @@ export async function POST(req: NextRequest) {
     } catch (xlsxError) {
       console.error('XLSX parse error:', xlsxError)
       return NextResponse.json({ 
-        error: '无法解析 Excel 文件，请确保文件格式正确',
-        details: xlsxError instanceof Error ? xlsxError.message : 'Unknown xlsx error'
+        error: 'Unable to parse the Excel file. Please make sure the format is correct.',
+        details: xlsxError instanceof Error ? xlsxError.message : 'Unknown Excel parsing error'
       }, { status: 400 })
     }
     
@@ -313,7 +313,7 @@ export async function POST(req: NextRequest) {
     })
 
     if (dataRows.length === 0) {
-      return NextResponse.json({ error: '表格中没有有效数据' }, { status: 400 })
+      return NextResponse.json({ error: 'No valid rows were found in the spreadsheet' }, { status: 400 })
     }
 
     // Get all categories for L1/L2/L3 path lookup
@@ -327,8 +327,8 @@ export async function POST(req: NextRequest) {
     } catch (catError) {
       console.error('Failed to load categories:', catError)
       return NextResponse.json({ 
-        error: '无法加载分类数据',
-        details: catError instanceof Error ? catError.message : 'Unknown category error'
+        error: 'Unable to load category data',
+        details: catError instanceof Error ? catError.message : 'Unknown category loading error'
       }, { status: 500 })
     }
 
@@ -369,8 +369,8 @@ export async function POST(req: NextRequest) {
     } catch (brandError) {
       console.error('Failed to load brands:', brandError)
       return NextResponse.json({ 
-        error: '无法加载品牌数据',
-        details: brandError instanceof Error ? brandError.message : 'Unknown brand error'
+        error: 'Unable to load brand data',
+        details: brandError instanceof Error ? brandError.message : 'Unknown brand loading error'
       }, { status: 500 })
     }
     const brandMap = new Map(brands.docs.map(b => [b.name?.toLowerCase(), b.id]))
@@ -396,8 +396,8 @@ export async function POST(req: NextRequest) {
         if (!name || !sku || !shortDescription) {
           results.errors.push({
             row: rowNum,
-            sku: sku || '未知',
-            error: '缺少必填字段: SKU, Name, Short Description',
+            sku: sku || 'Unknown',
+            error: 'Missing required fields: SKU, Name, Short Description',
           })
           results.failed++
           continue
@@ -454,7 +454,7 @@ export async function POST(req: NextRequest) {
           results.errors.push({
             row: rowNum,
             sku,
-            error: `分类不存在: ${l3 || row.primaryCategory || '未指定'}`,
+            error: `Category not found: ${l3 || row.primaryCategory || 'Unspecified'}`,
           })
           results.failed++
           continue
@@ -622,22 +622,22 @@ export async function POST(req: NextRequest) {
       } catch (error) {
         results.errors.push({
           row: rowNum,
-          sku: sku || '未知',
-          error: error instanceof Error ? error.message : '未知错误',
+          sku: sku || 'Unknown',
+          error: error instanceof Error ? error.message : 'Unknown error',
         })
         results.failed++
       }
     }
 
     return NextResponse.json({
-      message: `导入完成: ${results.success} 成功, ${results.failed} 失败`,
+      message: `Import completed: ${results.success} succeeded, ${results.failed} failed`,
       ...results,
     })
   } catch (error) {
     console.error('Bulk import error:', error)
     
     // Ensure we always return JSON, never a plain string
-    let errorMessage = '导入失败'
+    let errorMessage = 'Import failed'
     let errorDetails = ''
     
     if (error instanceof Error) {

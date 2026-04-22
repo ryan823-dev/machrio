@@ -12,12 +12,12 @@ async function uploadFile(file: File): Promise<string> {
   formData.append('file', file)
   const res = await fetch('/api/upload/oss', { method: 'POST', body: formData })
   const data = await res.json()
-  if (!data.success || !data.url) throw new Error(data.error || '上传失败')
+  if (!data.success || !data.url) throw new Error(data.error || 'Upload failed')
   return data.url
 }
 
 // ────────────────────────────────────────────────────────────
-// Cover Image Card  (封面图)
+// Cover Image Card
 // ────────────────────────────────────────────────────────────
 function CoverImageCard({
   url,
@@ -75,12 +75,12 @@ function CoverImageCard({
               borderRadius: '50%', animation: 'eif-spin .8s linear infinite',
               margin: '0 auto 6px',
             }} />
-            <span style={{ fontSize: '12px' }}>上传中...</span>
+            <span style={{ fontSize: '12px' }}>Uploading...</span>
           </div>
         ) : hasImage && !imgErr ? (
           <img
             src={url}
-            alt="封面图"
+            alt="Cover image"
             style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
             onError={() => setImgErr(true)}
           />
@@ -89,14 +89,14 @@ function CoverImageCard({
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ display: 'block', margin: '0 auto 4px' }}>
               <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" />
             </svg>
-            加载失败
+            Failed to load
           </div>
         ) : (
           <div style={{ textAlign: 'center', color: '#bbb', fontSize: '12px' }}>
             <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" style={{ display: 'block', margin: '0 auto 4px', opacity: .45 }}>
               <rect x="3" y="3" width="18" height="18" rx="2" /><circle cx="8.5" cy="8.5" r="1.5" /><path d="m21 15-5-5L5 21" />
             </svg>
-            点击或拖拽上传
+            Click or drag to upload
           </div>
         )}
       </div>
@@ -107,17 +107,17 @@ function CoverImageCard({
           display: 'flex', justifyContent: 'center', gap: '12px',
           padding: '6px 0', borderTop: '1px solid #f0f0f0',
         }}>
-          <ActionIcon title="放大查看" onClick={onZoom}>
+          <ActionIcon title="View full size" onClick={onZoom}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /><line x1="11" y1="8" x2="11" y2="14" /><line x1="8" y1="11" x2="14" y2="11" />
             </svg>
           </ActionIcon>
-          <ActionIcon title="替换图片" onClick={onReplace}>
+          <ActionIcon title="Replace image" onClick={onReplace}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
             </svg>
           </ActionIcon>
-          <ActionIcon title="删除图片" onClick={onDelete}>
+          <ActionIcon title="Delete image" onClick={onDelete}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
             </svg>
@@ -151,7 +151,7 @@ function ActionIcon({ title, onClick, children }: { title: string; onClick: () =
 }
 
 // ────────────────────────────────────────────────────────────
-// Thumbnail card for gallery images (产品图)
+// Thumbnail card for gallery images
 // ────────────────────────────────────────────────────────────
 function ThumbCard({
   url,
@@ -183,29 +183,29 @@ function ThumbCard({
         {!imgErr ? (
           <img
             src={url}
-            alt="产品图"
+            alt="Product image"
             style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
             onError={() => setImgErr(true)}
           />
         ) : (
-          <span style={{ color: '#ccc', fontSize: '11px' }}>加载失败</span>
+          <span style={{ color: '#ccc', fontSize: '11px' }}>Failed to load</span>
         )}
       </div>
       <div style={{
         display: 'flex', justifyContent: 'center', gap: '8px',
         padding: '4px 0', borderTop: '1px solid #f0f0f0',
       }}>
-        <ActionIcon title="放大" onClick={onZoom}>
+        <ActionIcon title="Zoom" onClick={onZoom}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" /><line x1="11" y1="8" x2="11" y2="14" /><line x1="8" y1="11" x2="14" y2="11" />
           </svg>
         </ActionIcon>
-        <ActionIcon title="替换" onClick={onReplace}>
+        <ActionIcon title="Replace" onClick={onReplace}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /><polyline points="17 8 12 3 7 8" /><line x1="12" y1="3" x2="12" y2="15" />
           </svg>
         </ActionIcon>
-        <ActionIcon title="删除" onClick={onDelete}>
+        <ActionIcon title="Delete" onClick={onDelete}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
           </svg>
@@ -270,9 +270,9 @@ export const ExternalImageField: React.FC<{ path?: string }> = ({ path: pathProp
         next[target] = url
         setAdditional(next)
       }
-      toast.success('图片上传成功')
+      toast.success('Image uploaded successfully')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : '上传失败')
+      toast.error(err instanceof Error ? err.message : 'Upload failed')
     } finally {
       setUploading(null)
     }
@@ -320,8 +320,8 @@ export const ExternalImageField: React.FC<{ path?: string }> = ({ path: pathProp
     <div style={{ paddingBottom: '16px' }}>
       <style>{`@keyframes eif-spin { to { transform: rotate(360deg) } }`}</style>
 
-      {/* ── 封面图 ── */}
-      <h4 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 12px', color: '#1a1a2e' }}>封面图</h4>
+      {/* ── Cover image ── */}
+      <h4 style={{ fontSize: '16px', fontWeight: 700, margin: '0 0 12px', color: '#1a1a2e' }}>Cover Image</h4>
       <CoverImageCard
         url={(coverUrl as string) || ''}
         uploading={uploading === 'cover'}
@@ -347,8 +347,8 @@ export const ExternalImageField: React.FC<{ path?: string }> = ({ path: pathProp
         />
       )}
 
-      {/* ── 产品图 ── */}
-      <h4 style={{ fontSize: '16px', fontWeight: 700, margin: '28px 0 12px', color: '#1a1a2e' }}>产品图</h4>
+      {/* ── Product images ── */}
+      <h4 style={{ fontSize: '16px', fontWeight: 700, margin: '28px 0 12px', color: '#1a1a2e' }}>Product Images</h4>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
         {additionalUrls.map((url, idx) => (
           <ThumbCard
@@ -392,14 +392,14 @@ export const ExternalImageField: React.FC<{ path?: string }> = ({ path: pathProp
                 borderRadius: '50%', animation: 'eif-spin .8s linear infinite',
                 marginBottom: '6px',
               }} />
-              上传中...
+              Uploading...
             </>
           ) : (
             <>
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ marginBottom: '4px', opacity: .5 }}>
                 <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
               </svg>
-              添加图片
+              Add Image
             </>
           )}
         </div>
