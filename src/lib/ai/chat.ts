@@ -5,7 +5,10 @@ import {
   getToolDefinitions,
   type ProviderConfig,
 } from './config'
-import { searchProducts, getPool } from '@/lib/db'
+import { getCategoryBySlug, searchProducts, getPool } from '@/lib/db'
+import { parsePricing } from '@/lib/pricing'
+import { normalizePurchaseMode, supportsOnlineCheckout } from '@/lib/purchase-mode'
+import { RETURN_POLICY_SUMMARY, SHIPPING_POLICY_SUMMARY } from '@/lib/site-policies'
 
 export interface ChatMessage {
   role: 'system' | 'user' | 'assistant' | 'tool'
@@ -27,6 +30,8 @@ export interface ChatCompletionResponse {
   content: string
   tool_calls?: ToolCall[]
   finish_reason: string
+  provider: ProviderConfig['provider']
+  model: string
 }
 
 interface AnthropicMessage {
@@ -34,110 +39,90 @@ interface AnthropicMessage {
   content: string
 }
 
-// Fallback product data (used when database returns no results)
-const fallbackProducts = [
-  // Safety
-  { id: '1', name: 'Nitrile Exam Gloves, Powder-Free, Blue', sku: 'MRO-SF-001', price: '$12.99', priceUnit: 'per box of 100', inStock: true, availability: 'in-stock' },
-  { id: '2', name: 'Cut-Resistant Gloves, ANSI A4', sku: 'MRO-SF-002', price: '$18.49', priceUnit: 'per pair', inStock: true, availability: 'in-stock' },
-  { id: '3', name: 'Safety Glasses, Anti-Fog Clear Lens', sku: 'MRO-SF-003', price: '$8.99', priceUnit: 'per pair', inStock: true, availability: 'in-stock' },
-  { id: '4', name: 'Hard Hat, ANSI Type I Class E', sku: 'MRO-SF-004', price: '$29.99', priceUnit: 'each', inStock: true, availability: 'in-stock' },
-  // Adhesives & Sealants & Tape
-  { id: '5', name: 'Super Glue, Industrial Grade, 20g', sku: 'MRO-AD-001', price: '$8.49', priceUnit: 'per tube', inStock: true, availability: 'in-stock' },
-  { id: '6', name: 'Silicone Sealant, Clear, 10.1 oz Cartridge', sku: 'MRO-AD-002', price: '$6.99', priceUnit: 'per cartridge', inStock: true, availability: 'in-stock' },
-  // Material Handling
-  { id: '7', name: 'Steel Platform Cart, 1000 lb Capacity', sku: 'MRO-MH-001', price: '$289.99', priceUnit: 'each', inStock: true, availability: 'in-stock' },
-  { id: '8', name: 'Pallet Jack, 5500 lb Capacity', sku: 'MRO-MH-002', price: '$349.99', priceUnit: 'each', inStock: true, availability: 'in-stock' },
-  // Packaging & Shipping
-  { id: '9', name: 'Corrugated Shipping Boxes, 12x12x12" (25 pack)', sku: 'MRO-PK-001', price: '$29.99', priceUnit: 'per bundle of 25', inStock: true, availability: 'in-stock' },
-  { id: '10', name: 'Packing Tape, Clear, 2" x 110 yd (36 rolls)', sku: 'MRO-PK-002', price: '$79.99', priceUnit: 'per case of 36', inStock: true, availability: 'in-stock' },
-  // Cleaning
-  { id: '11', name: 'Industrial Degreaser, Heavy-Duty, 1 Gallon', sku: 'MRO-CL-001', price: '$24.99', priceUnit: 'per gallon', inStock: true, availability: 'in-stock' },
-  { id: '12', name: 'Commercial Wet Mop Kit with Bucket & Wringer', sku: 'MRO-CL-002', price: '$89.99', priceUnit: 'per kit', inStock: true, availability: 'in-stock' },
-  // Lighting
-  { id: '13', name: 'LED High Bay Light, 200W, 5000K', sku: 'MRO-LT-001', price: '$149.99', priceUnit: 'each', inStock: true, availability: 'in-stock' },
-  // Power Transmission
-  { id: '14', name: 'Deep Groove Ball Bearing, 6205-2RS', sku: 'MRO-PT-001', price: '$6.99', priceUnit: 'each', inStock: true, availability: 'in-stock' },
-  // Tool Storage
-  { id: '15', name: 'Heavy-Duty Steel Workbench, 72" x 30"', sku: 'MRO-TS-001', price: '$459.99', priceUnit: 'each', inStock: true, availability: 'in-stock' },
-  // Plumbing & Pumps
-  { id: '16', name: 'Submersible Sump Pump, 1/3 HP', sku: 'MRO-PP-001', price: '$119.99', priceUnit: 'each', inStock: true, availability: 'in-stock' },
-  { id: '17', name: 'PTFE Thread Seal Tape, 1/2" x 520" (10 pack)', sku: 'MRO-PP-002', price: '$9.99', priceUnit: 'per 10-pack', inStock: true, availability: 'in-stock' },
-]
+interface ProviderCompletionPayload {
+  content: string
+  tool_calls?: ToolCall[]
+  finish_reason: string
+}
 
-// Search products from database with fallback
+function formatProductPrice(
+  pricing: ReturnType<typeof parsePricing>,
+  purchaseModeValue: string | null | undefined,
+): { price: string; rawPrice: number; priceUnit?: string; currency?: string } {
+  const purchaseMode = normalizePurchaseMode(purchaseModeValue)
+  const basePrice = pricing?.basePrice
+  const currency = pricing?.currency || 'USD'
+  const priceUnit = pricing?.priceUnit || 'each'
+
+  if (supportsOnlineCheckout(purchaseMode) && typeof basePrice === 'number' && Number.isFinite(basePrice)) {
+    return {
+      price: `$${basePrice.toFixed(2)}${priceUnit ? `/${priceUnit}` : ''}`,
+      rawPrice: basePrice,
+      priceUnit,
+      currency,
+    }
+  }
+
+  if (purchaseMode === 'rfq-only') {
+    return {
+      price: 'Request a Quote',
+      rawPrice: 0,
+      priceUnit,
+      currency,
+    }
+  }
+
+  return {
+    price: 'Contact for pricing',
+    rawPrice: 0,
+    priceUnit,
+    currency,
+  }
+}
+
+// Search products from database without inventing fallback catalog items.
 async function searchProductsFromDB(query: string, _category?: string, limit: number = 5) {
   try {
-    const result = await searchProducts(query, { limit })
+    let categoryId: string | undefined
+
+    if (_category) {
+      const category = await getCategoryBySlug(_category)
+      categoryId = category?.id
+    }
+
+    const result = await searchProducts(query, { limit, categoryId })
 
     if (result.docs.length > 0) {
-      return result.docs.map(p => ({
+      return {
+        products: result.docs.map(p => ({
         id: p.id,
         name: p.name,
         sku: p.sku,
         slug: p.slug || '',
         categorySlug: 'products',
         imageUrl: p.external_image_url || undefined,
-        price: 'Contact for pricing',
-        rawPrice: 0,
-        priceUnit: 'each',
-        currency: 'USD',
+        ...formatProductPrice(parsePricing(p.pricing), p.purchase_mode),
         inStock: p.availability === 'in-stock',
         availability: p.availability || 'contact',
-      }))
+        })),
+        unavailable: false,
+      }
     }
 
-    // Fallback to mock data if database returns no results
-    console.log('[AI Search] Using fallback data')
-    return searchFallbackProducts(query, limit)
+    return {
+      products: [],
+      unavailable: false,
+    }
   } catch (error) {
-    console.error('[AI Search] Error, using fallback:', error)
-    return searchFallbackProducts(query, limit)
-  }
-}
-
-// Search fallback products
-function searchFallbackProducts(query: string, limit: number = 5) {
-  const q = query.toLowerCase()
-  const words = q.split(/\s+/).filter(w => w.length > 1)
-
-  // Expand common MRO search terms to match product names
-  const expandedTerms: Record<string, string[]> = {
-    'ppe': ['gloves', 'safety', 'hat', 'glasses'],
-    'safety': ['gloves', 'safety', 'hat', 'glasses'],
-    'protection': ['gloves', 'safety', 'hat', 'glasses'],
-    'adhesive': ['glue', 'sealant', 'tape'],
-    'tape': ['tape', 'packing'],
-    'handling': ['cart', 'pallet', 'jack'],
-    'packaging': ['box', 'tape', 'shipping'],
-    'shipping': ['box', 'tape', 'shipping'],
-    'cleaning': ['degreaser', 'mop', 'clean'],
-    'lighting': ['led', 'light', 'bay'],
-    'bearing': ['bearing', 'groove'],
-    'workbench': ['workbench', 'steel'],
-    'plumbing': ['pump', 'sump', 'ptfe', 'tape'],
-    'pump': ['pump', 'sump'],
-  }
-
-  // Collect all search terms
-  const searchTerms = [...words]
-  for (const term of words) {
-    if (expandedTerms[term]) {
-      searchTerms.push(...expandedTerms[term])
+    console.error('[AI Search] Error searching products:', error)
+    return {
+      products: [],
+      unavailable: true,
     }
   }
-  if (expandedTerms[q]) {
-    searchTerms.push(...expandedTerms[q])
-  }
-
-  const results = fallbackProducts.filter(p => {
-    const nameLower = p.name.toLowerCase()
-    return searchTerms.some(word => nameLower.includes(word)) || nameLower.includes(q)
-  })
-
-  return results.slice(0, limit)
 }
 
-// Find product by ID or SKU
+// Find product by ID or SKU without fabricating fallback items.
 async function findProductById(productId: string) {
   try {
     const pool = getPool()
@@ -150,11 +135,13 @@ async function findProductById(productId: string) {
 
     if (skuResult.rows.length > 0) {
       const p = skuResult.rows[0]
+      const pricing = formatProductPrice(parsePricing(p.pricing), p.purchase_mode)
       return {
         id: p.id,
         name: p.name,
         sku: p.sku,
-        price: 'Contact for pricing',
+        price: pricing.price,
+        rawPrice: pricing.rawPrice,
       }
     }
 
@@ -166,19 +153,20 @@ async function findProductById(productId: string) {
 
     if (idResult.rows.length > 0) {
       const p = idResult.rows[0]
+      const pricing = formatProductPrice(parsePricing(p.pricing), p.purchase_mode)
       return {
         id: p.id,
         name: p.name,
         sku: p.sku,
-        price: 'Contact for pricing',
+        price: pricing.price,
+        rawPrice: pricing.rawPrice,
       }
     }
 
-    // Fallback to mock data
-    return fallbackProducts.find(p => p.id === productId || p.sku === productId)
+    return null
   } catch (error) {
     console.error('[AI Search] Error finding product:', error)
-    return fallbackProducts.find(p => p.id === productId || p.sku === productId)
+    return null
   }
 }
 
@@ -190,15 +178,23 @@ export async function executeToolCall(name: string, args: Record<string, unknown
       const category = args.category as string | undefined
       const limit = (args.limit as number) || 5
 
-      const results = await searchProductsFromDB(query, category, limit)
+      const searchResult = await searchProductsFromDB(query, category, limit)
 
-      if (results.length === 0) {
+      if (searchResult.unavailable) {
+        return JSON.stringify({
+          success: false,
+          products: [],
+          error: 'Catalog search is temporarily unavailable right now.',
+        })
+      }
+
+      if (searchResult.products.length === 0) {
         return JSON.stringify({ success: true, products: [], message: 'No products found matching your search.' })
       }
 
       return JSON.stringify({
         success: true,
-        products: results,
+        products: searchResult.products,
       })
     }
 
@@ -211,7 +207,14 @@ export async function executeToolCall(name: string, args: Record<string, unknown
         return JSON.stringify({ success: false, error: 'Product not found' })
       }
 
-      const unitPrice = parseFloat(String(product.price || '0').replace('$', ''))
+      if (!product.rawPrice || product.rawPrice <= 0) {
+        return JSON.stringify({
+          success: false,
+          error: 'This item is quote-only and cannot be added directly with a live checkout price.',
+        })
+      }
+
+      const unitPrice = product.rawPrice
 
       return JSON.stringify({
         success: true,
@@ -246,25 +249,14 @@ export async function executeToolCall(name: string, args: Record<string, unknown
     case 'get_shipping_info': {
       return JSON.stringify({
         success: true,
-        shipping: {
-          sameDay: 'Orders placed before 3PM EST ship same day',
-          standard: '3-5 business days',
-          express: '1-2 business days (additional charge)',
-          freeShipping: 'Free shipping on orders over $99',
-          bulkOrders: 'Dedicated freight available for large orders',
-        },
+        shipping: SHIPPING_POLICY_SUMMARY,
       })
     }
 
     case 'get_return_policy': {
       return JSON.stringify({
         success: true,
-        returns: {
-          window: '30-day hassle-free returns',
-          unopened: 'Full refund on unopened products',
-          defective: 'Free replacement for defective items',
-          process: 'Contact support for return shipping label',
-        },
+        returns: RETURN_POLICY_SUMMARY,
       })
     }
 
@@ -276,7 +268,8 @@ export async function executeToolCall(name: string, args: Record<string, unknown
 // Main chat completion function
 export async function createChatCompletion(
   messages: ChatMessage[],
-  useTools: boolean = true
+  useTools: boolean = true,
+  preferredProvider?: ProviderConfig['provider'],
 ): Promise<ChatCompletionResponse> {
   const configuredProviders = getConfiguredProviderConfigs()
 
@@ -284,14 +277,28 @@ export async function createChatCompletion(
     throw new Error('AI API key not configured')
   }
 
+  const orderedProviders = orderProviders(configuredProviders, preferredProvider)
   const providerErrors: string[] = []
 
-  for (const config of configuredProviders) {
+  for (const [index, config] of orderedProviders.entries()) {
     try {
-      return await createChatCompletionForProvider(config, messages, useTools)
+      if (index > 0) {
+        console.warn(
+          `[AI] Falling back to ${config.provider}/${config.model} after previous provider failure(s).`,
+        )
+      }
+
+      const completion = await createChatCompletionForProvider(config, messages, useTools)
+      validateCompletionPayload(completion, useTools)
+
+      return {
+        ...completion,
+        provider: config.provider,
+        model: config.model,
+      }
     } catch (error) {
       const detail = error instanceof Error ? error.message : 'Unknown provider error'
-      providerErrors.push(`${config.provider}: ${detail}`)
+      providerErrors.push(`${config.provider}/${config.model}: ${detail}`)
       console.error(`[AI] Provider ${config.provider} failed:`, error)
     }
   }
@@ -303,7 +310,7 @@ async function createChatCompletionForProvider(
   config: ProviderConfig,
   messages: ChatMessage[],
   useTools: boolean,
-): Promise<ChatCompletionResponse> {
+): Promise<ProviderCompletionPayload> {
   if (config.provider === 'anthropic') {
     return createAnthropicChatCompletion(config, messages)
   }
@@ -324,7 +331,7 @@ async function createChatCompletionForProvider(
     requestBody.tool_choice = 'auto'
   }
 
-  const response = await fetch(`${config.baseURL}/chat/completions`, {
+  const response = await fetchWithTimeout(`${config.baseURL}/chat/completions`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -332,7 +339,7 @@ async function createChatCompletionForProvider(
       ...config.headers,
     },
     body: JSON.stringify(requestBody),
-  })
+  }, config.timeoutMs)
 
   if (!response.ok) {
     const error = await response.text()
@@ -387,10 +394,10 @@ function buildAnthropicRequest(messages: ChatMessage[]) {
 async function createAnthropicChatCompletion(
   config: ProviderConfig,
   messages: ChatMessage[],
-): Promise<ChatCompletionResponse> {
+): Promise<ProviderCompletionPayload> {
   const anthropicRequest = buildAnthropicRequest(messages)
 
-  const response = await fetch(`${config.baseURL}/messages`, {
+  const response = await fetchWithTimeout(`${config.baseURL}/messages`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -405,7 +412,7 @@ async function createAnthropicChatCompletion(
       system: anthropicRequest.system,
       messages: anthropicRequest.messages,
     }),
-  })
+  }, config.timeoutMs)
 
   if (!response.ok) {
     const error = await response.text()
@@ -429,6 +436,81 @@ async function createAnthropicChatCompletion(
   return {
     content,
     finish_reason: data.stop_reason || 'stop',
+  }
+}
+
+function orderProviders(
+  providers: ProviderConfig[],
+  preferredProvider?: ProviderConfig['provider'],
+): ProviderConfig[] {
+  if (!preferredProvider) return providers
+
+  const preferredConfig = providers.find((provider) => provider.provider === preferredProvider)
+  if (!preferredConfig) return providers
+
+  return [
+    preferredConfig,
+    ...providers.filter((provider) => provider.provider !== preferredProvider),
+  ]
+}
+
+function validateCompletionPayload(
+  completion: ProviderCompletionPayload,
+  useTools: boolean,
+): void {
+  const hasText = completion.content.trim().length > 0
+  const toolCalls = completion.tool_calls || []
+  const hasToolCalls = toolCalls.length > 0
+
+  if (!hasText && !hasToolCalls) {
+    throw new Error('Model returned an empty response')
+  }
+
+  for (const toolCall of toolCalls) {
+    if (!toolCall.id || !toolCall.function?.name) {
+      throw new Error('Model returned a malformed tool call')
+    }
+
+    const rawArgs = toolCall.function.arguments || '{}'
+    let parsedArgs: unknown
+
+    try {
+      parsedArgs = JSON.parse(rawArgs)
+    } catch {
+      throw new Error(`Tool call arguments for "${toolCall.function.name}" were not valid JSON`)
+    }
+
+    if (!parsedArgs || typeof parsedArgs !== 'object' || Array.isArray(parsedArgs)) {
+      throw new Error(`Tool call arguments for "${toolCall.function.name}" must be a JSON object`)
+    }
+  }
+
+  if (!useTools && !hasText) {
+    throw new Error('Model returned no final answer text after tool execution')
+  }
+}
+
+async function fetchWithTimeout(
+  input: string,
+  init: RequestInit,
+  timeoutMs: number,
+): Promise<Response> {
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), timeoutMs)
+
+  try {
+    return await fetch(input, {
+      ...init,
+      signal: controller.signal,
+    })
+  } catch (error) {
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new Error(`AI request timed out after ${timeoutMs}ms`)
+    }
+
+    throw error
+  } finally {
+    clearTimeout(timeout)
   }
 }
 
@@ -475,7 +557,7 @@ export async function processConversation(
     }
 
     // Get final response after tool execution
-    completion = await createChatCompletion(messages, false)
+    completion = await createChatCompletion(messages, false, completion.provider)
   }
 
   return {

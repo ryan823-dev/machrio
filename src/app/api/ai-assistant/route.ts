@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     if (configuredProviders.length === 0) {
       // Fall back to mock response if no API key
       return NextResponse.json({
-        reply: generateFallbackResponse(userMessage, source),
+        reply: generateFallbackResponse(userMessage, source, history),
         mode: 'fallback',
       })
     }
@@ -70,7 +70,7 @@ export async function POST(request: Request) {
       console.error('AI assistant provider error:', error)
 
       return NextResponse.json({
-        reply: generateFallbackResponse(userMessage, source),
+        reply: generateFallbackResponse(userMessage, source, history),
         mode: 'fallback',
         warning: error instanceof Error ? error.message : 'Unknown AI provider error',
       })
@@ -87,12 +87,58 @@ export async function POST(request: Request) {
   }
 }
 
-// Fallback response when API is not configured
-function generateFallbackResponse(input: string, source?: string): string {
+function getLastAssistantMessage(history: ChatMessage[]): string {
+  for (let index = history.length - 1; index >= 0; index -= 1) {
+    if (history[index]?.role === 'assistant') {
+      return history[index]?.content || ''
+    }
+  }
+
+  return ''
+}
+
+function isAffirmativeReply(input: string): boolean {
+  const normalized = input.trim().toLowerCase()
+  return [
+    'yes',
+    'y',
+    'yeah',
+    'yep',
+    'sure',
+    'ok',
+    'okay',
+    'please',
+    'go ahead',
+    'sounds good',
+    'do it',
+  ].includes(normalized)
+}
+
+function isNegativeReply(input: string): boolean {
+  const normalized = input.trim().toLowerCase()
+  return ['no', 'nope', 'not now'].includes(normalized)
+}
+
+// Fallback response when AI providers are unavailable.
+// This fallback is intentionally stateful enough to avoid breaking a simple multi-turn conversation.
+function generateFallbackResponse(input: string, source?: string, history: ChatMessage[] = []): string {
   const lower = input.toLowerCase()
+  const lastAssistantMessage = getLastAssistantMessage(history)
+  const lastAssistantLower = lastAssistantMessage.toLowerCase()
+  const saidYes = isAffirmativeReply(input)
+  const saidNo = isNegativeReply(input)
 
   // Empty category page: supply-chain-oriented responses
   if (source === 'empty-category') {
+    if (saidYes && (lastAssistantLower.includes('submit an rfq') || lastAssistantLower.includes('quote'))) {
+      return `Great. To prepare the quote, please send:\n\n` +
+        `• product name or part number\n` +
+        `• quantity needed\n` +
+        `• key specs or required certifications\n` +
+        `• target delivery country and timeline\n\n` +
+        `If you already have a list or spec sheet, you can upload it and our team can quote from that.`
+    }
+
     if (lower.includes('quote') || lower.includes('rfq') || lower.includes('bulk') || lower.includes('price')) {
       return `Absolutely! For bulk and custom orders, here's how we work:\n\n` +
         `1. **Tell me** what you need — product specs, quantities, brand preferences\n` +
@@ -116,12 +162,36 @@ function generateFallbackResponse(input: string, source?: string): string {
       `Share these details and I'll get you a competitive quote. Or you can upload a procurement list below.`
   }
 
+  if (saidYes) {
+    if (
+      lastAssistantLower.includes('add any of these to your cart')
+      || lastAssistantLower.includes('need bulk pricing')
+      || lastAssistantLower.includes('add to your cart')
+    ) {
+      return `Happy to help. Which path do you want?\n\n` +
+        `• **Add to cart** — tell me the glove option and quantity\n` +
+        `• **Bulk pricing** — tell me the estimated quantity and any required specs\n\n` +
+        `For example: "Cut-resistant gloves, 20 pairs" or "Need 300 pairs with ANSI A4".`
+    }
+
+    if (
+      lastAssistantLower.includes('chemical handling')
+      || lastAssistantLower.includes('cut protection')
+      || lastAssistantLower.includes('general assembly')
+    ) {
+      return `Which glove job best matches your need: chemical handling, cut protection, or general assembly? If you already know the quantity or size range, send that too.`
+    }
+
+    return `Tell me the product or job you need help with, and include quantity or specs if you know them.`
+  }
+
+  if (saidNo) {
+    return `No problem. Tell me what product you want to find, or ask about shipping, returns, quotes, or order help.`
+  }
+
   if (lower.includes('glove') || lower.includes('ppe') || lower.includes('safety')) {
-    return `We have a wide selection of safety gloves and PPE:\n\n` +
-      `• **Nitrile Exam Gloves** (MRO-GL-001) - $12.99/box\n` +
-      `• **Cut-Resistant Gloves, ANSI A4** (MRO-GL-002) - $18.49/pair\n` +
-      `• **Chemical-Resistant Neoprene** (MRO-GL-003) - $24.99/pair\n\n` +
-      `Would you like me to add any of these to your cart, or need bulk pricing?`
+    return `I can help with gloves. What is the main job: **chemical handling**, **cut protection**, or **general assembly**?\n\n` +
+      `If you already know the quantity, size range, or certification requirement, send that too and I can guide you faster.`
   }
 
   if (lower.includes('quote') || lower.includes('rfq') || lower.includes('bulk') || lower.includes('price')) {
@@ -149,10 +219,13 @@ function generateFallbackResponse(input: string, source?: string): string {
       `Need to start a return? Visit our Help Center.`
   }
 
+  if (lower.includes('bearing') || /[a-z0-9]+-[a-z0-9]+/i.test(input)) {
+    return `If you have a part number or bearing code, send it exactly as printed. If you also know quantity or brand preference, include that and I can guide you to the fastest next step.`
+  }
+
   return `Hi! I'm the Machrio AI Sourcing Assistant. I can help you:\n\n` +
-    `• **Find products** - Tell me what you need\n` +
-    `• **Add to cart** - Quick ordering\n` +
-    `• **Get bulk quotes** - RFQ for volume pricing\n` +
-    `• **Answer questions** - Shipping, returns, specs\n\n` +
-    `What can I help you with today?`
+    `• **Find products** — tell me the product, use case, or part number\n` +
+    `• **Get bulk quotes** — send quantity and key specs\n` +
+    `• **Answer buying questions** — shipping, returns, lead time, and order help\n\n` +
+    `What are you trying to buy today?`
 }

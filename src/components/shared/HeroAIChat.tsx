@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useOptionalCart } from '@/contexts/CartContext'
 import { useAIAssistantVisibility } from '@/contexts/AIAssistantVisibilityContext'
 import { AIMessageContent } from './AIMessageContent'
@@ -76,7 +77,14 @@ function HeroProductCard({
       {/* Thumbnail */}
       <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded bg-white/10">
         {product.imageUrl ? (
-          <img src={product.imageUrl} alt={product.name} className="h-10 w-10 object-contain" loading="lazy" decoding="async" />
+          <Image
+            src={product.imageUrl}
+            alt={product.name}
+            width={40}
+            height={40}
+            className="h-10 w-10 object-contain"
+            loading="lazy"
+          />
         ) : (
           <svg className="h-5 w-5 text-primary-300" fill="currentColor" viewBox="0 0 20 20">
             <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
@@ -412,10 +420,9 @@ export function HeroAIChat() {
       const products = (action.data as Record<string, unknown>)?.products as ProductResult[] | undefined
       if (products && products.length > 0) {
         setReqSheet(prev => ({ ...prev, purchaseMode: 'rfq' }))
-        setMessages(prev => [...prev, { 
-          role: 'assistant', 
-          content: `RFQ draft created with ${products.length} item(s):\n${products.map(p => `  - ${p.name} (${p.sku})`).join('\n')}\n\nView your draft at /rfq or tell me more specs to refine it.`
-        }])
+        appendAssistantMessage(
+          `RFQ draft created with ${products.length} item(s):\n${products.map(p => `  - ${p.name} (${p.sku})`).join('\n')}\n\nView your draft at /rfq or tell me more specs to refine it.`,
+        )
       }
     } else if (action.type === 'add_to_cart') {
       const products = (action.data as Record<string, unknown>)?.products as ProductResult[] | undefined
@@ -445,15 +452,14 @@ export function HeroAIChat() {
           msg += `\n\n${skippedCount} item(s) require a quote and were not added.`
         }
         msg += '\n\n[View Cart](/cart) or continue shopping.'
-        setMessages(prev => [...prev, { role: 'assistant', content: msg }])
+        appendAssistantMessage(msg)
       }
     } else if (action.type === 'save_list') {
       const products = (action.data as Record<string, unknown>)?.products as ProductResult[] | undefined
       if (products && products.length > 0) {
-        setMessages(prev => [...prev, { 
-          role: 'assistant', 
-          content: `Saved ${products.length} item(s) to your shopping list:\n${products.map(p => `  - ${p.name} (${p.sku})`).join('\n')}\n\nYou can review your list anytime at /account/lists.`
-        }])
+        appendAssistantMessage(
+          `Saved ${products.length} item(s) to your shopping list:\n${products.map(p => `  - ${p.name} (${p.sku})`).join('\n')}\n\nYou can review your list anytime at /account/lists.`,
+        )
       }
     }
   }
@@ -540,16 +546,16 @@ export function HeroAIChat() {
             <p className="text-primary-200 text-sm mb-4">Tell me what you need, I&apos;ll help you find it!</p>
             <div className="flex flex-wrap justify-center gap-2">
               <button 
-                onClick={() => handleQuickAction('I want to find products')}
+                onClick={() => handleQuickAction('Help me find the right product')}
                 className="rounded-full bg-white/10 px-3 py-1.5 text-xs text-white hover:bg-white/20 transition-colors"
               >
-                Find Products
+                Find the Right Product
               </button>
               <button 
-                onClick={() => handleQuickAction('I need a bulk quote')}
+                onClick={() => handleQuickAction('I want bulk pricing for a product')}
                 className="rounded-full bg-white/10 px-3 py-1.5 text-xs text-white hover:bg-white/20 transition-colors"
               >
-                Request a Quote
+                Get Bulk Pricing
               </button>
               <button 
                 onClick={startOrderLookup}
@@ -635,7 +641,7 @@ export function HeroAIChat() {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder="What are you looking for? e.g., safety gloves..."
+            placeholder="Describe the job, product, part number, or quantity..."
             className="min-w-0 flex-1 rounded-lg border border-white/20 bg-white/10 px-4 py-2.5 text-sm text-white placeholder-primary-300 focus:border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-400"
           />
           <button

@@ -233,17 +233,36 @@ export async function searchProducts(query: string, options?: {
   totalDocs: number
 }> {
   const pool = getPool()
-  const { limit = 24 } = options || {}
+  const { limit = 24, brandId, categoryId } = options || {}
 
   try {
     const searchTerm = `%${query.toLowerCase()}%`
+    const conditions = [
+      `status = 'published'`,
+      `(LOWER(name) LIKE $1 OR LOWER(short_description) LIKE $1 OR LOWER(sku) LIKE $1)`,
+    ]
+    const params: Array<string | number> = [searchTerm]
+    let paramIndex = 2
+
+    if (brandId) {
+      conditions.push(`brand_id::text = $${paramIndex}`)
+      params.push(brandId)
+      paramIndex += 1
+    }
+
+    if (categoryId) {
+      conditions.push(`primary_category_id::text = $${paramIndex}`)
+      params.push(categoryId)
+      paramIndex += 1
+    }
+
+    params.push(limit)
     const result = await pool.query(
       `SELECT * FROM products
-       WHERE status = 'published'
-       AND (LOWER(name) LIKE $1 OR LOWER(short_description) LIKE $1 OR LOWER(sku) LIKE $1)
+       WHERE ${conditions.join(' AND ')}
        ORDER BY created_at DESC
-       LIMIT $2`,
-      [searchTerm, limit]
+       LIMIT $${paramIndex}`,
+      params
     )
 
     return {
