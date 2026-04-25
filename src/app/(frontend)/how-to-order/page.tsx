@@ -33,7 +33,7 @@ const howToSchema = {
       '@type': 'HowToStep',
       position: 2,
       name: 'Quotation & Purchase Orders',
-      text: 'For bulk orders or custom specifications, submit a quotation request from any product page or the Request a Quote page. Our sales team responds within 24 hours with pricing and lead times. Upon agreement, we issue a Proforma Invoice (PI) for your company approval.',
+      text: 'For bulk orders or custom specifications, submit a quotation request from any product page or the Request a Quote page. Our team responds within 24 hours with pricing and lead times. Upon agreement, we issue a Proforma Invoice (PI) for your company approval.',
       url: 'https://machrio.com/how-to-order/#step-2',
     },
     {
@@ -47,7 +47,7 @@ const howToSchema = {
       '@type': 'HowToStep',
       position: 4,
       name: 'Long-Term Cooperation',
-      text: 'Machrio accepts purchase orders (PO) and long-term supply agreements from qualified business accounts. Email sales@machrio.com to set up your company profile for recurring procurement, framework agreements, or multi-department consolidation.',
+      text: 'Machrio accepts purchase orders (PO) and long-term supply agreements from qualified business accounts. Email support@machrio.com to set up your company profile for recurring procurement, framework agreements, or multi-department consolidation.',
       url: 'https://machrio.com/how-to-order/#step-4',
     },
   ],
@@ -85,7 +85,7 @@ export default function HowToOrderPage() {
           <div>
             <h2 className="text-lg font-semibold text-secondary-900">Quotation &amp; Purchase Orders</h2>
             <p className="mt-2 text-sm leading-relaxed text-secondary-600">
-              For bulk orders or custom specifications, submit a quotation request from any product page or our <Link href="/rfq" className="text-primary-600 underline hover:text-primary-800">Request a Quote</Link> page. Our sales team responds within 24 hours with pricing and lead times.
+              For bulk orders or custom specifications, submit a quotation request from any product page or our <Link href="/rfq" className="text-primary-600 underline hover:text-primary-800">Request a Quote</Link> page. Our team responds within 24 hours with pricing and lead times.
             </p>
             <p className="mt-2 text-sm text-secondary-600">
               Upon agreement, we&apos;ll issue a Proforma Invoice (PI) for your company&apos;s internal approval. Payment can be made via bank transfer to our multi-currency accounts.
@@ -114,7 +114,7 @@ export default function HowToOrderPage() {
           <div>
             <h2 className="text-lg font-semibold text-secondary-900">Long-Term Cooperation</h2>
             <p className="mt-2 text-sm leading-relaxed text-secondary-600">
-              Machrio accepts purchase orders (PO) and long-term supply agreements from qualified business accounts. Email <strong>sales@machrio.com</strong> to set up your company profile for recurring procurement, framework agreements, or multi-department consolidation.
+              Machrio accepts purchase orders (PO) and long-term supply agreements from qualified business accounts. Email <strong>support@machrio.com</strong> to set up your company profile for recurring procurement, framework agreements, or multi-department consolidation.
             </p>
           </div>
         </div>

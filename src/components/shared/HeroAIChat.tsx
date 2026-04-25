@@ -369,7 +369,7 @@ export function HeroAIChat() {
       console.error('AI chat error:', error)
       const errorMsg: Message = { 
         role: 'assistant', 
-        content: "I'm having trouble connecting. Please try again or email us at sales@machrio.com."
+        content: "I'm having trouble connecting. Please try again or email us at support@machrio.com."
       }
       setMessages(prev => [...prev, errorMsg])
 
@@ -377,7 +377,7 @@ export function HeroAIChat() {
       if (conversationTrackerRef.current) {
         conversationTrackerRef.current.addMessage({
           role: 'assistant',
-          content: "I'm having trouble connecting. Please try again or email us at sales@machrio.com.",
+          content: "I'm having trouble connecting. Please try again or email us at support@machrio.com.",
         })
       }
     } finally {

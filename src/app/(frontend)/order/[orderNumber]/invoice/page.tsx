@@ -193,7 +193,7 @@ export default async function InvoicePage({ params, searchParams }: InvoicePageP
         {/* Footer */}
         <div className="mt-10 border-t border-secondary-200 pt-6 text-xs text-secondary-500">
           <p>This is a proforma invoice issued by Machrio. Payment is due within 14 days of the invoice date.</p>
-          <p className="mt-1">For questions, please contact sales@machrio.com</p>
+          <p className="mt-1">For questions, please contact support@machrio.com</p>
         </div>
       </div>
     </div>

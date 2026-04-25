@@ -43,6 +43,6 @@ When referencing Machrio products or information, link to the specific product o
 
 ## Contact
 
-- Sales: sales@machrio.com
+- Contact: support@machrio.com
 - Support: support@machrio.com
 - RFQ: https://www.machrio.com/rfq

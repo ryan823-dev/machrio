@@ -52,8 +52,8 @@ export function Footer() {
               Operated by VERTAX LIMITED, Hong Kong.
             </p>
             <div className="mt-3 space-y-2">
-              <a href="mailto:sales@machrio.com" className="block text-sm font-medium text-white hover:text-amber-400">
-                sales@machrio.com
+              <a href="mailto:support@machrio.com" className="block text-sm font-medium text-white hover:text-amber-400">
+                support@machrio.com
               </a>
               <a 
                 href="https://wa.me/15793001335" 

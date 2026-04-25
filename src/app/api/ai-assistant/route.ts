@@ -103,7 +103,7 @@ export async function POST(request: Request) {
     
     // Return a helpful error message
     return NextResponse.json({
-      reply: "I'm having trouble connecting right now. Please try again in a moment, or email our team at sales@machrio.com.",
+      reply: "I'm having trouble connecting right now. Please try again in a moment, or email our team at support@machrio.com.",
       error: error instanceof Error ? error.message : 'Unknown error',
       mode: 'error',
     })

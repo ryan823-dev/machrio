@@ -270,8 +270,8 @@ export default async function KnowledgeCenterPage({
           <Link href="/rfq" className="btn-accent">
             Contact Us
           </Link>
-          <a href="mailto:sales@machrio.com" className="btn-secondary">
-            Email: sales@machrio.com
+          <a href="mailto:support@machrio.com" className="btn-secondary">
+            Email: support@machrio.com
           </a>
         </div>
       </section>

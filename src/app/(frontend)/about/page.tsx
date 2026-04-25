@@ -56,7 +56,7 @@ const aboutPageSchema = {
     contactPoint: {
       '@type': 'ContactPoint',
       contactType: 'sales',
-      email: 'sales@machrio.com',
+      email: 'support@machrio.com',
       telephone: '+1-579-300-1335',
       availableLanguage: ['English', 'Chinese'],
     },

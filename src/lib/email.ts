@@ -6,8 +6,8 @@ const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null
 
-const FROM_EMAIL = process.env.EMAIL_FROM || 'Machrio <orders@machrio.com>'
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'sales@machrio.com'
+const FROM_EMAIL = process.env.EMAIL_FROM || 'Machrio <support@machrio.com>'
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'support@machrio.com'
 
 // ==================== 类型定义 ====================
 
@@ -150,7 +150,7 @@ export async function sendOrderConfirmationEmail(data: OrderEmailData) {
             <a href="${orderUrl}" style="display:inline-block;background:#1a3c6e;color:#fff;padding:10px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px">View Order Details</a>
             
             <p style="margin:24px 0 0;color:#94a3b8;font-size:12px">
-              If you have any questions, please contact us at <a href="mailto:sales@machrio.com" style="color:#2563eb">sales@machrio.com</a>
+              If you have any questions, please contact us at <a href="mailto:support@machrio.com" style="color:#2563eb">support@machrio.com</a>
             </p>
           </div>
         </div>
@@ -228,7 +228,7 @@ export async function sendRFQConfirmationEmail(data: RFQEmailData) {
             <a href="${serverUrl}/category" style="display:inline-block;background:#1a3c6e;color:#fff;padding:10px 24px;border-radius:6px;text-decoration:none;font-weight:600;font-size:14px">Browse Products</a>
             
             <p style="margin:24px 0 0;color:#94a3b8;font-size:12px">
-              If you have urgent questions, please contact us at <a href="mailto:sales@machrio.com" style="color:#2563eb">sales@machrio.com</a>
+              If you have urgent questions, please contact us at <a href="mailto:support@machrio.com" style="color:#2563eb">support@machrio.com</a>
             </p>
           </div>
         </div>

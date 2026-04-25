@@ -61,7 +61,7 @@ export async function sendEmailWithAttachments(options: SendEmailOptions): Promi
     // 无附件，使用普通发送
     try {
       const result = await resend.emails.send({
-        from: options.from || 'Machrio <orders@machrio.com>',
+        from: options.from || 'Machrio <support@machrio.com>',
         to: options.to,
         subject: options.subject,
         html: options.html,
@@ -75,7 +75,7 @@ export async function sendEmailWithAttachments(options: SendEmailOptions): Promi
   // 带附件发送
   try {
     const result = await resend.emails.send({
-      from: options.from || 'Machrio <orders@machrio.com>',
+      from: options.from || 'Machrio <support@machrio.com>',
       to: options.to,
       subject: options.subject,
       html: options.html,

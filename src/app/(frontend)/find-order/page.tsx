@@ -58,7 +58,7 @@ export default async function FindOrderPage({ searchParams }: FindOrderPageProps
                 <Link href="/contact" className="btn-secondary">
                   Contact Support
                 </Link>
-                <a href="mailto:sales@machrio.com" className="btn-accent">
+                <a href="mailto:support@machrio.com" className="btn-accent">
                   Email Sales
                 </a>
               </div>

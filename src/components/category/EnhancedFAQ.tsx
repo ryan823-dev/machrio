@@ -176,7 +176,7 @@ export function EnhancedFAQ({
           </p>
           <div className="mt-2 flex flex-wrap justify-center gap-3">
             <a
-              href={`mailto:sales@machrio.com?subject=Question about ${encodeURIComponent(categoryName)}`}
+              href={`mailto:support@machrio.com?subject=Question about ${encodeURIComponent(categoryName)}`}
               className="text-sm font-medium text-primary-600 hover:text-primary-700 hover:underline"
             >
               Email our team

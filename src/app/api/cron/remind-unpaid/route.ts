@@ -132,7 +132,7 @@ export async function GET(req: NextRequest) {
                 <div style="background:#f0f9ff;border:1px solid #0ea5e9;border-radius:6px;padding:16px;margin:0 0 16px">
                   <p style="margin:0;color:#0369a1;font-size:13px">
                     <strong>Need more time?</strong> If you need an extension or have any questions, please contact us at 
-                    <a href="mailto:sales@machrio.com" style="color:#0284c7">sales@machrio.com</a>
+                    <a href="mailto:support@machrio.com" style="color:#0284c7">support@machrio.com</a>
                   </p>
                 </div>
                 

@@ -189,7 +189,7 @@ export function EmptyStateAIDialog({ categoryName, parentCategories }: EmptyStat
       if (!response.ok) throw new Error('Failed to submit')
       setRfqSubmitted(true)
     } catch {
-      setRfqError('Failed to submit. Please try again or email us at sales@machrio.com.')
+      setRfqError('Failed to submit. Please try again or email us at support@machrio.com.')
     }
   }
 

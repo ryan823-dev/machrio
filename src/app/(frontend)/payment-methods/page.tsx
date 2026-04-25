@@ -123,7 +123,7 @@ export default function PaymentMethodsPage() {
           </li>
         </ul>
         <p className="mt-3 text-sm text-secondary-500 italic">
-          Contact our sales team at <strong>sales@machrio.com</strong> to set up your business account.
+          Contact our support team at <strong>support@machrio.com</strong> to set up your business account.
         </p>
       </section>
 

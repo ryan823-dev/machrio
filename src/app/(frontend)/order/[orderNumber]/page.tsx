@@ -404,8 +404,8 @@ export default async function OrderConfirmationPage({ params, searchParams }: Or
             <h2 className="text-sm font-bold text-secondary-900">Need Help?</h2>
             <p className="mt-2 text-xs text-secondary-500">
               Contact us at{' '}
-              <a href="mailto:sales@machrio.com" className="text-primary-700 hover:underline">
-                sales@machrio.com
+              <a href="mailto:support@machrio.com" className="text-primary-700 hover:underline">
+                support@machrio.com
               </a>{' '}
               with your order number.
             </p>

@@ -24,7 +24,7 @@ const faqSections = [
       },
       {
         q: 'Can I order offline or in bulk?',
-        a: 'Yes. Email your requirements to sales@machrio.com for bulk or customized procurement. Our sales team responds within 24 hours with pricing and lead times.',
+        a: 'Yes. Email your requirements to support@machrio.com for bulk or customized procurement. Our team responds within 24 hours with pricing and lead times.',
       },
       {
         q: 'Do I need an account to order?',
@@ -45,7 +45,7 @@ const faqSections = [
       },
       {
         q: 'Do you offer business credit or payment terms?',
-        a: 'Yes. Eligible business customers may apply for Net 15 or Net 30 terms via purchase order. Contact sales@machrio.com for details.',
+        a: 'Yes. Eligible business customers may apply for Net 15 or Net 30 terms via purchase order. Contact support@machrio.com for details.',
       },
       {
         q: 'Do you support multiple currencies?',
@@ -108,7 +108,7 @@ const faqSections = [
       },
       {
         q: 'Do you support long-term supply agreements?',
-        a: 'Yes. We support annual contracts, framework agreements, and recurring supply partnerships. Contact sales@machrio.com to discuss.',
+        a: 'Yes. We support annual contracts, framework agreements, and recurring supply partnerships. Contact support@machrio.com to discuss.',
       },
     ],
   },

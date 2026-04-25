@@ -53,7 +53,7 @@ export default async function HomePage() {
     description: 'Tools, parts, and industrial essentials platform',
     contactPoint: {
       '@type': 'ContactPoint',
-      email: 'sales@machrio.com',
+      email: 'support@machrio.com',
       contactType: 'sales',
       availableLanguage: ['English'],
     },

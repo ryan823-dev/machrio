@@ -6,11 +6,11 @@ export const dynamic = 'force-static'
 
 export const metadata: Metadata = {
   title: 'Contact Us | Machrio',
-  description: 'Get in touch with Machrio for customer support, sales inquiries, or business partnerships. We respond within 1 business day.',
+  description: 'Get in touch with Machrio for customer support, quotations, or business partnerships. We respond within 1 business day.',
   alternates: { canonical: '/contact' },
   openGraph: {
     title: 'Contact Us | Machrio',
-    description: 'Get in touch with Machrio for customer support, sales inquiries, or business partnerships. We respond within 1 business day.',
+    description: 'Get in touch with Machrio for customer support, quotations, or business partnerships. We respond within 1 business day.',
   },
 }
 
@@ -64,14 +64,14 @@ export default function ContactPage() {
                 </div>
                 <div>
                   <p className="text-sm text-secondary-500">Sales &amp; Quotations</p>
-                  <a href="mailto:sales@machrio.com" className="text-primary-600 hover:text-primary-800">
-                    sales@machrio.com
+                  <a href="mailto:support@machrio.com" className="text-primary-600 hover:text-primary-800">
+                    support@machrio.com
                   </a>
                 </div>
                 <div>
-                  <p className="text-sm text-secondary-500">Business Partnership</p>
-                  <a href="mailto:partner@machrio.com" className="text-primary-600 hover:text-primary-800">
-                    partner@machrio.com
+                  <p className="text-sm text-secondary-500">Business Partnerships</p>
+                  <a href="mailto:support@machrio.com" className="text-primary-600 hover:text-primary-800">
+                    support@machrio.com
                   </a>
                 </div>
               </div>

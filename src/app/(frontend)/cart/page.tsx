@@ -301,7 +301,7 @@ export default function CartPage() {
               <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700">
                 <p className="font-medium">We do not have a live shipping rate for this destination yet.</p>
                 <p className="mt-1">
-                  Select another shipping country, request an RFQ, or contact <a href="mailto:sales@machrio.com" className="underline">sales@machrio.com</a> for manual freight confirmation.
+                  Select another shipping country, request an RFQ, or contact <a href="mailto:support@machrio.com" className="underline">support@machrio.com</a> for manual freight confirmation.
                 </p>
               </div>
             ) : null}
