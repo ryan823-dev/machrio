@@ -10,13 +10,11 @@ interface FAQItem {
 interface EnhancedFAQProps {
   faqs: FAQItem[]
   categoryName: string
-  showSchema?: boolean
 }
 
-export function EnhancedFAQ({ 
-  faqs, 
+export function EnhancedFAQ({
+  faqs,
   categoryName,
-  showSchema = true 
 }: EnhancedFAQProps) {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
@@ -118,10 +116,10 @@ export function EnhancedFAQ({
       <div className="space-y-3">
         {filteredFAQs.length === 0 ? (
           <div className="py-8 text-center text-sm text-secondary-500">
-            No questions found matching "{searchQuery}"
+            No questions found matching &quot;{searchQuery}&quot;
           </div>
         ) : (
-          filteredFAQs.map((faq, index) => {
+          filteredFAQs.map((faq) => {
             const actualIndex = faqs.indexOf(faq)
             const isExpanded = expandAll || expandedIndex === actualIndex
             
@@ -192,26 +190,6 @@ export function EnhancedFAQ({
         </div>
       )}
       
-      {/* FAQ Schema */}
-      {showSchema && (
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'FAQPage',
-              mainEntity: faqs.map((faq) => ({
-                '@type': 'Question',
-                name: faq.question,
-                acceptedAnswer: {
-                  '@type': 'Answer',
-                  text: faq.answer,
-                },
-              })),
-            }),
-          }}
-        />
-      )}
     </section>
   )
 }

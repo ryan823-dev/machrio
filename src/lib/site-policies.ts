@@ -1,3 +1,4 @@
+import { SUPPORT_EMAIL } from '@/lib/contact'
 import { FREE_SHIPPING_THRESHOLD_USD, formatUsd } from '@/lib/shipping/rules'
 
 export const SHIPPING_POLICY_SUMMARY = {
@@ -28,7 +29,7 @@ export const SHIPPING_POLICY_SUMMARY = {
   },
   tracking: 'All shipments include online tracking sent by email after shipment.',
   policyPath: '/shipping-policy',
-  supportEmail: 'support@machrio.com',
+  supportEmail: SUPPORT_EMAIL,
 } as const
 
 export const RETURN_POLICY_SUMMARY = {
@@ -45,5 +46,5 @@ export const RETURN_POLICY_SUMMARY = {
   wrongItemClaimWindow: '48 hours from receipt',
   defectiveClaimWindow: '15 working days from delivery',
   policyPath: '/return-refund',
-  supportEmail: 'support@machrio.com',
+  supportEmail: SUPPORT_EMAIL,
 } as const

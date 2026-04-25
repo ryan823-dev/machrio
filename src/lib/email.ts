@@ -1,13 +1,14 @@
 import { Resend } from 'resend'
 import { getBankTransferReference } from '@/lib/bank-transfer'
+import { getAdminEmail, getFromEmail } from '@/lib/contact'
 import { issueOrderAccessLinks } from '@/lib/order-access'
 
 const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null
 
-const FROM_EMAIL = process.env.EMAIL_FROM || 'Machrio <support@machrio.com>'
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'support@machrio.com'
+const FROM_EMAIL = getFromEmail()
+const ADMIN_EMAIL = getAdminEmail()
 
 // ==================== 类型定义 ====================
 

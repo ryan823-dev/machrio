@@ -63,7 +63,7 @@ export default function ContactPage() {
                   </a>
                 </div>
                 <div>
-                  <p className="text-sm text-secondary-500">Sales &amp; Quotations</p>
+                  <p className="text-sm text-secondary-500">Quotes &amp; Procurement</p>
                   <a href="mailto:support@machrio.com" className="text-primary-600 hover:text-primary-800">
                     support@machrio.com
                   </a>
