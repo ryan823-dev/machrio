@@ -45,6 +45,13 @@ interface ProviderCompletionPayload {
   finish_reason: string
 }
 
+const MAX_PROVIDER_ATTEMPTS = 3
+const RETRYABLE_PROVIDER_ERRORS = [
+  'Model returned an empty response',
+  'Model returned no final answer text after tool execution',
+  'No response from AI',
+]
+
 function formatProductPrice(
   pricing: ReturnType<typeof parsePricing>,
   purchaseModeValue: string | null | undefined,
@@ -281,25 +288,37 @@ export async function createChatCompletion(
   const providerErrors: string[] = []
 
   for (const [index, config] of orderedProviders.entries()) {
-    try {
-      if (index > 0) {
-        console.warn(
-          `[AI] Falling back to ${config.provider}/${config.model} after previous provider failure(s).`,
-        )
-      }
+    if (index > 0) {
+      console.warn(
+        `[AI] Falling back to ${config.provider}/${config.model} after previous provider failure(s).`,
+      )
+    }
 
-      const completion = await createChatCompletionForProvider(config, messages, useTools)
-      validateCompletionPayload(completion, useTools)
+    for (let attempt = 1; attempt <= MAX_PROVIDER_ATTEMPTS; attempt += 1) {
+      try {
+        const completion = await createChatCompletionForProvider(config, messages, useTools)
+        validateCompletionPayload(completion, useTools)
 
-      return {
-        ...completion,
-        provider: config.provider,
-        model: config.model,
+        return {
+          ...completion,
+          provider: config.provider,
+          model: config.model,
+        }
+      } catch (error) {
+        const detail = error instanceof Error ? error.message : 'Unknown provider error'
+        const canRetry = attempt < MAX_PROVIDER_ATTEMPTS && shouldRetryProviderError(error)
+
+        if (canRetry) {
+          console.warn(
+            `[AI] Provider ${config.provider} returned a retryable response issue (${detail}). Retrying ${attempt + 1}/${MAX_PROVIDER_ATTEMPTS}.`,
+          )
+          continue
+        }
+
+        providerErrors.push(`${config.provider}/${config.model}: ${detail}`)
+        console.error(`[AI] Provider ${config.provider} failed:`, error)
+        break
       }
-    } catch (error) {
-      const detail = error instanceof Error ? error.message : 'Unknown provider error'
-      providerErrors.push(`${config.provider}/${config.model}: ${detail}`)
-      console.error(`[AI] Provider ${config.provider} failed:`, error)
     }
   }
 
@@ -488,6 +507,14 @@ function validateCompletionPayload(
   if (!useTools && !hasText) {
     throw new Error('Model returned no final answer text after tool execution')
   }
+}
+
+function shouldRetryProviderError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false
+  }
+
+  return RETRYABLE_PROVIDER_ERRORS.some((pattern) => error.message.includes(pattern))
 }
 
 async function fetchWithTimeout(
