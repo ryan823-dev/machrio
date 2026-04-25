@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { randomUUID } from 'crypto'
 import type { PoolClient } from 'pg'
 
 import {
@@ -89,6 +90,27 @@ type MessageProductRow = {
   name: string | null
   sku: string | null
   price: string | null
+}
+
+type LegacyConversationRow = {
+  id: string
+  status: string | null
+  priority: string | null
+  assigned_to: string | null
+  follow_up_status: string | null
+  follow_up_notes: string | null
+  first_message_at: Date | string | null
+  last_message_at: Date | string | null
+  source_page: string | null
+  source_url: string | null
+  user_id: string | null
+  user_name: string | null
+  user_email: string | null
+  user_phone: string | null
+  user_company: string | null
+  user_agent: string | null
+  metadata: Record<string, unknown> | null
+  intent_score: number | null
 }
 
 function toIsoString(value: Date | string | null | undefined): string {
@@ -609,220 +631,277 @@ async function saveConversationLocally(
   const client = await pool.connect()
 
   try {
-    await client.query('BEGIN')
-    await ensureConversationSchema(client)
+    const existingResult = await client.query<LegacyConversationRow>(
+      `
+        SELECT
+          id,
+          status,
+          priority,
+          assigned_to,
+          follow_up_status,
+          follow_up_notes,
+          first_message_at,
+          last_message_at,
+          source_page,
+          source_url,
+          user_id,
+          user_name,
+          user_email,
+          user_phone,
+          user_company,
+          user_agent,
+          metadata,
+          intent_score
+        FROM ai_conversations
+        WHERE session_id = $1
+        ORDER BY updated_at DESC NULLS LAST, created_at DESC NULLS LAST
+        LIMIT 1
+      `,
+      [snapshot.sessionId],
+    )
 
-    const existingDoc = await loadExistingConversation(client, snapshot.sessionId)
-    const mergedMessages = mergeMessages(existingDoc?.messages, snapshot.messages)
-    const conversationType = normalizeConversationType(snapshot.conversationType, mergedMessages)
+    const existingRow = existingResult.rows[0] || null
+    const existingMetadata =
+      existingRow?.metadata && typeof existingRow.metadata === 'object' ? existingRow.metadata : {}
+    const existingMessages = Array.isArray(existingMetadata.messages)
+      ? existingMetadata.messages
+          .map((message) => normalizeConversationMessage(message as ConversationMessage))
+          .filter((message): message is ConversationMessage => Boolean(message))
+      : []
+
+    const mergedMessages = mergeMessages(existingMessages, snapshot.messages)
+    const conversationType = normalizeConversationType(
+      snapshot.conversationType || existingMetadata.conversationType,
+      mergedMessages,
+    )
     const insights = deriveConversationInsights(mergedMessages, conversationType)
-    const mergedUser = mergeUserData(existingDoc?.user, snapshot.user, insights.contactEmail, insights.contactPhone)
-    const startedAt = existingDoc?.startedAt || mergedMessages[0]?.timestamp || new Date().toISOString()
+    const mergedUser = mergeUserData(
+      {
+        userId: existingRow?.user_id || undefined,
+        userName: existingRow?.user_name || undefined,
+        userEmail: existingRow?.user_email || undefined,
+        userPhone: existingRow?.user_phone || undefined,
+        userCompany: existingRow?.user_company || undefined,
+      },
+      snapshot.user,
+      insights.contactEmail,
+      insights.contactPhone,
+    )
+    const firstMessageAt = existingRow?.first_message_at || mergedMessages[0]?.timestamp || new Date().toISOString()
     const lastMessageAt = mergedMessages[mergedMessages.length - 1]?.timestamp || new Date().toISOString()
-    const latestSourcePage = snapshot.sourcePage || existingDoc?.latestSourcePage
-    const latestSourceUrl = snapshot.sourceUrl || existingDoc?.latestSourceUrl
-    const firstSourcePage = existingDoc?.firstSourcePage || latestSourcePage || 'unknown'
-    const firstSourceUrl = existingDoc?.firstSourceUrl || latestSourceUrl || 'unknown'
+    const sourcePage =
+      snapshot.sourcePage ||
+      (typeof existingMetadata.sourcePage === 'string' ? existingMetadata.sourcePage : undefined) ||
+      existingRow?.source_page ||
+      'unknown'
+    const sourceUrl =
+      snapshot.sourceUrl ||
+      (typeof existingMetadata.sourceUrl === 'string' ? existingMetadata.sourceUrl : undefined) ||
+      existingRow?.source_url ||
+      'unknown'
     const userAgent =
-      (typeof snapshot.metadata.userAgent === 'string' && snapshot.metadata.userAgent) || existingDoc?.userAgent
-    const referrer =
-      (typeof snapshot.metadata.referrer === 'string' && snapshot.metadata.referrer) || existingDoc?.referrer
+      (typeof snapshot.metadata.userAgent === 'string' && snapshot.metadata.userAgent) ||
+      existingRow?.user_agent ||
+      undefined
     const displayTitle = buildConversationDisplayTitle({
       sessionId: snapshot.sessionId,
       user: mergedUser,
       latestUserNeed: insights.latestUserNeed,
-      sourcePage: latestSourcePage || firstSourcePage,
+      sourcePage,
     })
 
-    const conversationResult = await client.query<{ id: number }>(
+    const metadata = {
+      ...existingMetadata,
+      displayTitle,
+      conversationType,
+      purchaseMode: insights.purchaseMode,
+      latestUserNeed: insights.latestUserNeed,
+      quantitySignal: insights.quantitySignal,
+      deliverySignal: insights.deliverySignal,
+      contactEmail: mergedUser.userEmail || insights.contactEmail || null,
+      contactPhone: mergedUser.userPhone || insights.contactPhone || null,
+      salesSummary: insights.salesSummary,
+      sourcePage,
+      sourceUrl,
+      lastCapturedAt: toIsoString(
+        typeof snapshot.metadata.timestamp === 'string' ? snapshot.metadata.timestamp : new Date().toISOString(),
+      ),
+      user: mergedUser,
+      messages: mergedMessages.map((message) => ({
+        role: message.role,
+        content: message.content,
+        timestamp: message.timestamp ? toIsoString(message.timestamp) : new Date().toISOString(),
+        products: (message.products || []).map((product) => ({
+          id: product.id,
+          name: product.name,
+          sku: product.sku,
+          price: product.price || null,
+        })),
+      })),
+      mentionedSkus: insights.mentionedSkus,
+      recommendedProducts: insights.recommendedProducts.map((product) => ({
+        id: product.id,
+        name: product.name,
+        sku: product.sku,
+        price: product.price || null,
+      })),
+      rawMetadata: snapshot.metadata,
+      syncVersion: 'legacy-ai-conversation-sync-v1',
+    }
+
+    const extractedNeeds = {
+      displayTitle,
+      latestUserNeed: insights.latestUserNeed,
+      purchaseMode: insights.purchaseMode,
+      quantitySignal: insights.quantitySignal,
+      deliverySignal: insights.deliverySignal,
+      contactEmail: mergedUser.userEmail || insights.contactEmail || null,
+      contactPhone: mergedUser.userPhone || insights.contactPhone || null,
+      mentionedSkus: insights.mentionedSkus,
+      recommendedProducts: insights.recommendedProducts.map((product) => ({
+        id: product.id,
+        name: product.name,
+        sku: product.sku,
+        price: product.price || null,
+      })),
+      salesSummary: insights.salesSummary,
+      messageCount: mergedMessages.length,
+    }
+
+    const productInterests = Array.from(
+      new Set(
+        [...insights.mentionedSkus, ...insights.recommendedProducts.map((product) => product.sku)].filter(Boolean),
+      ),
+    )
+
+    const priority =
+      existingRow?.priority ||
+      (insights.purchaseMode === 'rfq' || insights.purchaseMode === 'both' || insights.quantitySignal
+        ? 'high'
+        : 'medium')
+    const intentScore =
+      existingRow?.intent_score ??
+      (insights.purchaseMode === 'both' ? 90 : insights.purchaseMode === 'rfq' ? 80 : insights.quantitySignal ? 65 : 40)
+
+    if (existingRow) {
+      await client.query(
+        `
+          UPDATE ai_conversations
+          SET
+            conversation_type = $2,
+            last_message_at = $3,
+            message_count = $4,
+            source_page = $5,
+            source_url = $6,
+            user_agent = $7,
+            user_id = $8,
+            user_name = $9,
+            user_email = $10,
+            user_phone = $11,
+            user_company = $12,
+            extracted_needs = $13::jsonb,
+            metadata = $14::jsonb,
+            product_interests = $15::text[],
+            intent_score = $16,
+            priority = $17,
+            updated_at = now()
+          WHERE id = $1
+        `,
+        [
+          existingRow.id,
+          conversationType,
+          toIsoString(lastMessageAt),
+          mergedMessages.length,
+          sourcePage,
+          sourceUrl,
+          userAgent || null,
+          mergedUser.userId || null,
+          mergedUser.userName || null,
+          mergedUser.userEmail || null,
+          mergedUser.userPhone || null,
+          mergedUser.userCompany || null,
+          JSON.stringify(extractedNeeds),
+          JSON.stringify(metadata),
+          productInterests,
+          intentScore,
+          priority,
+        ],
+      )
+
+      return {
+        id: existingRow.id,
+        sessionId: snapshot.sessionId,
+        status: 'updated',
+      }
+    }
+
+    const conversationId = randomUUID()
+    await client.query(
       `
         INSERT INTO ai_conversations (
-          display_title,
+          id,
           session_id,
           status,
+          priority,
           conversation_type,
-          assigned_to_id,
-          started_at,
+          first_message_at,
           last_message_at,
           message_count,
-          purchase_mode,
-          first_source_page,
-          first_source_url,
-          latest_source_page,
-          latest_source_url,
-          user_user_id,
-          user_user_name,
-          user_user_email,
-          user_user_phone,
-          user_user_company,
-          latest_user_need,
-          quantity_signal,
-          delivery_signal,
-          contact_email,
-          contact_phone,
-          sales_summary,
+          source_page,
+          source_url,
           user_agent,
-          referrer,
-          last_captured_at,
-          notes
+          user_id,
+          user_name,
+          user_email,
+          user_phone,
+          user_company,
+          follow_up_status,
+          follow_up_notes,
+          extracted_needs,
+          metadata,
+          product_interests,
+          intent_score,
+          created_at,
+          updated_at
         )
         VALUES (
-          $1, $2, $3, $4, $5, $6, $7, $8, $9,
-          $10, $11, $12, $13, $14, $15, $16, $17, $18,
-          $19, $20, $21, $22, $23, $24, $25, $26, $27, $28
+          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
+          $11, $12, $13, $14, $15, $16, $17, $18,
+          $19::jsonb, $20::jsonb, $21::text[], $22, now(), now()
         )
-        ON CONFLICT (session_id) DO UPDATE SET
-          display_title = EXCLUDED.display_title,
-          status = EXCLUDED.status,
-          conversation_type = EXCLUDED.conversation_type,
-          assigned_to_id = EXCLUDED.assigned_to_id,
-          started_at = EXCLUDED.started_at,
-          last_message_at = EXCLUDED.last_message_at,
-          message_count = EXCLUDED.message_count,
-          purchase_mode = EXCLUDED.purchase_mode,
-          first_source_page = EXCLUDED.first_source_page,
-          first_source_url = EXCLUDED.first_source_url,
-          latest_source_page = EXCLUDED.latest_source_page,
-          latest_source_url = EXCLUDED.latest_source_url,
-          user_user_id = EXCLUDED.user_user_id,
-          user_user_name = EXCLUDED.user_user_name,
-          user_user_email = EXCLUDED.user_user_email,
-          user_user_phone = EXCLUDED.user_user_phone,
-          user_user_company = EXCLUDED.user_user_company,
-          latest_user_need = EXCLUDED.latest_user_need,
-          quantity_signal = EXCLUDED.quantity_signal,
-          delivery_signal = EXCLUDED.delivery_signal,
-          contact_email = EXCLUDED.contact_email,
-          contact_phone = EXCLUDED.contact_phone,
-          sales_summary = EXCLUDED.sales_summary,
-          user_agent = EXCLUDED.user_agent,
-          referrer = EXCLUDED.referrer,
-          last_captured_at = EXCLUDED.last_captured_at,
-          notes = EXCLUDED.notes,
-          updated_at = now()
-        RETURNING id
       `,
       [
-        displayTitle,
+        conversationId,
         snapshot.sessionId,
-        existingDoc?.status || 'new',
+        'new',
+        priority,
         conversationType,
-        existingDoc?.assignedTo || null,
-        toIsoString(startedAt),
+        toIsoString(firstMessageAt),
         toIsoString(lastMessageAt),
         mergedMessages.length,
-        insights.purchaseMode,
-        firstSourcePage,
-        firstSourceUrl,
-        latestSourcePage || firstSourcePage,
-        latestSourceUrl || firstSourceUrl,
+        sourcePage,
+        sourceUrl,
+        userAgent || null,
         mergedUser.userId || null,
         mergedUser.userName || null,
         mergedUser.userEmail || null,
         mergedUser.userPhone || null,
         mergedUser.userCompany || null,
-        insights.latestUserNeed || null,
-        insights.quantitySignal || null,
-        insights.deliverySignal || null,
-        mergedUser.userEmail || insights.contactEmail || null,
-        mergedUser.userPhone || insights.contactPhone || null,
-        insights.salesSummary || null,
-        userAgent || null,
-        referrer || null,
-        toIsoString(
-          typeof snapshot.metadata.timestamp === 'string' ? snapshot.metadata.timestamp : new Date().toISOString(),
-        ),
-        existingDoc?.notes || null,
+        'new',
+        null,
+        JSON.stringify(extractedNeeds),
+        JSON.stringify(metadata),
+        productInterests,
+        intentScore,
       ],
     )
 
-    const conversationId = conversationResult.rows[0]?.id
-    if (!conversationId) {
-      throw new Error('Failed to persist AI conversation')
-    }
-
-    await client.query(
-      'DELETE FROM ai_conversations_messages_products WHERE _parent_id IN (SELECT id FROM ai_conversations_messages WHERE _parent_id = $1)',
-      [conversationId],
-    )
-    await client.query('DELETE FROM ai_conversations_messages WHERE _parent_id = $1', [conversationId])
-    await client.query('DELETE FROM ai_conversations_recommended_products WHERE _parent_id = $1', [conversationId])
-    await client.query('DELETE FROM ai_conversations_mentioned_skus WHERE _parent_id = $1', [conversationId])
-
-    for (const [index, sku] of insights.mentionedSkus.entries()) {
-      await client.query(
-        `
-          INSERT INTO ai_conversations_mentioned_skus (_order, _parent_id, id, value)
-          VALUES ($1, $2, $3, $4)
-        `,
-        [index + 1, conversationId, buildChildRowId(snapshot.sessionId, 'sku', index), sku],
-      )
-    }
-
-    for (const [index, product] of insights.recommendedProducts.entries()) {
-      await client.query(
-        `
-          INSERT INTO ai_conversations_recommended_products (_order, _parent_id, id, product_id, name, sku, price)
-          VALUES ($1, $2, $3, $4, $5, $6, $7)
-        `,
-        [
-          index + 1,
-          conversationId,
-          buildChildRowId(snapshot.sessionId, 'recommended', index),
-          product.id,
-          product.name,
-          product.sku,
-          product.price || null,
-        ],
-      )
-    }
-
-    for (const [messageIndex, message] of mergedMessages.entries()) {
-      const messageRowId = buildChildRowId(snapshot.sessionId, 'message', messageIndex)
-
-      await client.query(
-        `
-          INSERT INTO ai_conversations_messages (_order, _parent_id, id, role, timestamp, content)
-          VALUES ($1, $2, $3, $4, $5, $6)
-        `,
-        [
-          messageIndex + 1,
-          conversationId,
-          messageRowId,
-          message.role,
-          message.timestamp ? toIsoString(message.timestamp) : new Date().toISOString(),
-          message.content,
-        ],
-      )
-
-      for (const [productIndex, product] of (message.products || []).entries()) {
-        await client.query(
-          `
-            INSERT INTO ai_conversations_messages_products (_order, _parent_id, id, product_id, name, sku, price)
-            VALUES ($1, $2, $3, $4, $5, $6, $7)
-          `,
-          [
-            productIndex + 1,
-            messageRowId,
-            buildChildRowId(snapshot.sessionId, 'message_product', messageIndex, productIndex),
-            product.id,
-            product.name,
-            product.sku,
-            product.price || null,
-          ],
-        )
-      }
-    }
-
-    await client.query('COMMIT')
-
     return {
-      id: String(conversationId),
+      id: conversationId,
       sessionId: snapshot.sessionId,
-      status: existingDoc ? 'updated' : 'created',
+      status: 'created',
     }
   } catch (error) {
-    await client.query('ROLLBACK').catch(() => null)
     throw error
   } finally {
     client.release()

@@ -29,7 +29,6 @@ import { Pages } from './collections/Pages'
 import { Industries } from './collections/Industries'
 import { Redirects } from './collections/Redirects'
 import { GlossaryTerms } from './collections/GlossaryTerms'
-import { AIConversations } from './collections/AIConversations'
 
 import { Homepage } from './globals/Homepage'
 import { SiteSettings } from './globals/SiteSettings'
@@ -105,7 +104,6 @@ export default buildConfig({
     Industries,
     Redirects,
     GlossaryTerms,
-    AIConversations,
   ],
   globals: [
     Homepage,
