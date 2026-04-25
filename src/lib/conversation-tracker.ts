@@ -1,33 +1,28 @@
 /**
  * AI Conversation Tracker
- * 
+ *
  * Saves AI assistant conversations to the admin backend for analysis
  * and customer requirement extraction.
  */
 
-interface ConversationMessage {
-  role: 'user' | 'assistant' | 'system'
-  content: string
-  products?: Array<{
-    id: string
-    name: string
-    sku: string
-    price?: string
-  }>
-}
+import {
+  detectConversationType,
+  normalizeConversationMessage,
+  type ConversationMessage,
+  type ConversationUserData,
+} from '@/lib/ai-conversation-insights'
 
-interface UserData {
-  userId?: string
-  userName?: string
-  userEmail?: string
-  userPhone?: string
-  userCompany?: string
+const LOCAL_CONVERSATION_SYNC_PATH = '/api/ai-conversation-sync'
+
+type ConversationSyncTarget = {
+  kind: 'local'
+  url: string
 }
 
 interface ConversationData {
   sessionId: string
   messages: ConversationMessage[]
-  user?: UserData
+  user?: ConversationUserData
   sourcePage?: string
   sourceUrl?: string
   conversationType?: string
@@ -48,15 +43,15 @@ export function generateSessionId(): string {
   // Check if we already have a session ID in sessionStorage
   if (typeof window !== 'undefined') {
     let sessionId = sessionStorage.getItem('machrio_conversation_session_id')
-    
+
     if (!sessionId) {
       sessionId = `sess_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`
       sessionStorage.setItem('machrio_conversation_session_id', sessionId)
     }
-    
+
     return sessionId
   }
-  
+
   // Server-side fallback
   return `sess_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`
 }
@@ -80,17 +75,57 @@ export function resetSessionId(): void {
   }
 }
 
+function getConversationSyncTargets(): ConversationSyncTarget[] {
+  return [
+    {
+      kind: 'local',
+      url: LOCAL_CONVERSATION_SYNC_PATH,
+    },
+  ]
+}
+
+async function parseSaveConversationResponse(
+  response: Response,
+  sessionId: string,
+): Promise<SaveConversationResponse> {
+  const contentType = response.headers.get('content-type') || ''
+
+  if (contentType.includes('application/json')) {
+    const json = (await response.json().catch(() => null)) as Partial<SaveConversationResponse> | null
+
+    return {
+      id: typeof json?.id === 'string' && json.id ? json.id : sessionId,
+      sessionId: typeof json?.sessionId === 'string' && json.sessionId ? json.sessionId : sessionId,
+      status: typeof json?.status === 'string' && json.status ? json.status : 'saved',
+      message: typeof json?.message === 'string' ? json.message : undefined,
+    }
+  }
+
+  const text = await response.text().catch(() => '')
+
+  return {
+    id: sessionId,
+    sessionId,
+    status: 'saved',
+    message: text || undefined,
+  }
+}
+
+async function readErrorResponse(response: Response): Promise<string> {
+  return (await response.text().catch(() => '')) || response.statusText || 'Unknown error'
+}
+
 /**
  * Get user data from session/context if available
  */
-export function getUserData(): UserData {
+export function getUserData(): ConversationUserData {
   if (typeof window === 'undefined') {
     return {}
   }
-  
+
   // Try to get user data from various sources
-  const userData: UserData = {}
-  
+  const userData: ConversationUserData = {}
+
   // Check for stored user info (if your app has this)
   try {
     const storedUser = localStorage.getItem('machrio_user_info')
@@ -105,7 +140,7 @@ export function getUserData(): UserData {
   } catch {
     // Ignore errors
   }
-  
+
   return userData
 }
 
@@ -119,10 +154,10 @@ export function getPageInfo(): { sourcePage: string; sourceUrl: string } {
       sourceUrl: 'unknown',
     }
   }
-  
+
   const path = window.location.pathname
   const title = document.title || 'Machrio'
-  
+
   return {
     sourcePage: `${title} - ${path}`,
     sourceUrl: window.location.href,
@@ -130,78 +165,37 @@ export function getPageInfo(): { sourcePage: string; sourceUrl: string } {
 }
 
 /**
- * Detect conversation type from messages
- */
-export function detectConversationType(messages: ConversationMessage[]): string {
-  if (messages.length === 0) return 'general'
-  
-  const lastUserMessage = messages
-    .filter(m => m.role === 'user')
-    .pop()
-  
-  if (!lastUserMessage) return 'general'
-  
-  const content = lastUserMessage.content.toLowerCase()
-  
-  // Check for product inquiries
-  if (content.includes('product') || content.includes('item') || content.includes('buy') || 
-      content.includes('price') || content.includes('cost') || content.includes('quote')) {
-    return 'product_inquiry'
-  }
-  
-  // Check for RFQ/bulk orders
-  if (content.includes('bulk') || content.includes('rfq') || content.includes('wholesale') || 
-      content.includes('large quantity') || content.includes('b2b')) {
-    return 'rfq_inquiry'
-  }
-  
-  // Check for shipping questions
-  if (content.includes('shipping') || content.includes('delivery') || content.includes('track')) {
-    return 'shipping_inquiry'
-  }
-  
-  // Check for returns
-  if (content.includes('return') || content.includes('refund') || content.includes('exchange')) {
-    return 'returns_support'
-  }
-  
-  // Check for technical support
-  if (content.includes('how to') || content.includes('help') || content.includes('issue') || 
-      content.includes('problem')) {
-    return 'technical_support'
-  }
-  
-  return 'general'
-}
-
-/**
- * Save conversation to admin backend
- * 
+ * Save conversation to the configured backend.
+ *
+ * The browser always sends snapshots to the same-origin sync route so the site
+ * can forward them server-side without depending on NEXT_PUBLIC_* build-time
+ * env vars in production.
+ *
  * @param data - Conversation data to save
  * @returns Promise with save result
  */
 export async function saveConversation(
   data: ConversationData
 ): Promise<SaveConversationResponse | null> {
-  const adminApiUrl = process.env.NEXT_PUBLIC_ADMIN_API_URL
-  
-  // Skip if admin API URL is not configured
-  if (!adminApiUrl) {
-    console.warn('[Conversation Tracker] Admin API URL not configured. Skipping conversation save.')
+  const normalizedMessages = data.messages
+    .map((message) => normalizeConversationMessage(message))
+    .filter((message): message is ConversationMessage => Boolean(message))
+
+  if (normalizedMessages.length === 0) {
     return null
   }
-  
+
   try {
     const { sourcePage, sourceUrl } = getPageInfo()
     const userData = getUserData()
-    
+
     const payload = {
       sessionId: data.sessionId,
-      messages: data.messages.map(m => ({
-        role: m.role,
-        content: m.content,
-        contentType: 'text',
-        contextData: m.products ? { products: m.products } : undefined,
+      messages: normalizedMessages.map((message) => ({
+        role: message.role,
+        content: message.content,
+        products: message.products,
+        timestamp: message.timestamp,
       })),
       user: {
         ...userData,
@@ -209,7 +203,7 @@ export async function saveConversation(
       },
       sourcePage: data.sourcePage || sourcePage,
       sourceUrl: data.sourceUrl || sourceUrl,
-      conversationType: data.conversationType || detectConversationType(data.messages),
+      conversationType: data.conversationType || detectConversationType(normalizedMessages),
       metadata: {
         userAgent: typeof window !== 'undefined' ? navigator.userAgent : undefined,
         referrer: typeof window !== 'undefined' ? document.referrer : undefined,
@@ -217,38 +211,63 @@ export async function saveConversation(
         ...data.metadata,
       },
     }
-    
-    const response = await fetch(`${adminApiUrl}/api/ai-conversations`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        // Add API key if configured
-        ...(process.env.NEXT_PUBLIC_ADMIN_API_KEY && {
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_ADMIN_API_KEY}`,
-        }),
-      },
-      body: JSON.stringify(payload),
-    })
-    
-    if (!response.ok) {
-      const errorText = await response.text()
-      console.error('[Conversation Tracker] Failed to save conversation:', response.status, errorText)
-      return null
+
+    const syncTargets = getConversationSyncTargets()
+    let lastError: { status?: number; text: string; url: string } | null = null
+
+    for (const target of syncTargets) {
+      const response = await fetch(target.url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(process.env.NEXT_PUBLIC_ADMIN_API_KEY && {
+            Authorization: `Bearer ${process.env.NEXT_PUBLIC_ADMIN_API_KEY}`,
+          }),
+        },
+        body: JSON.stringify(payload),
+        keepalive: true,
+      })
+
+      if (response.ok) {
+        const result = await parseSaveConversationResponse(response, data.sessionId)
+        console.log('[Conversation Tracker] Conversation saved successfully:', {
+          id: result.id,
+          target: target.url,
+          kind: target.kind,
+        })
+        return result
+      }
+
+      const errorText = await readErrorResponse(response)
+      lastError = {
+        status: response.status,
+        text: errorText,
+        url: target.url,
+      }
+
+      console.error(
+        '[Conversation Tracker] Failed to save conversation snapshot:',
+        response.status,
+        target.url,
+        errorText,
+      )
     }
-    
-    const result = await response.json()
-    console.log('[Conversation Tracker] Conversation saved successfully:', result.id)
-    
-    return result
+
+    console.error('[Conversation Tracker] Failed to save conversation snapshot after trying all targets.', {
+      sessionId: data.sessionId,
+      targets: syncTargets.map((target) => target.url),
+      lastError,
+    })
+    return null
   } catch (error) {
-    console.error('[Conversation Tracker] Error saving conversation:', error)
+    console.error('[Conversation Tracker] Error saving conversation snapshot:', error)
     return null
   }
 }
 
 /**
  * Save a single message to an existing conversation
- * 
+ *
  * @param sessionId - Session ID of the conversation
  * @param message - Message to save
  * @returns Promise with save result
@@ -257,41 +276,12 @@ export async function saveMessage(
   sessionId: string,
   message: ConversationMessage
 ): Promise<boolean> {
-  const adminApiUrl = process.env.NEXT_PUBLIC_ADMIN_API_URL
-  
-  if (!adminApiUrl) {
-    return false
-  }
-  
-  try {
-    const payload = {
-      messageType: message.role,
-      content: message.content,
-      contentType: 'text',
-      contextData: message.products ? { products: message.products } : undefined,
-    }
-    
-    const response = await fetch(`${adminApiUrl}/api/ai-conversations/session/${sessionId}/messages`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(process.env.NEXT_PUBLIC_ADMIN_API_KEY && {
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_ADMIN_API_KEY}`,
-        }),
-      },
-      body: JSON.stringify(payload),
-    })
-    
-    if (!response.ok) {
-      console.error('[Conversation Tracker] Failed to save message:', response.status)
-      return false
-    }
-    
-    return true
-  } catch (error) {
-    console.error('[Conversation Tracker] Error saving message:', error)
-    return false
-  }
+  const result = await saveConversation({
+    sessionId,
+    messages: [message],
+  })
+
+  return Boolean(result)
 }
 
 /**
@@ -300,35 +290,8 @@ export async function saveMessage(
 export async function batchSaveConversations(
   conversations: ConversationData[]
 ): Promise<number> {
-  const adminApiUrl = process.env.NEXT_PUBLIC_ADMIN_API_URL
-  
-  if (!adminApiUrl) {
-    return 0
-  }
-  
-  try {
-    const response = await fetch(`${adminApiUrl}/api/ai-conversations/batch`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(process.env.NEXT_PUBLIC_ADMIN_API_KEY && {
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_ADMIN_API_KEY}`,
-        }),
-      },
-      body: JSON.stringify({ conversations }),
-    })
-    
-    if (!response.ok) {
-      console.error('[Conversation Tracker] Batch save failed:', response.status)
-      return 0
-    }
-    
-    const result = await response.json()
-    return result.saved || 0
-  } catch (error) {
-    console.error('[Conversation Tracker] Batch save error:', error)
-    return 0
-  }
+  const results = await Promise.all(conversations.map((conversation) => saveConversation(conversation)))
+  return results.filter(Boolean).length
 }
 
 /**
@@ -340,34 +303,40 @@ export class ConversationTracker {
   private messages: ConversationMessage[] = []
   private saveTimeout: NodeJS.Timeout | null = null
   private autoSaveEnabled: boolean = false
-  
+
   constructor(sessionId?: string) {
     this.sessionId = sessionId || generateSessionId()
   }
-  
+
   /**
    * Add a message to the tracker
    */
   addMessage(message: ConversationMessage): void {
-    this.messages.push(message)
-    
+    const normalizedMessage = normalizeConversationMessage(message)
+
+    if (!normalizedMessage) {
+      return
+    }
+
+    this.messages.push(normalizedMessage)
+
     // Auto-save if enabled
     if (this.autoSaveEnabled) {
       this.scheduleAutoSave()
     }
   }
-  
+
   /**
    * Enable auto-save with debounce
    */
   enableAutoSave(debounceMs: number = 5000): void {
     this.autoSaveEnabled = true
-    
+
     if (this.messages.length > 0) {
       this.scheduleAutoSave(debounceMs)
     }
   }
-  
+
   /**
    * Disable auto-save
    */
@@ -378,7 +347,7 @@ export class ConversationTracker {
       this.saveTimeout = null
     }
   }
-  
+
   /**
    * Schedule an auto-save
    */
@@ -386,12 +355,12 @@ export class ConversationTracker {
     if (this.saveTimeout) {
       clearTimeout(this.saveTimeout)
     }
-    
+
     this.saveTimeout = setTimeout(() => {
       this.save()
     }, debounceMs)
   }
-  
+
   /**
    * Save the conversation
    */
@@ -399,34 +368,34 @@ export class ConversationTracker {
     if (this.messages.length === 0) {
       return null
     }
-    
+
     const result = await saveConversation({
       sessionId: this.sessionId,
       messages: [...this.messages],
     })
-    
+
     // Clear messages after successful save
     if (result) {
       this.messages = []
     }
-    
+
     return result
   }
-  
+
   /**
    * Get current message count
    */
   getMessageCount(): number {
     return this.messages.length
   }
-  
+
   /**
    * Get session ID
    */
   getSessionId(): string {
     return this.sessionId
   }
-  
+
   /**
    * Reset the tracker
    */
