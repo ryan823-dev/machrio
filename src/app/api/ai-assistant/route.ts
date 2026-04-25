@@ -2,9 +2,22 @@ import { NextResponse } from 'next/server'
 import { processConversation, ChatMessage } from '@/lib/ai/chat'
 import { getConfiguredProviderConfigs } from '@/lib/ai/config'
 
+const AI_PROXY_HEADER = 'x-machrio-ai-proxy'
+const DEFAULT_AI_ASSISTANT_PROXY_URL = 'https://machrio.vercel.app/api/ai-assistant'
+
+interface AIAssistantRequestPayload {
+  messages?: ChatMessage[]
+  message?: string
+  conversationHistory?: ChatMessage[]
+  source?: string
+  categoryName?: string
+  categoryPath?: string
+}
+
 export async function POST(request: Request) {
   try {
-    const { messages, message, conversationHistory, source, categoryName, categoryPath } = await request.json()
+    const payload = await request.json() as AIAssistantRequestPayload
+    const { messages, message, conversationHistory, source, categoryName, categoryPath } = payload
 
     // Support both formats: { messages: [...] } or { message: "string" } or { message, conversationHistory }
     let history: ChatMessage[] = []
@@ -49,6 +62,11 @@ export async function POST(request: Request) {
     const configuredProviders = getConfiguredProviderConfigs()
     
     if (configuredProviders.length === 0) {
+      const proxiedResponse = await proxyAIRequest(payload, request)
+      if (proxiedResponse) {
+        return NextResponse.json(proxiedResponse)
+      }
+
       // Fall back to mock response if no API key
       return NextResponse.json({
         reply: generateFallbackResponse(userMessage, source, history),
@@ -69,6 +87,11 @@ export async function POST(request: Request) {
     } catch (error) {
       console.error('AI assistant provider error:', error)
 
+      const proxiedResponse = await proxyAIRequest(payload, request)
+      if (proxiedResponse) {
+        return NextResponse.json(proxiedResponse)
+      }
+
       return NextResponse.json({
         reply: generateFallbackResponse(userMessage, source, history),
         mode: 'fallback',
@@ -84,6 +107,78 @@ export async function POST(request: Request) {
       error: error instanceof Error ? error.message : 'Unknown error',
       mode: 'error',
     })
+  }
+}
+
+function getAIProxyUrl(): string | null {
+  const configuredUrl = process.env.AI_ASSISTANT_PROXY_URL?.trim()
+  if (configuredUrl) {
+    return configuredUrl
+  }
+
+  return process.env.NODE_ENV === 'production'
+    ? DEFAULT_AI_ASSISTANT_PROXY_URL
+    : null
+}
+
+// When the current host cannot reach a working provider, forward the request to
+// the Vercel production API that already has the AI credentials configured.
+async function proxyAIRequest(
+  payload: AIAssistantRequestPayload,
+  request: Request,
+): Promise<Record<string, unknown> | null> {
+  if (request.headers.get(AI_PROXY_HEADER) === '1') {
+    return null
+  }
+
+  const proxyUrl = getAIProxyUrl()
+  if (!proxyUrl) {
+    return null
+  }
+
+  try {
+    const currentHost = new URL(request.url).host
+    const proxyHost = new URL(proxyUrl).host
+
+    if (currentHost === proxyHost) {
+      return null
+    }
+
+    const response = await fetch(proxyUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        [AI_PROXY_HEADER]: '1',
+      },
+      body: JSON.stringify(payload),
+    })
+
+    if (!response.ok) {
+      console.error('AI assistant proxy failed with status:', response.status)
+      return null
+    }
+
+    const data = await response.json() as Record<string, unknown>
+    const reply = typeof data.reply === 'string'
+      ? data.reply
+      : typeof data.response === 'string'
+        ? data.response
+        : ''
+
+    if (!reply.trim()) {
+      return null
+    }
+
+    return {
+      ...data,
+      reply,
+      response: typeof data.response === 'string' ? data.response : reply,
+      mode: 'ai',
+      proxied: true,
+    }
+  } catch (error) {
+    console.error('AI assistant proxy error:', error)
+    return null
   }
 }
 
