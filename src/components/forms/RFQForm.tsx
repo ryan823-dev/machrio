@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, type FormEvent } from 'react'
+import { clearRfqDraft, getRfqDraft, type RfqDraft } from '@/lib/rfq-draft'
 
 interface FormErrors {
   name?: string
@@ -9,12 +10,52 @@ interface FormErrors {
   message?: string
 }
 
+interface FormValues {
+  name: string
+  email: string
+  phone: string
+  company: string
+  products: string
+  quantity: string
+  timeline: string
+  message: string
+  website_url: string
+}
+
+const EMPTY_FORM_VALUES: FormValues = {
+  name: '',
+  email: '',
+  phone: '',
+  company: '',
+  products: '',
+  quantity: '',
+  timeline: '',
+  message: '',
+  website_url: '',
+}
+
 export function RFQForm() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
   const [fieldErrors, setFieldErrors] = useState<FormErrors>({})
+  const [formValues, setFormValues] = useState<FormValues>(EMPTY_FORM_VALUES)
+  const [aiDraft, setAiDraft] = useState<RfqDraft | null>(null)
   const formRef = useRef<HTMLFormElement>(null)
   const errorSummaryRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const draft = getRfqDraft()
+    if (!draft) return
+
+    setAiDraft(draft)
+    setFormValues((prev) => ({
+      ...prev,
+      products: draft.products || prev.products,
+      quantity: draft.quantity || prev.quantity,
+      timeline: draft.timeline || prev.timeline,
+      message: draft.message || prev.message,
+    }))
+  }, [])
 
   // Accessibility: Focus on first error field when validation fails
   useEffect(() => {
@@ -31,12 +72,12 @@ export function RFQForm() {
     }
   }, [status])
 
-  function validateForm(formData: FormData): FormErrors {
+  function validateForm(values: FormValues): FormErrors {
     const errors: FormErrors = {}
-    const name = formData.get('name')?.toString().trim()
-    const email = formData.get('email')?.toString().trim()
-    const company = formData.get('company')?.toString().trim()
-    const message = formData.get('message')?.toString().trim()
+    const name = values.name.trim()
+    const email = values.email.trim()
+    const company = values.company.trim()
+    const message = values.message.trim()
 
     if (!name) errors.name = 'Full name is required'
     if (!email) {
@@ -50,17 +91,30 @@ export function RFQForm() {
     return errors
   }
 
+  function handleInputChange(field: keyof FormValues, value: string) {
+    setFormValues((prev) => ({ ...prev, [field]: value }))
+  }
+
+  function handleClearAiDraft() {
+    clearRfqDraft()
+    setAiDraft(null)
+    setFormValues((prev) => ({
+      ...prev,
+      products: '',
+      quantity: '',
+      timeline: '',
+      message: '',
+    }))
+  }
+
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault()
     setStatus('loading')
     setErrorMsg('')
     setFieldErrors({})
 
-    const form = e.currentTarget
-    const formData = new FormData(form)
-
     // Client-side validation
-    const errors = validateForm(formData)
+    const errors = validateForm(formValues)
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors)
       setStatus('error')
@@ -69,16 +123,25 @@ export function RFQForm() {
     }
 
     const body = {
-      name: formData.get('name'),
-      email: formData.get('email'),
-      phone: formData.get('phone') || '',
-      company: formData.get('company'),
-      products: formData.get('products') || '',
-      quantity: formData.get('quantity') || '',
-      timeline: formData.get('timeline') || '',
-      message: formData.get('message'),
-      website_url: formData.get('website_url') || '',
-      sourcePage: '/rfq',
+      name: formValues.name.trim(),
+      email: formValues.email.trim(),
+      phone: formValues.phone.trim(),
+      company: formValues.company.trim(),
+      products: formValues.products.trim(),
+      quantity: formValues.quantity.trim(),
+      timeline: formValues.timeline.trim(),
+      message: formValues.message.trim(),
+      website_url: formValues.website_url.trim(),
+      sourcePage: aiDraft ? `/rfq (prefilled from ${aiDraft.source})` : '/rfq',
+      aiContext: aiDraft
+        ? {
+            source: aiDraft.source,
+            sessionId: aiDraft.sessionId || '',
+            sourcePage: aiDraft.sourcePage || '',
+            sourceUrl: aiDraft.sourceUrl || '',
+            updatedAt: aiDraft.updatedAt,
+          }
+        : null,
     }
 
     try {
@@ -97,7 +160,9 @@ export function RFQForm() {
       }
 
       setStatus('success')
-      form.reset()
+      setFormValues(EMPTY_FORM_VALUES)
+      clearRfqDraft()
+      setAiDraft(null)
     } catch {
       setStatus('error')
       setErrorMsg('Network error. Please check your connection and try again.')
@@ -133,6 +198,33 @@ export function RFQForm() {
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="mt-8 space-y-6" noValidate>
+      {aiDraft && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          <p className="font-medium">We prefilled this RFQ from your AI conversation.</p>
+          <p className="mt-1 text-amber-800">
+            Review and edit the details before submitting. Source: {aiDraft.sourcePage || aiDraft.source}
+          </p>
+          <div className="mt-3 flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleClearAiDraft}
+              className="text-xs font-medium text-amber-800 underline underline-offset-2 hover:text-amber-900"
+            >
+              Clear AI draft
+            </button>
+            <span className="text-xs text-amber-700">
+              Updated {new Date(aiDraft.updatedAt).toLocaleString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+              })}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Accessibility: Error summary at top */}
       {hasErrors && errorMsg && (
         <div 
@@ -158,6 +250,8 @@ export function RFQForm() {
             <input 
               type="text" id="name" name="name" required 
               className="input-field"
+              value={formValues.name}
+              onChange={(e) => handleInputChange('name', e.target.value)}
               aria-required="true"
               aria-invalid={!!fieldErrors.name}
               aria-describedby={fieldErrors.name ? 'name-error' : undefined}
@@ -174,6 +268,8 @@ export function RFQForm() {
             <input 
               type="text" id="company" name="company" required 
               className="input-field"
+              value={formValues.company}
+              onChange={(e) => handleInputChange('company', e.target.value)}
               aria-required="true"
               aria-invalid={!!fieldErrors.company}
               aria-describedby={fieldErrors.company ? 'company-error' : undefined}
@@ -190,6 +286,8 @@ export function RFQForm() {
             <input 
               type="email" id="email" name="email" required 
               className="input-field"
+              value={formValues.email}
+              onChange={(e) => handleInputChange('email', e.target.value)}
               aria-required="true"
               aria-invalid={!!fieldErrors.email}
               aria-describedby={fieldErrors.email ? 'email-error' : undefined}
@@ -202,7 +300,14 @@ export function RFQForm() {
             <label htmlFor="phone" className="mb-1 block text-sm text-secondary-700">
               Phone
             </label>
-            <input type="tel" id="phone" name="phone" className="input-field" />
+            <input
+              type="tel"
+              id="phone"
+              name="phone"
+              className="input-field"
+              value={formValues.phone}
+              onChange={(e) => handleInputChange('phone', e.target.value)}
+            />
           </div>
         </div>
       </fieldset>
@@ -221,6 +326,8 @@ export function RFQForm() {
               name="products"
               placeholder="e.g., MRO-GL-001, Nitrile Exam Gloves"
               className="input-field"
+              value={formValues.products}
+              onChange={(e) => handleInputChange('products', e.target.value)}
             />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -234,6 +341,8 @@ export function RFQForm() {
                 name="quantity"
                 placeholder="e.g., 5000 units"
                 className="input-field"
+                value={formValues.quantity}
+                onChange={(e) => handleInputChange('quantity', e.target.value)}
               />
             </div>
             <div>
@@ -246,6 +355,8 @@ export function RFQForm() {
                 name="timeline"
                 placeholder="e.g., Within 2 weeks"
                 className="input-field"
+                value={formValues.timeline}
+                onChange={(e) => handleInputChange('timeline', e.target.value)}
               />
             </div>
           </div>
@@ -261,6 +372,8 @@ export function RFQForm() {
               rows={5}
               placeholder="Describe your requirements, specifications, or any questions..."
               className="input-field"
+              value={formValues.message}
+              onChange={(e) => handleInputChange('message', e.target.value)}
               aria-required="true"
               aria-invalid={!!fieldErrors.message}
               aria-describedby={fieldErrors.message ? 'message-error' : undefined}
@@ -273,7 +386,16 @@ export function RFQForm() {
       </fieldset>
 
       {/* Honeypot - anti-spam */}
-      <input type="text" name="website_url" className="hidden" tabIndex={-1} autoComplete="off" aria-hidden="true" />
+      <input
+        type="text"
+        name="website_url"
+        className="hidden"
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden="true"
+        value={formValues.website_url}
+        onChange={(e) => handleInputChange('website_url', e.target.value)}
+      />
 
       <div className="flex items-center gap-4">
         <button

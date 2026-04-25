@@ -101,6 +101,18 @@ export default async function ArticlePage({
   const tags = article.tags || []
   const faqs = article.faq || []
   const topicCluster = getArticleTopicCluster(slug)
+  const cta = article.cta || {
+    title: 'Need Help Finding the Right Products?',
+    description:
+      'Our sourcing team can help you find exactly what you need. Get a custom quote within 24 hours.',
+    primaryLabel: 'Request a Quote',
+    primaryHref: '/rfq',
+    secondaryLabel: 'Browse Products',
+    secondaryHref: '/category',
+  }
+  const primaryCtaHref = cta.primaryAiPrompt
+    ? `/knowledge-center/${slug}?ai=1&prompt=${encodeURIComponent(cta.primaryAiPrompt)}`
+    : cta.primaryHref
 
   // Adjacent articles for navigation
   const { prev, next } = await getAdjacentArticles(slug)
@@ -293,14 +305,14 @@ export default async function ArticlePage({
       {/* ── CTA ── */}
       <section className="mt-10 rounded-lg border border-amber-200 bg-amber-50 p-6 text-center">
         <h2 className="text-lg font-semibold text-amber-800">
-          Need Help Finding the Right Products?
+          {cta.title}
         </h2>
         <p className="mt-2 text-sm text-amber-700">
-          Our sourcing team can help you find exactly what you need. Get a custom quote within 24 hours.
+          {cta.description}
         </p>
         <div className="mt-4 flex justify-center gap-3">
-          <Link href="/rfq" className="btn-accent">Request a Quote</Link>
-          <Link href="/category" className="btn-secondary">Browse Products</Link>
+          <Link href={primaryCtaHref} className="btn-accent">{cta.primaryLabel}</Link>
+          <Link href={cta.secondaryHref} className="btn-secondary">{cta.secondaryLabel}</Link>
         </div>
       </section>
     </div>

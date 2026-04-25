@@ -574,7 +574,7 @@ async function loadExistingConversation(
     firstSourceUrl: row.first_source_url || undefined,
     latestSourcePage: row.latest_source_page || undefined,
     latestSourceUrl: row.latest_source_url || undefined,
-    startedAt: row.started_at || undefined,
+    startedAt: row.started_at ? toIsoString(row.started_at) : undefined,
     userAgent: row.user_agent || undefined,
     referrer: row.referrer || undefined,
     user: {
@@ -587,7 +587,7 @@ async function loadExistingConversation(
     messages: messageResult.rows.map((message) => ({
       role: message.role || 'user',
       content: message.content || '',
-      timestamp: message.timestamp || undefined,
+      timestamp: message.timestamp ? toIsoString(message.timestamp) : undefined,
       products: productsByMessageId.get(message.id),
     })),
   }

@@ -52,6 +52,7 @@ const categoryColors: Record<string, string> = {
 // ---------------------------------------------------------------------------
 
 const coverThemes: { keywords: string[]; gradient: string; icon: string }[] = [
+  { keywords: ['laser', 'level', 'measuring', 'layout', 'tile', 'cabinet', 'ceiling'], gradient: 'from-sky-600 to-cyan-400', icon: '📐' },
   { keywords: ['safety', 'protection', 'ppe', 'respiratory', 'eye', 'face', 'hearing', 'head', 'fall'], gradient: 'from-red-500 to-orange-400', icon: '🛡️' },
   { keywords: ['footwear', 'shoe', 'boot'], gradient: 'from-amber-500 to-yellow-400', icon: '👢' },
   { keywords: ['hand', 'arm', 'glove'], gradient: 'from-blue-500 to-cyan-400', icon: '🧤' },

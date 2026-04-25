@@ -33,11 +33,19 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const sanitizedSourcePage = sanitizeSourcePage(data.sourcePage)
+    const aiContext = normalizeAiContext(data.aiContext)
+
+    const resolvedSourcePage = buildRfqSourcePage(sanitizedSourcePage, aiContext)
+
     // Build full message with product details
     const parts = [data.message]
     if (data.products) parts.push(`Products: ${data.products}`)
     if (data.quantity) parts.push(`Quantity: ${data.quantity}`)
     if (data.timeline) parts.push(`Timeline: ${data.timeline}`)
+    if (aiContext?.source) {
+      parts.push(buildAiContextBlock(aiContext))
+    }
     const fullMessage = parts.join('\n\n')
 
     // Store in database
@@ -48,7 +56,7 @@ export async function POST(request: NextRequest) {
         customerPhone: data.phone,
         customerCompany: data.company,
         message: fullMessage,
-        sourcePage: data.sourcePage,
+        sourcePage: resolvedSourcePage,
       })
 
       if (submission?.id) {
@@ -57,7 +65,7 @@ export async function POST(request: NextRequest) {
           rfqId: submission.id,
           customerEmail: data.email,
           customerCompany: data.company,
-          sourcePage: data.sourcePage,
+          sourcePage: resolvedSourcePage,
         })
       }
     } catch (dbError) {
@@ -72,7 +80,7 @@ export async function POST(request: NextRequest) {
       phone: data.phone,
       company: data.company,
       message: fullMessage,
-      sourcePage: data.sourcePage,
+      sourcePage: resolvedSourcePage,
     }
 
     // Send both emails in parallel
@@ -98,4 +106,80 @@ export async function POST(request: NextRequest) {
       { status: 500 },
     )
   }
+}
+
+function sanitizeText(value: unknown, maxLength: number): string {
+  const raw = typeof value === 'string' ? value.trim() : ''
+  if (!raw) return ''
+  return raw.length <= maxLength ? raw : `${raw.slice(0, maxLength - 3)}...`
+}
+
+function sanitizeSourcePage(value: unknown, fallback = ''): string {
+  const page = sanitizeText(value, 200)
+  if (!page) return fallback
+  return page.startsWith('/') ? page : `/${page}`
+}
+
+function normalizeAiContext(value: unknown): {
+  source?: string
+  sessionId?: string
+  sourcePage?: string
+  sourceUrl?: string
+  updatedAt?: string
+} | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null
+
+  const raw = value as Record<string, unknown>
+  const source = sanitizeText(raw.source, 32)
+  if (!source) return null
+
+  return {
+    source,
+    sessionId: sanitizeText(raw.sessionId, 80) || undefined,
+    sourcePage: sanitizeSourcePage(raw.sourcePage || '', ''),
+    sourceUrl: sanitizeText(raw.sourceUrl, 180) || undefined,
+    updatedAt: sanitizeText(raw.updatedAt, 40) || undefined,
+  }
+}
+
+function buildRfqSourcePage(
+  sourcePage: string,
+  aiContext: {
+    source?: string
+    sessionId?: string
+    sourcePage?: string
+  } | null,
+): string {
+  const base = sourcePage || '/rfq'
+  if (!aiContext?.source) return base
+
+  const segments = [base, `draft-source=${aiContext.source}`]
+
+  if (aiContext.sourcePage) {
+    segments.push(`origin=${aiContext.sourcePage}`)
+  }
+
+  if (aiContext.sessionId) {
+    segments.push(`session=${aiContext.sessionId}`)
+  }
+
+  return segments.join(' | ')
+}
+
+function buildAiContextBlock(aiContext: {
+  source?: string
+  sessionId?: string
+  sourcePage?: string
+  sourceUrl?: string
+  updatedAt?: string
+}): string {
+  const lines = ['AI draft context:']
+
+  if (aiContext.source) lines.push(`- Draft source: ${aiContext.source}`)
+  if (aiContext.sessionId) lines.push(`- Session ID: ${aiContext.sessionId}`)
+  if (aiContext.sourcePage) lines.push(`- Origin page: ${aiContext.sourcePage}`)
+  if (aiContext.sourceUrl) lines.push(`- Origin URL: ${aiContext.sourceUrl}`)
+  if (aiContext.updatedAt) lines.push(`- Draft updated at: ${aiContext.updatedAt}`)
+
+  return lines.join('\n')
 }

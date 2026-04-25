@@ -15,6 +15,82 @@ export interface SeoCategoryLink {
   description: string
 }
 
+export interface SeoPageRoadmapItem {
+  slug: string
+  name: string
+  priority: 'high' | 'medium' | 'low'
+  status: 'implemented' | 'ready' | 'pending-content' | 'pending-availability'
+  owner: string
+  rationale: string
+}
+
+export const SEO_CATEGORY_ROADMAP: SeoPageRoadmapItem[] = [
+  {
+    slug: 'haz-loc',
+    name: 'HazLoc Isolation Hardware',
+    priority: 'high',
+    status: 'ready',
+    owner: 'SEO',
+    rationale: 'High-intent industrial safety flow from lockout and electrical isolation pages; currently covered by dedicated copy in seo.ts.',
+  },
+  {
+    slug: 'explosion-proof-limit-switch',
+    name: 'Explosion-Proof Limit Switches',
+    priority: 'high',
+    status: 'ready',
+    owner: 'SEO',
+    rationale: 'Critical electrical/plant maintenance intent with certification and downtime sensitivity.',
+  },
+  {
+    slug: 'terminal-bridge-connectors',
+    name: 'Terminal Bridge Connectors',
+    priority: 'medium',
+    status: 'ready',
+    owner: 'SEO',
+    rationale: 'Connector compatibility checks are frequent in lockout and panel workflows and should move from generic catalog browsing to fit-driven landing copy.',
+  },
+  {
+    slug: 'rf-coax-connectors',
+    name: 'RF/Coax Connectors',
+    priority: 'medium',
+    status: 'ready',
+    owner: 'SEO',
+    rationale: 'High support load from signal-chain mismatch risk; copy now includes feasibility-first checks before checkout or RFQ routing.',
+  },
+  {
+    slug: 'cleanroom-bucket',
+    name: 'Cleanroom Buckets',
+    priority: 'medium',
+    status: 'ready',
+    owner: 'SEO',
+    rationale: 'Crosses janitorial and facility workflows with compliance-style buying behavior; moved to dedicated intent copy.',
+  },
+  {
+    slug: 'flooring',
+    name: 'Flooring Materials',
+    priority: 'low',
+    status: 'ready',
+    owner: 'SEO',
+    rationale: 'Needs full cluster expansion in final page structure later, currently seeded with decision-oriented SEO skeleton.',
+  },
+  {
+    slug: 'epdm',
+    name: 'EPDM Materials',
+    priority: 'low',
+    status: 'ready',
+    owner: 'SEO',
+    rationale: 'Spec-heavy commodity where stock and custom profile path should be split for quote routing.',
+  },
+  {
+    slug: 'engineered-wood-flooring',
+    name: 'Engineered Wood Flooring',
+    priority: 'low',
+    status: 'ready',
+    owner: 'SEO',
+    rationale: 'Needs stronger category-level page structure; current copy now aligns to spec-and-installation decision path.',
+  },
+]
+
 export interface SeoCategoryOverride {
   metaTitle: string
   metaDescription: string
@@ -618,6 +694,309 @@ const CATEGORY_OVERRIDES: Record<string, SeoCategoryOverride> = {
         question: 'When should a facility request a quote for mop sinks?',
         answer:
           'RFQ is the better route for multi-site standards, replacement projects with matching accessories, or any order where installation details need review before purchasing.',
+      },
+    ],
+  },
+  'haz-loc': {
+    metaTitle: 'Hazardous-Location Lockout Solutions (HazLoc) for Energy Isolation',
+    metaDescription:
+      'Source safe isolation components for hazardous locations by electrical area classification, mounting envelope, certification requirements, and lockout workflow.',
+    summary:
+      'HazLoc isolation should start from compliance and environment, not just size. Buyers need clarity on area classification, connector compatibility, lockout device type, and physical fit so they can confirm in-plant feasibility before checkout.',
+    buyingFactors: [
+      'Verify the hazardous-area classification and the required protection approach before selecting terminal or device-level hardware.',
+      'Check compatibility across lockout points, switch blocks, and terminal interfaces before mixing products.',
+      'Confirm certification and labeling requirements (Ex/ATEX, UL, CSA or local equivalent) and how they fit your existing permit regime.',
+    ],
+    applications: [
+      'Hazardous-area breaker lockout and panel shutdown workflows',
+      'Plant isolation programs where lockout hardware must align with electrical zoning',
+      'Maintenance teams standardizing lock ownership under compliance-controlled processes',
+    ],
+    procurementChecklist: [
+      'List hazardous-zone class/division, equipment model family, and required approval marks.',
+      'Record exact breaker/terminal interface dimensions, lock hasp interface, and available maintenance clearances.',
+      'Check whether the facility needs intrinsic-safe accessories, compatible covers, and label-ready procedures.',
+    ],
+    faq: [
+      {
+        question: 'How should buyers compare lockout options for HazLoc environments?',
+        answer:
+          'Buyers should compare terminal compatibility, zone compatibility, certification scope, and replacement keying or key-control policy together instead of evaluating components in isolation.',
+      },
+      {
+        question: 'Can ordinary lockout components be used in explosive environments?',
+        answer:
+          'Usually not without explicit compliance checks. For HazLoc points, verify classification, equipment approvals, and mounting method first, then confirm stock and replacement path.',
+      },
+      {
+        question: 'When should RFQ be used for HazLoc lockout components?',
+        answer:
+          'RFQ is recommended when multiple zone classes, device brands, or installation variants exist and you need a full compliance + fit confirmation plan.',
+      },
+    ],
+    guideSlugs: ['how-to-choose-lockout-tagout-kits-buying-guide'],
+  },
+  'explosion-proof-limit-switch': {
+    metaTitle: 'Explosion-Proof Limit Switches for Safe Plant Isolation',
+    metaDescription:
+      'Evaluate explosion-proof limit switches by zone class, mounting style, travel range, and lockout compatibility before sourcing from stock or quoted runs.',
+    summary:
+      'Explosion-proof limit switches are compliance-sensitive procurement items. The page should help buyers verify switch type, mounting method, wiring constraints, and replacement compatibility before purchase.',
+    buyingFactors: [
+      'Check whether the existing limit-switch style is direct-mount or retrofit and whether replacement is truly plug-compatible.',
+      'Verify zone class assumptions, certification labels, and ambient constraints before ordering multiple SKUs.',
+      'Confirm travel range and actuator access, especially if replacement timing is urgent.',
+    ],
+    applications: [
+      'Hazardous area motor or conveyor shutdown points',
+      'Conveyed-material systems and process-control isolated shutoffs',
+      'Preventive maintenance and replacement projects with strict downtime windows',
+    ],
+    procurementChecklist: [
+      'Capture motor/control cabinet model, hazardous-zone type, and approved switch spec.',
+      'List existing wiring method, mounting depth, and replacement spare part standards.',
+      'Confirm stock lead time constraints for in-house maintenance windows.',
+    ],
+    faq: [
+      {
+        question: 'What is the first step when sourcing explosion-proof limit switches?',
+        answer:
+          'Confirm the existing zone class and switch family first, then choose a replacement path based on mounting compatibility and certification compatibility.',
+      },
+      {
+        question: 'Can stock checks be done before full RFQ?',
+        answer:
+          'Yes. For urgent replacement points, confirm exact model parity and shipping window first, then convert to RFQ if multiple variants are needed.',
+      },
+      {
+        question: 'When should the team switch from direct checkout to quote?',
+        answer:
+          'Use RFQ when multiple certified variants are possible or when procurement needs compatibility validation across several hazardous locations.',
+      },
+    ],
+  },
+  'terminal-bridge-connectors': {
+    metaTitle: 'Terminal Bridge Connectors for Reliable Electrical Lockout Work',
+    metaDescription:
+      'Compare terminal bridge connectors by pin spacing, dielectric strength, mounting durability, and lockout compatibility for breaker and panel workflows.',
+    summary:
+      'Terminal bridge connectors are often treated as generic hardware but usually fail in the field due to pin mismatch. This page should help buyers check size, spacing, and isolation compatibility before selecting stock or quoting.',
+    buyingFactors: [
+      'Validate pin spacing and terminal pitch against actual equipment drawings before deciding quantity.',
+      'Check if connector body material and insulation match the ambient environment and lockout requirements.',
+      'Separate temporary isolation connectors and long-term replacement parts by maintenance strategy.',
+    ],
+    applications: [
+      'Breaker lockout and maintenance handover kits',
+      'Electrical isolation tasks requiring temporary bridging',
+      'Procurement refreshes where connector compatibility drives downtime risk',
+    ],
+    procurementChecklist: [
+      'Capture pin pitch, terminal depth, rated current, and insulation class.',
+      'Confirm panel clearances and whether existing accessories are reusable.',
+      'Check whether connector stocks are needed for same-day shutdown replacement.',
+    ],
+    faq: [
+      {
+        question: 'How should we avoid wrong terminal connector selection?',
+        answer:
+          'Start with measured connector geometry and panel interface photos before comparing catalog variants. A small geometry mismatch creates major field delays.',
+      },
+      {
+        question: 'What is the best way to validate connector feasibility quickly?',
+        answer:
+          'Batch-check core sizes, pin spacing, and keying pattern against a small representative sample before bulk purchase.',
+      },
+      {
+        question: 'When should RFQ be used for terminal bridge connectors?',
+        answer:
+          'When multiple panel families are involved, or when lead time risk requires a full replacement-scope validation instead of single-item checkout.',
+      },
+    ],
+  },
+  'rf-coax-connectors': {
+    metaTitle: 'RF/Coax Connectors for Industrial Control and Instrumentation',
+    metaDescription:
+      'Source RF and coax connectors by connector family, shielding, impedance, bend radius, and current stock status for industrial control, telecom, and instrumentation paths.',
+    summary:
+      'RF/coax connector buying is usually high-friction when signal chain compatibility is unclear. Buyers should resolve interface type, pinout, shielding, and mechanical retention before purchase.',
+    buyingFactors: [
+      'Verify connector family (BNC, SMA, N-type, F, etc.) and required impedance profile first.',
+      'Compare cable compatibility, shielding level, and bend handling with planned cable runs.',
+      'Distinguish direct stockable connectors from items needing lead-time confirmation and RF validation.',
+    ],
+    applications: [
+      'Industrial instrumentation and field telemetry wiring',
+      'Control cabinets with mixed connector generations',
+      'Project-ready procurement where downtime is sensitive to cable mismatches',
+    ],
+    procurementChecklist: [
+      'Record exact connector gender, shell type, keying method, and cable interface.',
+      'Check whether grounding/strain relief and environmental seals are mandatory.',
+      'Request stock verification for the first batch and a replacement path for extended rollout.',
+    ],
+    faq: [
+      {
+        question: 'What should be validated before direct-purchasing RF/coax connectors?',
+        answer:
+          'Connector family, impedance target, cable compatibility, and required mechanical retention are the minimum checks. Missing any one increases risk of rework.',
+      },
+      {
+        question: 'Are these connectors typically stocked?',
+        answer:
+          'Some connectors are frequently stocked while high-frequency or specialized variants are often lead-time items. A short feasibility check usually prevents wrong-route orders.',
+      },
+      {
+        question: 'When should RFQ be used for connector rollouts?',
+        answer:
+          'RFQ is suitable when multiple interface standards are involved or when a single connector decision affects a larger project bill of materials.',
+      },
+    ],
+  },
+  'cleanroom-bucket': {
+    metaTitle: 'Cleanroom Buckets and Service Buckets for Controlled Environments',
+    metaDescription:
+      'Select cleanroom-capable mop buckets by surface material, lid retention, contamination control, and replacement-stock feasibility for clean environments.',
+    summary:
+      'Cleanroom bucket selection is more than size. Buyers should verify construction material, sealing method, contamination-control performance, and stocking depth before comparing offers.',
+    buyingFactors: [
+      'Check bucket body material and sealing path for your contamination class.',
+      'Match lid design, handle stability, and footprint to your standard cleaning workflow.',
+      'Verify compatibility with cleaning supplies and cleaning-cycle frequency before setting reorder quantities.',
+    ],
+    applications: [
+      'Pharma and biotech cleanrooms',
+      'Electronics and precision manufacturing support teams',
+      'High-control janitorial and service workflows with repeat scheduling',
+    ],
+    procurementChecklist: [
+      'Record material, volume, lid/handle requirements, and wipe-resistant finish needs.',
+      'Define replacement lead time and preventive maintenance cycle needs.',
+      'Check if mop, wringer, and accessory compatibility can be standardized.',
+    ],
+    faq: [
+      {
+        question: 'What matters most for cleanroom bucket purchasing?',
+        answer:
+          'Material compatibility, contamination control design, and operational compatibility with existing tooling are the core checks for cleanroom buckets.',
+      },
+      {
+        question: 'How to reduce risk in cleanroom bucket replenishment?',
+        answer:
+          'Standardize size and lid/accessory specs across lines and confirm supplier stock before placing multi-site replenishment.',
+      },
+      {
+        question: 'When is RFQ better for cleanroom buckets?',
+        answer:
+          'RFQ helps when multiple facility sites or compliance constraints exist, especially if replacement consistency matters across shifts.',
+      },
+    ],
+  },
+  flooring: {
+    metaTitle: 'Industrial Flooring & Floor Protection Materials',
+    metaDescription:
+      'Choose flooring solutions by traffic class, slip performance, chemical resistance, installation method, and lead-time for production-ready rollout.',
+    summary:
+      'Flooring procurement on industrial sites is mostly specification-led. Buyers should check use-case class, thickness, adhesion method, and replacement pattern before comparing RFQ and checkout options.',
+    buyingFactors: [
+      'Validate load class, wear target, and chemical exposure before any supplier comparison.',
+      'Compare installation process, seam handling, and maintenance burden as part of long-term floor ownership.',
+      'Separate direct stock candidates from custom spec batches when planning budget and timing.',
+    ],
+    applications: [
+      'Warehouses and loading zones with heavy traffic',
+      'Clean and service aisles with specific slip/cleaning requirements',
+      'Facility upgrades where replacement downtime is constrained',
+    ],
+    procurementChecklist: [
+      'Record active loads, rolling impact, and required skid resistance.',
+      'Capture adhesive/substrate requirements and required installation window.',
+      'Decide between stocked modules and project-specific engineered rolls/tiles.',
+    ],
+    faq: [
+      {
+        question: 'How should we start a flooring procurement search?',
+        answer:
+          'Start from traffic class and environment, then choose between stocked standard sizes and engineered custom sizes.',
+      },
+      {
+        question: 'When is RFQ needed for flooring?',
+        answer:
+          'RFQ helps for high-volume site upgrades, large engineered roll runs, and specifications requiring coordinated subgrade or adhesive planning.',
+      },
+    ],
+  },
+  epdm: {
+    metaTitle: 'EPDM Materials and Accessories for Industrial Waterproofing',
+    metaDescription:
+      'Select EPDM compounds by thickness, hardness, UV resistance, temperature band, and compatibility for industrial waterproofing and gaskets.',
+    summary:
+      'EPDM buying decisions are sensitive to environmental fit and installation method. This page should help buyers choose compound and size spec, and confirm stock feasibility early.',
+    buyingFactors: [
+      'Define exposure temperature, UV exposure, chemical contact, and mechanical load before finalizing compound.',
+      'Check thickness and hardness ranges against actual sealing location.',
+      'Validate manufacturing lead times for custom profiles versus stocked profiles.',
+    ],
+    applications: [
+      'Gasket, seal, and gasket-compatible replacement workflows',
+      'Waterproofing and vibration damping in industrial environments',
+      'Facility retrofit projects where material compatibility is constrained',
+    ],
+    procurementChecklist: [
+      'Record temperature and weather profile, service life expectations, and compatible substrate.',
+      'Measure critical dimensions and tolerances before order.',
+      'Plan either stock check for standard profiles or RFQ for custom geometry.',
+    ],
+    faq: [
+      {
+        question: 'What should buyers compare for EPDM purchases?',
+        answer:
+          'Thickness, hardness, UV resistance, and substrate compatibility are the non-negotiable comparison points for durable EPDM outcomes.',
+      },
+      {
+        question: 'Can standard EPDM stock satisfy engineered wood or flooring upgrades?',
+        answer:
+          'Sometimes, but only when size, tolerance, and environment-specific hardness requirements match the project spec.',
+      },
+      {
+        question: 'When is quote support useful for EPDM?',
+        answer:
+          'Use RFQ for long-run projects, custom profiles, and multi-site rollout where spec uniformity and delivery timing matter.',
+      },
+    ],
+  },
+  'engineered-wood-flooring': {
+    metaTitle: 'Engineered Wood Flooring for Industrial and Facility Use',
+    metaDescription:
+      'Source engineered wood flooring by wear layer, finish, edge profile, slip behavior, and lead-time for facility and industrial-use zones.',
+    summary:
+      'Engineered wood flooring should be selected as a system: base, finish, edge, and installation method all affect durability. Buyers should resolve use-zone requirements before procurement.',
+    buyingFactors: [
+      'Match thickness, finish class, and edge profile to the actual load and maintenance cycle.',
+      'Check moisture tolerance, installation method, and adhesive compatibility with existing subfloor.',
+      'Split direct stockable standard boards from custom lot runs for timing control.',
+    ],
+    applications: [
+      'High-traffic service and support corridors with industrial load needs',
+      'Commercial and mixed-use industrial-adjacent spaces',
+      'Maintenance and replacement cycles where uptime and consistency matter',
+    ],
+    procurementChecklist: [
+      'Capture subfloor profile, expected load class, and installation method.',
+      'Record acoustic and slip requirements, finish treatment, and expected service life.',
+      'Define lot size and replacement frequency to decide stock vs RFQ routing.',
+    ],
+    faq: [
+      {
+        question: 'How to choose engineered wood flooring for industrial-adjacent spaces?',
+        answer:
+          'Prioritize wear layer, edge type, and maintenance routine over color alone, especially where replacement windows are constrained.',
+      },
+      {
+        question: 'When should flooring be moved to RFQ flow?',
+        answer:
+          'RFQ is useful for multi-room or multi-site standardization with custom lot runs, especially when installation support is required.',
       },
     ],
   },

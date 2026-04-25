@@ -33,11 +33,11 @@ export default async function InvoicePage({ params, searchParams }: InvoicePageP
     accessToken,
   })
 
+  const canonicalOrderNumber = order.order_number
+
   if (!accessResult) {
     return <OrderAccessRequired orderNumber={canonicalOrderNumber} />
   }
-
-  const canonicalOrderNumber = order.order_number
   const orderPath = buildOrderPath(canonicalOrderNumber, accessResult.via === 'token' ? accessToken : undefined)
 
   const customer = {

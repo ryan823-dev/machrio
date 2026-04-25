@@ -16,6 +16,7 @@ import {
   requestDirectOrderLookup,
   type OrderLookupDraft,
 } from '@/lib/order-lookup-chat'
+import { buildRfqDraftFromConversation, saveRfqDraft } from '@/lib/rfq-draft'
 
 interface Message {
   role: 'user' | 'assistant'
@@ -419,10 +420,40 @@ export function HeroAIChat() {
     } else if (action.type === 'create_rfq') {
       const products = (action.data as Record<string, unknown>)?.products as ProductResult[] | undefined
       if (products && products.length > 0) {
-        setReqSheet(prev => ({ ...prev, purchaseMode: 'rfq' }))
-        appendAssistantMessage(
-          `RFQ draft created with ${products.length} item(s):\n${products.map(p => `  - ${p.name} (${p.sku})`).join('\n')}\n\nView your draft at /rfq or tell me more specs to refine it.`,
-        )
+        const nextReqSheet = { ...reqSheet, purchaseMode: 'rfq' as const, shortlist: reqSheet.shortlist.length > 0 ? reqSheet.shortlist : products }
+        setReqSheet(nextReqSheet)
+
+        const draft = buildRfqDraftFromConversation({
+          source: 'hero-ai',
+          sessionId: conversationTrackerRef.current?.getSessionId(),
+          sourcePage: typeof window !== 'undefined' ? window.location.pathname : undefined,
+          sourceUrl: typeof window !== 'undefined' ? window.location.href : undefined,
+          messages: messages.map((message) => ({
+            role: message.role,
+            content: message.content,
+            products: message.products?.map((product) => ({
+              id: product.id,
+              name: product.name,
+              sku: product.sku,
+              price: product.price,
+            })),
+          })),
+          requirementSheet: {
+            ...nextReqSheet,
+            shortlist: nextReqSheet.shortlist.map((product) => ({
+              id: product.id,
+              name: product.name,
+              sku: product.sku,
+              price: product.price,
+            })),
+          },
+        })
+
+        if (draft) {
+          saveRfqDraft(draft)
+        }
+
+        window.location.href = '/rfq?source=hero-ai'
       }
     } else if (action.type === 'add_to_cart') {
       const products = (action.data as Record<string, unknown>)?.products as ProductResult[] | undefined

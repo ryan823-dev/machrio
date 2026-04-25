@@ -15,6 +15,7 @@ import {
   requestDirectOrderLookup,
   type OrderLookupDraft,
 } from '@/lib/order-lookup-chat'
+import { buildRfqDraftFromConversation, saveRfqDraft } from '@/lib/rfq-draft'
 
 interface ProductCard {
   id: string
@@ -107,7 +108,15 @@ function ProductCardItem({
   )
 }
 
-export function AIAssistant() {
+interface AIAssistantLaunchConfig {
+  shouldOpen?: boolean
+  launchPrompt?: string
+}
+
+export function AIAssistant({
+  shouldOpen = false,
+  launchPrompt = '',
+}: AIAssistantLaunchConfig = {}) {
   const [isOpen, setIsOpen] = useState(false)
   const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE])
   const [input, setInput] = useState('')
@@ -116,6 +125,8 @@ export function AIAssistant() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const messagesContainerRef = useRef<HTMLDivElement>(null)
   const conversationTrackerRef = useRef<ConversationTracker | null>(null)
+  const messagesRef = useRef<Message[]>([INITIAL_MESSAGE])
+  const processedAiLaunchRef = useRef<string | null>(null)
   const cart = useOptionalCart()
   const canAddToCart = Boolean(cart)
   const { shouldHideFloatingButton } = useAIAssistantVisibility()
@@ -146,6 +157,10 @@ export function AIAssistant() {
     }
   }, [messages])
 
+  useEffect(() => {
+    messagesRef.current = messages
+  }, [messages])
+
   function handleAddToCart(product: ProductCard) {
     if (!cart) return
 
@@ -169,7 +184,11 @@ export function AIAssistant() {
       includeInConversation,
     }
 
-    setMessages((prev) => [...prev, message])
+    setMessages((prev) => {
+      const updatedMessages = [...prev, message]
+      messagesRef.current = updatedMessages
+      return updatedMessages
+    })
 
     if (conversationTrackerRef.current) {
       conversationTrackerRef.current.addMessage({
@@ -219,9 +238,7 @@ export function AIAssistant() {
     }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    const trimmed = input.trim()
+  async function submitMessage(trimmed: string) {
     if (!trimmed || isLoading) return
 
     const userMsg: Message = {
@@ -230,8 +247,9 @@ export function AIAssistant() {
       content: trimmed,
       includeInConversation: !orderLookupDraft,
     }
-    setMessages((prev) => [...prev, userMsg])
-    setInput('')
+    const nextMessages = [...messagesRef.current, userMsg]
+    setMessages(nextMessages)
+    messagesRef.current = nextMessages
 
     // Track user message
     if (conversationTrackerRef.current) {
@@ -249,7 +267,7 @@ export function AIAssistant() {
     setIsLoading(true)
 
     try {
-      const aiMessages = [...messages, userMsg]
+      const aiMessages = nextMessages
         .filter((m) => m.includeInConversation !== false)
         .map((m) => ({ role: m.role, content: m.content }))
 
@@ -271,7 +289,9 @@ export function AIAssistant() {
         products: products.length > 0 ? products : undefined,
       }
       
-      setMessages((prev) => [...prev, assistantMsg])
+      const updatedMessages = [...nextMessages, assistantMsg]
+      setMessages(updatedMessages)
+      messagesRef.current = updatedMessages
 
       // Track assistant message
       if (conversationTrackerRef.current) {
@@ -292,7 +312,9 @@ export function AIAssistant() {
         role: 'assistant', 
         content: 'Connection error. Please try again.' 
       }
-      setMessages((prev) => [...prev, errorMsg])
+      const updatedMessages = [...nextMessages, errorMsg]
+      setMessages(updatedMessages)
+      messagesRef.current = updatedMessages
 
       // Track error message
       if (conversationTrackerRef.current) {
@@ -304,6 +326,57 @@ export function AIAssistant() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  useEffect(() => {
+    const shouldLaunch = shouldOpen
+    const prompt = launchPrompt
+    const launchKey = `${shouldLaunch ? 'open' : 'closed'}:${prompt}`
+
+    if (!shouldLaunch || processedAiLaunchRef.current === launchKey) {
+      return
+    }
+
+    processedAiLaunchRef.current = launchKey
+    setIsOpen(true)
+
+    if (prompt) {
+      setInput('')
+      void submitMessage(prompt)
+    }
+  }, [shouldOpen, launchPrompt])
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    const trimmed = input.trim()
+    if (!trimmed || isLoading) return
+    setInput('')
+    await submitMessage(trimmed)
+  }
+
+  function handleContinueToRfq() {
+    const draft = buildRfqDraftFromConversation({
+      source: 'ai-assistant',
+      sessionId: conversationTrackerRef.current?.getSessionId(),
+      sourcePage: typeof window !== 'undefined' ? window.location.pathname : undefined,
+      sourceUrl: typeof window !== 'undefined' ? window.location.href : undefined,
+      messages: messagesRef.current.filter((message) => message.id !== 'welcome').map((message) => ({
+        role: message.role,
+        content: message.content,
+        products: message.products?.map((product) => ({
+          id: product.id,
+          name: product.name,
+          sku: product.sku,
+          price: product.price,
+        })),
+      })),
+    })
+
+    if (draft) {
+      saveRfqDraft(draft)
+    }
+
+    window.location.href = '/rfq?source=ai-assistant'
   }
 
   return (
@@ -409,6 +482,23 @@ export function AIAssistant() {
               >
                 Order Help
               </button>
+            </div>
+          )}
+
+          {messages.some((message) => message.role === 'user') && (
+            <div className="border-t border-amber-100 bg-amber-50 px-4 py-2">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-xs text-amber-800">
+                  Ready to formalize this request? We&apos;ll carry your AI conversation into the RFQ form.
+                </p>
+                <button
+                  type="button"
+                  onClick={handleContinueToRfq}
+                  className="flex-shrink-0 rounded-md bg-amber-500 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-amber-600"
+                >
+                  Continue to RFQ
+                </button>
+              </div>
             </div>
           )}
 

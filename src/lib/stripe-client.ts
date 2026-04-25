@@ -38,7 +38,7 @@ export async function getStripePublishableKey(): Promise<string | null> {
   return publishableKeyPromise
 }
 
-export async function getStripePromise(): Promise<Promise<Stripe | null>> {
+export async function getStripePromise(): Promise<Stripe | null> {
   const key = await getStripePublishableKey()
   if (!isValidKey(key)) {
     throw new Error('Stripe is not properly configured')

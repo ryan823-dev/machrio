@@ -123,7 +123,7 @@ export default function StripePayment({
 
     async function init() {
       try {
-        const nextStripePromise = await getStripePromise()
+        const nextStripePromise = getStripePromise()
         if (cancelled) return
 
         setStripePromise(nextStripePromise)
