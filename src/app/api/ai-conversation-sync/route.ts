@@ -33,6 +33,7 @@ const AI_CONVERSATIONS_COLLECTION = 'ai-conversations'
 const DEFAULT_EXTERNAL_CONVERSATION_SYNC_PATH = '/api/ai-conversations/ingest-snapshot'
 const LEGACY_EXTERNAL_CONVERSATION_SYNC_PATH = '/api/ai-conversations'
 const DEFAULT_PRODUCTION_ADMIN_API_BASE_URL = 'https://machrio-admin-production.up.railway.app'
+const EXTERNAL_SYNC_TIMEOUT_MS = 3000
 const PRODUCTION_SITE_HOSTNAMES = new Set([
   'machrio.com',
   'www.machrio.com',
@@ -428,41 +429,67 @@ async function saveConversationExternally(
   let lastError: { status?: number; text: string; url: string } | null = null
 
   for (const target of targets) {
-    const response = await fetch(target, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(authorizationToken && {
-          Authorization: `Bearer ${authorizationToken}`,
-        }),
-      },
-      body: JSON.stringify(snapshot),
-      cache: 'no-store',
-    })
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), EXTERNAL_SYNC_TIMEOUT_MS)
 
-    if (response.ok) {
-      const result = await parseSaveConversationResponse(response, snapshot.sessionId)
-      console.log('[ai-conversation-sync] mirrored conversation to admin backend:', {
+    try {
+      const response = await fetch(target, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(authorizationToken && {
+            Authorization: `Bearer ${authorizationToken}`,
+          }),
+        },
+        body: JSON.stringify(snapshot),
+        cache: 'no-store',
+        signal: controller.signal,
+      })
+
+      if (response.ok) {
+        const result = await parseSaveConversationResponse(response, snapshot.sessionId)
+        console.log('[ai-conversation-sync] mirrored conversation to admin backend:', {
+          sessionId: snapshot.sessionId,
+          target,
+          status: result.status,
+        })
+        return result
+      }
+
+      const errorText = await readErrorResponse(response)
+      lastError = {
+        status: response.status,
+        text: errorText,
+        url: target,
+      }
+
+      console.error('[ai-conversation-sync] failed to mirror conversation to admin backend:', {
         sessionId: snapshot.sessionId,
         target,
-        status: result.status,
+        status: response.status,
+        errorText,
       })
-      return result
-    }
+    } catch (error) {
+      const errorText =
+        error instanceof Error && error.name === 'AbortError'
+          ? `Request timed out after ${EXTERNAL_SYNC_TIMEOUT_MS}ms`
+          : error instanceof Error
+            ? error.message
+            : 'Unknown admin mirror error'
 
-    const errorText = await readErrorResponse(response)
-    lastError = {
-      status: response.status,
-      text: errorText,
-      url: target,
-    }
+      lastError = {
+        text: errorText,
+        url: target,
+      }
 
-    console.error('[ai-conversation-sync] failed to mirror conversation to admin backend:', {
-      sessionId: snapshot.sessionId,
-      target,
-      status: response.status,
-      errorText,
-    })
+      console.error('[ai-conversation-sync] failed to mirror conversation to admin backend:', {
+        sessionId: snapshot.sessionId,
+        target,
+        errorText,
+      })
+    } finally {
+      clearTimeout(timeoutId)
+    }
   }
 
   console.error('[ai-conversation-sync] exhausted admin sync targets without success:', {
