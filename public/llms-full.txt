@@ -101,11 +101,11 @@ Every page on Machrio includes an AI-powered sourcing assistant that can:
 
 ## Sitemap
 
-Full sitemap available at: https://www.machrio.com/sitemap.xml
+Full sitemap available at: https://machrio.com/sitemap.xml
 
 ## Contact
 
 - Contact: support@machrio.com
 - Support: support@machrio.com
-- RFQ submissions: https://www.machrio.com/rfq
-- Website: https://www.machrio.com
+- RFQ submissions: https://machrio.com/rfq
+- Website: https://machrio.com

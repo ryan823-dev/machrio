@@ -5,6 +5,7 @@ import { StructuredData } from '@/components/shared/StructuredData'
 // 完全静态生成，构建时生成 HTML
 export const dynamic = 'force-static'
 const SITE_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://machrio.com'
+const ORGANIZATION_LOGO_PATH = '/machrio-icon.png'
 
 export const metadata: Metadata = {
   title: 'About Us | Machrio',
@@ -26,7 +27,7 @@ const aboutPageSchema = {
     '@type': 'Organization',
     name: 'Machrio',
     url: SITE_URL,
-    logo: `${SITE_URL}/logo.png`,
+    logo: `${SITE_URL}${ORGANIZATION_LOGO_PATH}`,
     foundingDate: '2024',
     slogan: 'Your trusted source for tools, parts, and industrial essentials',
     description: 'B2B industrial e-commerce platform for MRO supplies — safety, adhesives, power transmission, material handling, cleaning, packaging, lighting, and tool storage.',

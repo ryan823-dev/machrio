@@ -2,15 +2,16 @@ import type { Metadata } from 'next'
 import { notFound, permanentRedirect } from 'next/navigation'
 import Link from 'next/link'
 import { cache } from 'react'
-import { getPool, safeQuery } from '@/lib/db'
+import { safeQuery } from '@/lib/db'
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 import { StructuredData } from '@/components/shared/StructuredData'
 import { FAQSchema, FAQSection } from '@/components/shared/FAQSchema'
+import { BuyerSummaryPanel } from '@/components/shared/BuyerSummaryPanel'
 import { AddToCartButton } from '@/components/shared/AddToCartButton'
 import { TieredPricingTable } from '@/components/product/TieredPricingTable'
 import { TrustBadges } from '@/components/product/TrustBadges'
 import { AddToQuoteButton } from '@/components/product/AddToQuoteButton'
-import { RelatedProducts } from '@/components/product/RelatedProducts'
+import { RelatedProductsAsync } from '@/components/product/RelatedProductsAsync'
 import { ImageZoom } from '@/components/product/ImageZoom'
 import { RecentlyViewed, TrackProductView } from '@/components/product/RecentlyViewed'
 import { AlsoViewed, TrackProductViewServer } from '@/components/product/AlsoViewed'
@@ -30,7 +31,6 @@ import {
   getProductExactMatchToken,
   getProductMetaDescription,
   getProductSeoName,
-  isRelevantRelatedProduct,
   withBrandSuffix,
 } from '@/lib/seo'
 
@@ -94,6 +94,40 @@ function stripHtmlDocumentWrappers(value: string): string {
     .replace(/<!doctype[^>]*>/gi, '')
     .replace(/<\/?(?:html|head|body)[^>]*>/gi, '')
     .trim()
+}
+
+function collapseWhitespace(value: string): string {
+  return value.replace(/\s+/g, ' ').trim()
+}
+
+function extractSentenceSummary(value: string, options: { maxSentences?: number; maxChars?: number } = {}): string {
+  const normalized = collapseWhitespace(value)
+  if (!normalized) return ''
+
+  const maxSentences = options.maxSentences ?? 2
+  const maxChars = options.maxChars ?? 220
+  const sentences = normalized.match(/[^.!?]+[.!?]?/g)?.map((sentence) => sentence.trim()).filter(Boolean) || []
+
+  if (sentences.length > 0) {
+    const selected: string[] = []
+
+    for (const sentence of sentences) {
+      const next = [...selected, sentence].join(' ')
+      if (selected.length > 0 && next.length > maxChars) break
+      selected.push(sentence)
+      if (selected.length >= maxSentences || next.length >= maxChars) break
+    }
+
+    if (selected.length > 0) {
+      return selected.join(' ')
+    }
+  }
+
+  if (normalized.length <= maxChars) return normalized
+
+  const truncated = normalized.slice(0, maxChars)
+  const lastSpace = truncated.lastIndexOf(' ')
+  return `${(lastSpace > 80 ? truncated.slice(0, lastSpace) : truncated).trim()}...`
 }
 
 function parseFiniteNumber(value: unknown): number | undefined {
@@ -188,34 +222,6 @@ const getProductBySlugFromDB = cache(async (slug: string) => {
 
   return { product: result.rows[0] || null }
 })
-
-async function withTimeout<T>(
-  promise: Promise<T>,
-  timeoutMs: number,
-  fallback: T,
-  label: string,
-): Promise<T> {
-  let timeoutId: ReturnType<typeof setTimeout> | null = null
-
-  try {
-    return await Promise.race([
-      promise.catch((error) => {
-        console.error(label, error)
-        return fallback
-      }),
-      new Promise<T>((resolve) => {
-        timeoutId = setTimeout(() => {
-          console.warn(`${label}: timed out after ${timeoutMs}ms`)
-          resolve(fallback)
-        }, timeoutMs)
-      }),
-    ])
-  } finally {
-    if (timeoutId) {
-      clearTimeout(timeoutId)
-    }
-  }
-}
 
 function extractProductImageUrls(
   rawImages: unknown,
@@ -455,127 +461,6 @@ function renderLegacyDescriptionContent(value: unknown): string {
   return text ? formatPlainDescription(text) : ''
 }
 
-// Types for related products from PostgreSQL
-interface RelatedProductData {
-  name: string
-  slug: string
-  categorySlug: string
-  categoryName?: string
-  sku: string
-  imageUrl?: string
-  price?: number
-  currency: string
-  source: 'manual' | 'same-brand' | 'same-category'
-}
-
-// Get related products using PostgreSQL
-async function getRelatedProductsFromDB(
-  currentProduct: {
-    id: string
-    name: string
-    slug: string
-    categoryId: string | null
-    categorySlug?: string | null
-    categoryName?: string | null
-  },
-  serverUrl: string,
-): Promise<RelatedProductData[]> {
-  const MAX_PRODUCTS = 8
-  const results: RelatedProductData[] = []
-  const seenIds = new Set<string>([currentProduct.id])
-  const pool = getPool()
-
-  try {
-    // 1. Same category products (primary source)
-    if (currentProduct.categoryId && results.length < MAX_PRODUCTS) {
-      const sameCategory = await pool.query(
-        `SELECT p.id, p.name, p.slug, p.sku, p.pricing, p.images, p.external_image_url,
-                c.slug as category_slug, c.name as category_name
-         FROM products p
-         LEFT JOIN categories c ON p.primary_category_id = c.id
-         WHERE p.primary_category_id = $1 AND p.status = 'published' AND p.id != $2
-         ORDER BY p.created_at DESC
-         LIMIT $3`,
-        [currentProduct.categoryId, currentProduct.id, MAX_PRODUCTS]
-      )
-      
-      for (const row of sameCategory.rows) {
-        if (results.length >= MAX_PRODUCTS) break
-        const candidate = {
-          name: row.name,
-          slug: row.slug,
-          categorySlug: row.category_slug,
-          categoryName: row.category_name,
-        }
-        if (!isRelevantRelatedProduct(currentProduct, candidate)) continue
-        const pricing = parsePricing(row.pricing)
-        const imageUrl = extractProductImageUrls(row.images, row.external_image_url, serverUrl)[0]
-        const canonicalCategory = getCanonicalProductCategory(candidate)
-        results.push({
-          name: row.name,
-          slug: row.slug,
-          categorySlug: canonicalCategory.slug,
-          categoryName: canonicalCategory.name,
-          sku: row.sku || '',
-          imageUrl,
-          price: pricing?.basePrice,
-          currency: pricing?.currency || 'USD',
-          source: 'same-category',
-        })
-        seenIds.add(row.id)
-      }
-    }
-
-    // 2. Get more products if needed (fallback to any products)
-    if (results.length < MAX_PRODUCTS) {
-      const moreProducts = await pool.query(
-        `SELECT p.id, p.name, p.slug, p.sku, p.pricing, p.images, p.external_image_url,
-                c.slug as category_slug, c.name as category_name
-         FROM products p
-         LEFT JOIN categories c ON p.primary_category_id = c.id
-         WHERE p.status = 'published' AND p.id != $1
-         ORDER BY p.created_at DESC
-         LIMIT $2`,
-        [currentProduct.id, MAX_PRODUCTS - results.length]
-      )
-      
-      for (const row of moreProducts.rows) {
-        if (results.length >= MAX_PRODUCTS) break
-        if (seenIds.has(row.id)) continue
-        const candidate = {
-          name: row.name,
-          slug: row.slug,
-          categorySlug: row.category_slug,
-          categoryName: row.category_name,
-        }
-        if (!isRelevantRelatedProduct(currentProduct, candidate)) continue
-        const pricing = parsePricing(row.pricing)
-        const imageUrl = extractProductImageUrls(row.images, row.external_image_url, serverUrl)[0]
-        const canonicalCategory = getCanonicalProductCategory(candidate)
-        results.push({
-          name: row.name,
-          slug: row.slug,
-          categorySlug: canonicalCategory.slug,
-          categoryName: canonicalCategory.name,
-          sku: row.sku || '',
-          imageUrl,
-          price: pricing?.basePrice,
-          currency: pricing?.currency || 'USD',
-          source: 'same-category',
-        })
-        seenIds.add(row.id)
-      }
-    }
-
-    return results
-  } catch (err) {
-    console.error('Error fetching related products:', err)
-    return []
-  }
-  // 注意：不要调用 pool.end()！
-  // 在 serverless 环境中，连接池应该被复用而不是关闭
-}
-
 // Generate product FAQs
 function generateProductFAQs(product: {
   name: string
@@ -759,6 +644,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   // Description
   const descriptionHtml = lexicalToHtml(product.full_description)
   const shortDescription = product.short_description || ''
+  const heroSummary = extractSentenceSummary(shortDescription, { maxSentences: 2, maxChars: 220 })
 
   const purchaseMode = normalizePurchaseMode(product.purchase_mode)
   const availability = product.availability || 'contact'
@@ -788,6 +674,38 @@ export default async function ProductPage({ params }: ProductPageProps) {
   
   // Calculate per-item price if there's a package quantity
   const perItemPrice = packageQty && basePrice ? (basePrice / packageQty) : null
+  const quickSpecItems = specifications.length > 0
+    ? specifications
+        .slice(0, 3)
+        .map((spec) => `${spec.label}: ${spec.value}${spec.unit ? ` ${spec.unit}` : ''}`)
+    : [
+        `${catName} product page with live pricing, MOQ, and availability context.`,
+        `SKU ${product.sku || 'N/A'} is ready for specification review before order.`,
+      ]
+  const purchaseDetailItems = [
+    canBuyOnline && typeof basePrice === 'number'
+      ? `Online price starts at $${basePrice.toFixed(2)}${priceUnit ? ` per ${priceUnit}` : ''}.`
+      : 'Pricing is quote-led for this SKU, so landed cost and availability can be confirmed before release.',
+    `Minimum order quantity: ${moq} unit${moq > 1 ? 's' : ''}.`,
+    packageQty && packageQty > 1
+      ? `Pack quantity: ${packageQty}${product.package_unit ? ` / ${product.package_unit}` : ' per package'}.`
+      : `Availability: ${availabilityLabel}.`,
+    leadTime ? `Lead time: ${leadTime}.` : 'Lead time can be confirmed with the sourcing team when timing is critical.',
+  ]
+  const rfqDecisionItems = canRFQ
+    ? [
+        'Use RFQ when you need bulk pricing, alternate pack sizes, or multi-SKU comparison.',
+        'Request support when fit, material, or substitute selection needs confirmation before order.',
+        'Escalate to sourcing when timeline, freight, or stocking strategy matters more than one-off checkout speed.',
+      ]
+    : [
+        'Confirm fit, material, and operating conditions against the spec table before checkout.',
+        'Review MOQ, package quantity, and availability if this SKU is being purchased for a scheduled maintenance window.',
+        'Contact sourcing if you need a cross-reference, alternate spec, or project-level stocking plan.',
+      ]
+  const productQuickAnswer = heroSummary
+    ? `${heroSummary} ${canRFQ ? 'Use the quick checks below to decide whether direct checkout is enough or whether an RFQ will reduce sourcing risk.' : 'Use the quick checks below to validate fit before placing the order.'}`
+    : `${seoProductName} is an industrial ${catName.toLowerCase()} option with live specification, availability, and ordering data on this page.`
 
   // FAQs
   const productFAQs = generateProductFAQs({
@@ -801,21 +719,6 @@ export default async function ProductPage({ params }: ProductPageProps) {
     lead_time: product.lead_time,
     purchase_mode: purchaseMode,
   })
-
-  // Related products: same category
-  const relatedProducts = await withTimeout(
-    getRelatedProductsFromDB({
-      id: product.id,
-      name: product.name,
-      slug: product.slug,
-      categoryId: product.category_id,
-      categorySlug: product.category_slug,
-      categoryName: product.category_name,
-    }, serverUrl),
-    1500,
-    [],
-    '[ProductPage] related products lookup failed',
-  )
 
   const schemaAvailability = mapAvailabilityToSchema(availability)
   const manufacturerPartNumber = getProductExactMatchToken(product.slug)
@@ -938,8 +841,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
             {' '}&middot; SKU: {product.sku || 'N/A'}
           </p>
           <h1 className="mt-1 text-2xl font-bold text-secondary-900">{seoProductName}</h1>
-          {shortDescription && (
-            <p className="mt-3 text-sm leading-relaxed text-secondary-600">{shortDescription}</p>
+          {heroSummary && (
+            <p data-speakable="summary" className="mt-3 text-sm leading-relaxed text-secondary-600">
+              {heroSummary}
+            </p>
           )}
 
           {/* Availability */}
@@ -1039,6 +944,18 @@ export default async function ProductPage({ params }: ProductPageProps) {
         </div>
       </div>
 
+      <BuyerSummaryPanel
+        eyebrow="Quick Answer"
+        title={`How Buyers Should Evaluate ${seoProductName}`}
+        answer={productQuickAnswer}
+        sections={[
+          { title: 'Quick Spec Check', items: quickSpecItems },
+          { title: 'Purchase Details', items: purchaseDetailItems },
+          { title: 'Use RFQ When', items: rfqDecisionItems },
+        ]}
+        className="mt-8"
+      />
+
       {/* Specs table */}
       {specifications.length > 0 && (
         <section id="specifications" className="mt-12 scroll-mt-24">
@@ -1078,7 +995,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
       <RelatedGuide categorySlug={catSlug} />
 
       {/* Related Products */}
-      <RelatedProducts products={relatedProducts} />
+      <RelatedProductsAsync productId={product.id} />
 
       {/* Frequently Bought Together (order co-occurrence) */}
       <BoughtTogether productId={product.id} />

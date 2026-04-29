@@ -5,6 +5,7 @@ import { getPool } from '@/lib/db'
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 import { FAQSchema } from '@/components/shared/FAQSchema'
 import { StructuredData } from '@/components/shared/StructuredData'
+import { BuyerSummaryPanel } from '@/components/shared/BuyerSummaryPanel'
 import { CategoryBuyingGuide } from '@/components/shared/RelatedGuide'
 import { ProductGrid } from '@/components/category/ProductGrid'
 import { ExpandableIntro } from '@/components/category/ExpandableIntro'
@@ -80,6 +81,39 @@ function hasRichTextContent(richText: unknown): boolean {
   if (!root || !Array.isArray(root.children)) return false
   const text = extractChildren(root.children as unknown[])
   return text.trim().length > 0
+}
+
+function stripHtml(value: string): string {
+  return value.replace(/<[^>]+>/g, ' ')
+}
+
+function collapseWhitespace(value: string): string {
+  return value.replace(/\s+/g, ' ').trim()
+}
+
+function truncateText(value: string, maxLength: number): string {
+  const normalized = collapseWhitespace(value)
+  if (normalized.length <= maxLength) return normalized
+
+  const truncated = normalized.slice(0, maxLength)
+  const lastSpace = truncated.lastIndexOf(' ')
+  return `${(lastSpace > 80 ? truncated.slice(0, lastSpace) : truncated).trim()}...`
+}
+
+function getCategoryPreviewText(category: CategoryRow): string {
+  const sources = [
+    category.short_description,
+    category.intro_content,
+    hasRichTextContent(category.description) ? extractChildren(((category.description as Record<string, unknown>).root as Record<string, unknown>).children as unknown[]) : '',
+  ]
+
+  for (const source of sources) {
+    if (!source) continue
+    const normalized = truncateText(stripHtml(String(source)), 240)
+    if (normalized) return normalized
+  }
+
+  return ''
 }
 
 // =============================================
@@ -345,6 +379,35 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
         }))
       : []
   )
+  const categoryPreviewText = getCategoryPreviewText(category)
+  const categorySummaryAnswer = categoryPreviewText || (
+    isLeafCategory || isL3
+      ? `Use this ${category.name.toLowerCase()} page to compare in-stock options, specification fit, and order conditions before moving to an individual product SKU.`
+      : `Start with the most relevant ${category.name.toLowerCase()} subcategory, then narrow by application, specification fit, and purchasing workflow.`
+  )
+  const categorySnapshotItems = [
+    children.length > 0
+      ? `${children.length} subcategories available to narrow the buyer journey.`
+      : 'This category routes directly into individual product-level comparison.',
+    productsResult.totalDocs > 0
+      ? `${productsResult.totalDocs} published products are available in this category view.`
+      : 'Use subcategory navigation to reach the most relevant product family faster.',
+    parent
+      ? `Located under ${parent.name}${grandparent ? ` within ${grandparent.name}` : ''} for easier sourcing context.`
+      : 'Acts as a top-level buying hub for this product family.',
+  ].filter(Boolean)
+  const categoryComparisonItems = seoOverride?.buyingFactors?.slice(0, 3) || [
+    `Match ${category.name.toLowerCase()} to the real application, duty cycle, and environment before comparing price.`,
+    isLeafCategory || isL3
+      ? 'Use product specs, pack quantity, and availability details to short-list the right SKU quickly.'
+      : 'Use subcategories to separate product families before reviewing detailed specifications.',
+    'Check compatibility, size, material, and replenishment requirements before purchasing.',
+  ]
+  const categoryRfqItems = seoOverride?.procurementChecklist?.slice(0, 3) || [
+    'Request a quote when you need bulk pricing, recurring replenishment, or mixed-SKU comparison.',
+    'Use RFQ when compatibility, dimensions, or material selection need confirmation before order.',
+    'Escalate to sourcing when landed cost, lead time, or substitution risk matters more than one-off unit price.',
+  ]
 
   return (
     <div className="container-main pb-12">
@@ -367,6 +430,20 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
           </p>
         )}
       </div>
+
+      {!seoOverride && (
+        <BuyerSummaryPanel
+          eyebrow="Quick Buying Summary"
+          title={`How to Source ${category.name}`}
+          answer={categorySummaryAnswer}
+          sections={[
+            { title: 'Category Snapshot', items: categorySnapshotItems },
+            { title: 'What to Compare', items: categoryComparisonItems },
+            { title: 'Use RFQ When', items: categoryRfqItems },
+          ]}
+          className="mb-10"
+        />
+      )}
 
       {seoOverride ? (
         <CategoryLandingPanel

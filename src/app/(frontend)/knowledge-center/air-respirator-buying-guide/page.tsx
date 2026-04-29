@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 import { FAQSchema } from '@/components/shared/FAQSchema'
+import { StructuredData } from '@/components/shared/StructuredData'
 
 export const dynamic = 'force-static'
 
@@ -13,6 +14,38 @@ export const metadata: Metadata = {
     title: 'Key Features to Consider When Purchasing an Air Respirator | Machrio',
     description: 'Learn the 10 essential features to consider when buying an air respirator: protection level, filter compatibility, fit, comfort, and safety certification.',
     type: 'article',
+  },
+}
+
+const SITE_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://machrio.com'
+const GUIDE_PATH = '/knowledge-center/air-respirator-buying-guide'
+const guideSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: 'Key Features to Consider When Purchasing an Air Respirator',
+  description:
+    'Learn the 10 essential features to consider when buying an air respirator, from hazard protection and fit to filter compatibility and safety certification.',
+  url: `${SITE_URL}${GUIDE_PATH}`,
+  mainEntityOfPage: {
+    '@type': 'WebPage',
+    '@id': `${SITE_URL}${GUIDE_PATH}`,
+  },
+  inLanguage: 'en',
+  articleSection: 'Industrial Safety',
+  image: `${SITE_URL}/og-image.png`,
+  author: {
+    '@type': 'Organization',
+    name: 'Machrio',
+    url: SITE_URL,
+  },
+  publisher: {
+    '@type': 'Organization',
+    name: 'Machrio',
+    url: SITE_URL,
+    logo: {
+      '@type': 'ImageObject',
+      url: `${SITE_URL}/machrio-icon.png`,
+    },
   },
 }
 
@@ -46,6 +79,7 @@ const faqItems = [
 export default function AirRespiratorGuide() {
   return (
     <div className="container-main pb-16 pt-8">
+      <StructuredData data={guideSchema} />
       <FAQSchema faqs={faqItems} />
       <Breadcrumbs items={[
         { label: 'Home', href: '/' },
@@ -140,7 +174,7 @@ export default function AirRespiratorGuide() {
                 4. Face Seal and Fit
               </h3>
               <p className="text-secondary-700 leading-relaxed mb-3">
-                A respirator only works properly if it seals well to the wearer's face. Poor fit reduces protection. Key points include:
+                A respirator only works properly if it seals well to the wearer&apos;s face. Poor fit reduces protection. Key points include:
               </p>
               <ul className="list-disc pl-6 space-y-1 text-secondary-700">
                 <li>Multiple size options</li>

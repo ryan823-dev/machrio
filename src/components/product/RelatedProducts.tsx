@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { ProductImage } from '@/components/shared/ProductImage'
 
-interface RelatedProduct {
+export interface RelatedProduct {
   name: string
   slug: string
   categorySlug: string

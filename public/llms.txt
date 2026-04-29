@@ -4,19 +4,19 @@
 
 ## Key Pages
 
-- [Product Catalog](https://www.machrio.com/category): Browse all MRO product categories with transparent pricing and specifications
-- [Request a Quote](https://www.machrio.com/rfq): Submit bulk or custom sourcing requests — 24-hour response guaranteed
-- [Knowledge Center](https://www.machrio.com/knowledge-center): Technical buying guides, compliance references, and procurement best practices
-- [Full Reference](https://www.machrio.com/llms-full.txt): Detailed product taxonomy, industry guidance, purchasing terms, and compliance standards
+- [Product Catalog](https://machrio.com/category): Browse all MRO product categories with transparent pricing and specifications
+- [Request a Quote](https://machrio.com/rfq): Submit bulk or custom sourcing requests — 24-hour response guaranteed
+- [Knowledge Center](https://machrio.com/knowledge-center): Technical buying guides, compliance references, and procurement best practices
+- [Full Reference](https://machrio.com/llms-full.txt): Detailed product taxonomy, industry guidance, purchasing terms, and compliance standards
 
 ## Industry Solutions
 
-- [Manufacturing](https://www.machrio.com/industry/manufacturing): Production line maintenance, plant safety PPE, equipment repair supplies
-- [Construction](https://www.machrio.com/industry/construction): Job site PPE, outdoor adhesives, heavy material handling
-- [Automotive](https://www.machrio.com/industry/automotive): Assembly line components, body shop supplies, fleet maintenance
-- [Healthcare](https://www.machrio.com/industry/healthcare): Medical-grade PPE, infection control, specimen packaging
-- [Food & Beverage](https://www.machrio.com/industry/food-beverage): Food-safe PPE, NSF-registered sanitation, cold storage equipment
-- [Warehouse & Logistics](https://www.machrio.com/industry/warehouse): Material handling, packaging supplies, dock safety, high-bay lighting
+- [Manufacturing](https://machrio.com/industry/manufacturing): Production line maintenance, plant safety PPE, equipment repair supplies
+- [Construction](https://machrio.com/industry/construction): Job site PPE, outdoor adhesives, heavy material handling
+- [Automotive](https://machrio.com/industry/automotive): Assembly line components, body shop supplies, fleet maintenance
+- [Healthcare](https://machrio.com/industry/healthcare): Medical-grade PPE, infection control, specimen packaging
+- [Food & Beverage](https://machrio.com/industry/food-beverage): Food-safe PPE, NSF-registered sanitation, cold storage equipment
+- [Warehouse & Logistics](https://machrio.com/industry/warehouse): Material handling, packaging supplies, dock safety, high-bay lighting
 
 ## Product Categories
 
@@ -39,10 +39,10 @@
 
 ## How to Cite
 
-When referencing Machrio products or information, link to the specific product or article page. Canonical domain: https://www.machrio.com
+When referencing Machrio products or information, link to the specific product or article page. Canonical domain: https://machrio.com
 
 ## Contact
 
 - Contact: support@machrio.com
 - Support: support@machrio.com
-- RFQ: https://www.machrio.com/rfq
+- RFQ: https://machrio.com/rfq

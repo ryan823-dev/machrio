@@ -11,49 +11,29 @@ import { getCanonicalProductCategory } from '@/lib/seo'
  * 文档：https://support.google.com/merchants/answer/7052112
  */
 
+const MERCHANT_FEED_BATCH_SIZE = 5000
+
+interface MerchantFeedProductRow {
+  id: string
+  name: string
+  slug: string
+  sku: string | null
+  short_description: string | null
+  pricing: unknown | null
+  images: unknown | null
+  external_image_url: string | null
+  availability: string | null
+  purchase_mode: string | null
+  category_slug: string | null
+  category_name: string | null
+  brand_name: string | null
+}
+
 export async function GET() {
   const pool = getPool()
   
   try {
     const { brandSelectSql, brandJoinSql } = await getProductBrandQueryParts(pool)
-    const result = await pool.query<{
-      id: string
-      name: string
-      slug: string
-      sku: string | null
-      short_description: string | null
-      pricing: unknown | null
-      images: unknown | null
-      external_image_url: string | null
-      availability: string | null
-      purchase_mode: string | null
-      category_slug: string | null
-      category_name: string | null
-      brand_name: string | null
-    }>(
-      `SELECT
-        p.id,
-        p.name,
-        p.slug,
-        p.sku,
-        p.short_description,
-        p.pricing,
-        p.images,
-        p.external_image_url,
-        p.availability,
-        p.purchase_mode,
-        c.slug as category_slug,
-        c.name as category_name,
-        ${brandSelectSql}
-       FROM products p
-       LEFT JOIN categories c ON p.primary_category_id = c.id
-       ${brandJoinSql}
-       WHERE p.status = 'published'
-       ORDER BY p.created_at DESC
-       LIMIT 10000`,
-    )
-
-    const products = result.rows
     const baseUrl =
       process.env.NEXT_PUBLIC_SERVER_URL ||
       process.env.NEXT_PUBLIC_SITE_URL ||
@@ -70,89 +50,129 @@ export async function GET() {
     xmlParts.push(`<link>${baseUrl}</link>`)
     xmlParts.push(`<description>Industrial supplies and equipment from Machrio</description>`)
 
-    // 添加每个产品
-    for (const product of products) {
-      const images = parseProductImages(product.images)
-      const pricing = parseProductPricing(product.pricing)
-      const basePrice = parsePositivePrice(pricing?.basePrice)
-      const purchaseMode = normalizePurchaseMode(product.purchase_mode)
-      const canBuyOnline =
-        (purchaseMode === 'both' || purchaseMode === 'buy-online') &&
-        basePrice !== null
-      const imageUrl = getMerchantImageUrl(product.external_image_url, images, baseUrl)
+    // 批量拉取，避免 10k 硬上限导致 feed 静默截断。
+    let offset = 0
 
-      if (!canBuyOnline || !imageUrl) {
-        continue
+    while (true) {
+      const result = await pool.query<MerchantFeedProductRow>(
+        `SELECT
+          p.id,
+          p.name,
+          p.slug,
+          p.sku,
+          p.short_description,
+          p.pricing,
+          p.images,
+          p.external_image_url,
+          p.availability,
+          p.purchase_mode,
+          c.slug as category_slug,
+          c.name as category_name,
+          ${brandSelectSql}
+         FROM products p
+         LEFT JOIN categories c ON p.primary_category_id = c.id
+         ${brandJoinSql}
+         WHERE p.status = 'published'
+         ORDER BY p.created_at DESC, p.id DESC
+         LIMIT $1 OFFSET $2`,
+        [MERCHANT_FEED_BATCH_SIZE, offset],
+      )
+
+      const products = result.rows
+      if (products.length === 0) {
+        break
       }
 
-      const canonicalCategory = getCanonicalProductCategory({
-        name: product.name,
-        slug: product.slug,
-        categorySlug: product.category_slug,
-        categoryName: product.category_name,
-      })
-      const productUrl = `${baseUrl}/product/${canonicalCategory.slug}/${product.slug}`
-      const currency = pricing?.currency || 'USD'
+      // 添加每个产品
+      for (const product of products) {
+        const images = parseProductImages(product.images)
+        const pricing = parseProductPricing(product.pricing)
+        const basePrice = parsePositivePrice(pricing?.basePrice)
+        const purchaseMode = normalizePurchaseMode(product.purchase_mode)
+        const canBuyOnline =
+          (purchaseMode === 'both' || purchaseMode === 'buy-online') &&
+          basePrice !== null
+        const imageUrl = getMerchantImageUrl(product.external_image_url, images, baseUrl)
 
-      xmlParts.push(`<item>`)
-      
-      // 必需字段
-      
-      // g:id - 产品唯一标识符（使用 SKU）
-      xmlParts.push(`<g:id>${escapeXml(product.sku || product.id)}</g:id>`)
-      
-      // g:title - 产品名称（最多 150 字符）
-      const title = truncate(product.name, 150)
-      xmlParts.push(`<g:title>${escapeXml(title)}</g:title>`)
-      
-      // g:description - 产品描述（最多 5000 字符）
-      const description = product.short_description || product.name
-      xmlParts.push(`<g:description>${escapeXml(description)}</g:description>`)
-      
-      // g:link - 产品页面 URL
-      xmlParts.push(`<g:link>${escapeXml(productUrl)}</g:link>`)
-      
-      // g:image_link - 主产品图片 URL
-      xmlParts.push(`<g:image_link>${escapeXml(imageUrl)}</g:image_link>`)
-      
-      // g:availability - 库存状态
-      const availability = mapAvailability(product.availability)
-      xmlParts.push(`<g:availability>${availability}</g:availability>`)
-      
-      // g:price - 价格和货币
-      xmlParts.push(`<g:price>${basePrice.toFixed(2)} ${currency}</g:price>`)
-      
-      // 可选但推荐的字段
-      
-      // g:brand - 品牌名称（查询品牌表）
-      const brandName = product.brand_name || 'Machrio'
-      xmlParts.push(`<g:brand>${escapeXml(brandName)}</g:brand>`)
-      
-      // g:condition - 产品状态（new/refurbished/used）
-      xmlParts.push(`<g:condition>new</g:condition>`)
-      
-      // g:target_country - 目标销售国家
-      xmlParts.push(`<g:target_country>US</g:target_country>`)
-      
-      // g:product_type - 产品类别（使用分类路径）
-      if (product.category_name) {
-        xmlParts.push(`<g:product_type>${escapeXml(product.category_name)}</g:product_type>`)
+        if (!canBuyOnline || !imageUrl) {
+          continue
+        }
+
+        const canonicalCategory = getCanonicalProductCategory({
+          name: product.name,
+          slug: product.slug,
+          categorySlug: product.category_slug,
+          categoryName: product.category_name,
+        })
+        const productUrl = `${baseUrl}/product/${canonicalCategory.slug}/${product.slug}`
+        const currency = pricing?.currency || 'USD'
+
+        xmlParts.push(`<item>`)
+        
+        // 必需字段
+        
+        // g:id - 产品唯一标识符（使用 SKU）
+        xmlParts.push(`<g:id>${escapeXml(product.sku || product.id)}</g:id>`)
+        
+        // g:title - 产品名称（最多 150 字符）
+        const title = truncate(product.name, 150)
+        xmlParts.push(`<g:title>${escapeXml(title)}</g:title>`)
+        
+        // g:description - 产品描述（最多 5000 字符）
+        const description = product.short_description || product.name
+        xmlParts.push(`<g:description>${escapeXml(description)}</g:description>`)
+        
+        // g:link - 产品页面 URL
+        xmlParts.push(`<g:link>${escapeXml(productUrl)}</g:link>`)
+        
+        // g:image_link - 主产品图片 URL
+        xmlParts.push(`<g:image_link>${escapeXml(imageUrl)}</g:image_link>`)
+        
+        // g:availability - 库存状态
+        const availability = mapAvailability(product.availability)
+        xmlParts.push(`<g:availability>${availability}</g:availability>`)
+        
+        // g:price - 价格和货币
+        xmlParts.push(`<g:price>${basePrice.toFixed(2)} ${currency}</g:price>`)
+        
+        // 可选但推荐的字段
+        
+        // g:brand - 品牌名称（查询品牌表）
+        const brandName = product.brand_name || 'Machrio'
+        xmlParts.push(`<g:brand>${escapeXml(brandName)}</g:brand>`)
+        
+        // g:condition - 产品状态（new/refurbished/used）
+        xmlParts.push(`<g:condition>new</g:condition>`)
+        
+        // g:target_country - 目标销售国家
+        xmlParts.push(`<g:target_country>US</g:target_country>`)
+        
+        // g:product_type - 产品类别（使用分类路径）
+        if (product.category_name) {
+          xmlParts.push(`<g:product_type>${escapeXml(product.category_name)}</g:product_type>`)
+        }
+        
+        // g:mpn - 制造商部件号（使用 SKU）
+        if (product.sku) {
+          xmlParts.push(`<g:mpn>${escapeXml(product.sku)}</g:mpn>`)
+        }
+        
+        // g:gtin - 如果有 GTIN
+        // 如果数据库有 gtin 字段，可以在这里添加
+        
+        // g:availability_date - 如果有预计到货日期
+        if (product.availability === 'backorder') {
+          // 可以添加预计到货日期
+        }
+        
+        xmlParts.push(`</item>`)
       }
-      
-      // g:mpn - 制造商部件号（使用 SKU）
-      if (product.sku) {
-        xmlParts.push(`<g:mpn>${escapeXml(product.sku)}</g:mpn>`)
+
+      offset += products.length
+
+      if (products.length < MERCHANT_FEED_BATCH_SIZE) {
+        break
       }
-      
-      // g:gtin - 如果有 GTIN
-      // 如果数据库有 gtin 字段，可以在这里添加
-      
-      // g:availability_date - 如果有预计到货日期
-      if (product.availability === 'backorder') {
-        // 可以添加预计到货日期
-      }
-      
-      xmlParts.push(`</item>`)
     }
 
     // 关闭标签

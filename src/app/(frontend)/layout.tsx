@@ -13,7 +13,8 @@ import { AIAssistantVisibilityProvider } from '@/contexts/AIAssistantVisibilityC
 import { WebVitalsReporter } from '@/components/shared/WebVitalsReporter'
 
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID
-const SITE_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://www.machrio.com'
+const SITE_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://machrio.com'
+const ORGANIZATION_LOGO_PATH = '/machrio-icon.png'
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -66,7 +67,7 @@ const organizationSchema = {
   '@type': 'Organization',
   name: 'Machrio',
   url: SITE_URL,
-  logo: `${SITE_URL}/logo.png`,
+  logo: `${SITE_URL}${ORGANIZATION_LOGO_PATH}`,
   description:
     'B2B industrial e-commerce platform for MRO supplies — safety, adhesives, power transmission, material handling, cleaning, packaging, lighting, and tool storage for manufacturing, construction, automotive, healthcare, food & beverage, and warehouse operations.',
   slogan: 'Your trusted source for tools, parts, and industrial essentials',

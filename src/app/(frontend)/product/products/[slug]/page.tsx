@@ -1,6 +1,7 @@
 import { notFound, permanentRedirect } from 'next/navigation'
 import { getProductBySlug } from '@/lib/db-queries'
 import { getCanonicalProductCategory } from '@/lib/seo'
+import { resolveProductPath } from '@/lib/url-resolution'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,8 +14,15 @@ export default async function LegacyProductRedirectPage({
 }: LegacyProductRedirectPageProps) {
   const { slug } = await params
   const { product } = await getProductBySlug(slug)
+  const legacyPath = `/product/products/${slug}`
 
   if (!product) {
+    const resolution = await resolveProductPath(legacyPath, 'products', slug)
+
+    if (resolution.redirectTo) {
+      permanentRedirect(resolution.redirectTo)
+    }
+
     notFound()
   }
 

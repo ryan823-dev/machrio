@@ -149,7 +149,7 @@ export default async function ArticlePage({
       url: serverUrl,
       logo: {
         '@type': 'ImageObject',
-        url: `${serverUrl}/machrio-logo.png`,
+        url: `${serverUrl}/machrio-icon.png`,
       },
     },
     mainEntityOfPage: {

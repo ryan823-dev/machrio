@@ -1,6 +1,10 @@
 import { getGlossaryTermBySlug, safeQuery } from '@/lib/db'
 import { getCanonicalProductCategory, getProductExactMatchToken } from '@/lib/seo'
-import { getStaticGlossaryAliasRedirects } from '@/lib/static-glossary-terms'
+import {
+  STATIC_GLOSSARY_TERMS,
+  getStaticGlossaryAliasRedirects,
+  getStaticGlossaryAliasTarget,
+} from '@/lib/static-glossary-terms'
 
 interface ProductLookupRow {
   id: string
@@ -52,6 +56,7 @@ const MANUAL_PRODUCT_REDIRECTS: Record<string, string> = {
 const MANUAL_GLOSSARY_REDIRECTS: Record<string, string> = {
   ...getStaticGlossaryAliasRedirects(),
 }
+const STATIC_GLOSSARY_TERM_SLUGS = new Set(STATIC_GLOSSARY_TERMS.map((term) => term.slug))
 
 function trimTrailingSlash(pathname: string): string {
   return pathname !== '/' && pathname.endsWith('/') ? pathname.slice(0, -1) : pathname
@@ -521,14 +526,46 @@ export async function resolveGlossaryPath(pathname: string, slug: string): Promi
     }
   }
 
+  const canonicalStaticSlug = getStaticGlossaryAliasTarget(slug) || slug
+  if (STATIC_GLOSSARY_TERM_SLUGS.has(canonicalStaticSlug)) {
+    const canonicalPath = `/glossary/${canonicalStaticSlug}`
+
+    if (canonicalPath !== normalizedPath) {
+      return {
+        exists: true,
+        redirectTo: canonicalPath,
+        statusCode: 301,
+        matchedBy: 'canonical-static-glossary-path',
+      }
+    }
+
+    return { exists: true, matchedBy: 'static-glossary-term' }
+  }
+
   try {
+    const term = await getGlossaryTermBySlug(slug)
+
+    if (term) {
+      const canonicalPath = `/glossary/${term.slug}`
+
+      if (canonicalPath !== normalizedPath) {
+        return {
+          exists: true,
+          redirectTo: canonicalPath,
+          statusCode: 301,
+          matchedBy: 'canonical-glossary-path',
+        }
+      }
+
+      return { exists: true, matchedBy: 'glossary-term-found' }
+    }
+
     const managedRedirect = await getManagedRedirect(normalizedPath)
     if (managedRedirect) {
       return managedRedirect
     }
 
-    const term = await getGlossaryTermBySlug(slug)
-    return term ? { exists: true, matchedBy: 'glossary-term-found' } : { exists: false }
+    return { exists: false }
   } catch (error) {
     console.error('[resolveGlossaryPath] failed to resolve glossary path:', error)
     return { exists: true, matchedBy: 'glossary-resolution-error-fallback' }
