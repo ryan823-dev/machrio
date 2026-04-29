@@ -9,12 +9,16 @@
 **开发环境（本地测试）**：
 ```bash
 NEXT_PUBLIC_ADMIN_API_URL=http://localhost:8080
+# 可选：显式指定后台 ingest 路径
+# NEXT_PUBLIC_ADMIN_API_CONVERSATION_PATH=/api/ai-conversations/ingest-snapshot
 ```
 
 **生产环境**：
 ```bash
 NEXT_PUBLIC_ADMIN_API_URL=https://admin-api.machrio.com
 NEXT_PUBLIC_ADMIN_API_KEY=your-admin-api-key
+# 如后台使用自定义路径，再额外配置：
+# NEXT_PUBLIC_ADMIN_API_CONVERSATION_PATH=/api/ai-conversations/ingest-snapshot
 ```
 
 ### 2️⃣ 测试功能（2 分钟）
@@ -27,7 +31,7 @@ npm run dev
 # 与 AI 助手进行对话
 
 # 查看浏览器控制台
-# 应该看到：[Conversation Tracker] Conversation saved successfully: xxx
+# 应该看到：[Conversation Tracker] Conversation saved successfully: { ... }
 ```
 
 ## ✅ 已完成的修改
@@ -37,7 +41,6 @@ npm run dev
 - ✅ `src/lib/conversation-tracker.ts` - 核心服务（新建）
 - ✅ `src/components/shared/AIAssistant.tsx` - 浮动助手（已修改）
 - ✅ `src/components/shared/HeroAIChat.tsx` - Hero 聊天（已修改）
-- ✅ `.env.local` - 环境变量（已更新）
 - ✅ `.env.example` - 环境变量示例（已更新）
 
 ## 📊 功能特性
@@ -56,7 +59,7 @@ npm run dev
 打开开发者工具（F12），查看控制台日志：
 
 ```
-[Conversation Tracker] Conversation saved successfully: sess_1234567890_abc
+[Conversation Tracker] Conversation saved successfully: { id, target, kind }
 ```
 
 ### Session Storage
@@ -77,6 +80,18 @@ POST http://localhost:8080/api/ai-conversations
 Status: 200 OK
 ```
 
+当前前台会优先尝试：
+
+```
+POST http://localhost:8080/api/ai-conversations/ingest-snapshot
+```
+
+如果后台还是旧接口，则会自动回退到：
+
+```
+POST http://localhost:8080/api/ai-conversations
+```
+
 ## 📖 详细文档
 
 完整文档请查看：`AI-CONVERSATION-INTEGRATION.md`
@@ -84,10 +99,10 @@ Status: 200 OK
 ## ❓ 常见问题
 
 **Q: 没有看到保存日志？**
-A: 检查 `NEXT_PUBLIC_ADMIN_API_URL` 是否配置正确
+A: 检查 `NEXT_PUBLIC_ADMIN_API_URL` 是否配置正确，并确认前台已经重新 build / deploy
 
 **Q: 保存失败但 AI 助手正常？**
-A: 正常现象，保存失败不影响 AI 助手使用
+A: 正常现象，保存失败不影响 AI 助手使用。打开浏览器 Console/Network，重点看是否出现 `Admin API URL not configured` 或 `Failed to save conversation snapshot`
 
 **Q: 如何禁用对话保存？**
 A: 删除或注释掉 `NEXT_PUBLIC_ADMIN_API_URL` 配置即可

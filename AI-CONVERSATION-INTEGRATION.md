@@ -22,6 +22,8 @@
 # AI Conversation Tracking (Admin Backend)
 # 开发环境（本地 admin 后台）
 NEXT_PUBLIC_ADMIN_API_URL=http://localhost:8080
+# 可选：显式指定后台 ingest 路径
+# NEXT_PUBLIC_ADMIN_API_CONVERSATION_PATH=/api/ai-conversations/ingest-snapshot
 
 # 生产环境
 # NEXT_PUBLIC_ADMIN_API_URL=https://admin-api.machrio.com
@@ -69,7 +71,14 @@ ConversationTracker.addMessage()
     ↓
 saveConversation() 调用
     ↓
-POST /api/ai-conversations
+如果配置了 NEXT_PUBLIC_ADMIN_API_URL:
+POST {ADMIN_API_URL}/api/ai-conversations/ingest-snapshot
+    ↓
+如果后台仍是旧接口，自动回退:
+POST {ADMIN_API_URL}/api/ai-conversations
+    ↓
+如果未配置:
+POST /api/ai-conversation-sync
     ↓
 Admin 后台存储
 ```
@@ -140,6 +149,8 @@ Admin 后台存储
 ```bash
 # 1. 配置开发环境变量
 echo "NEXT_PUBLIC_ADMIN_API_URL=http://localhost:8080" >> .env.local
+# 如后台使用新快照接口，可显式指定（默认也会优先尝试）
+# echo "NEXT_PUBLIC_ADMIN_API_CONVERSATION_PATH=/api/ai-conversations/ingest-snapshot" >> .env.local
 
 # 2. 启动网站
 npm run dev
@@ -234,9 +245,33 @@ console.log(`成功保存 ${savedCount} 条对话`)
 ### 保存对话
 
 ```
-POST {ADMIN_API_URL}/api/ai-conversations
+POST {ADMIN_API_URL}/api/ai-conversations/ingest-snapshot
 Content-Type: application/json
 Authorization: Bearer {API_KEY} (可选)
+
+Body:
+{
+  "sessionId": "sess_xxx",
+  "messages": [...],
+  "user": {...},
+  "sourcePage": "...",
+  "sourceUrl": "...",
+  "conversationType": "...",
+  "metadata": {...}
+}
+```
+
+如果后台仍保留旧接口，前台会自动回退到：
+
+```
+POST {ADMIN_API_URL}/api/ai-conversations
+```
+
+### 本地 fallback（未配置外部后台地址时）
+
+```
+POST /api/ai-conversation-sync
+Content-Type: application/json
 
 Body:
 {

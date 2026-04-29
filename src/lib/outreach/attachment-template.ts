@@ -6,10 +6,12 @@
  */
 
 import { Resend } from 'resend'
+import { getFromEmail } from '@/lib/contact'
 
 const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null
+const FROM_EMAIL = getFromEmail()
 
 // ==================== 类型定义 ====================
 
@@ -43,6 +45,10 @@ export interface SendEmailOptions {
   attachments?: EmailAttachment[]
 }
 
+function getErrorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : 'Unknown email error'
+}
+
 // ==================== Resend 邮件发送 ====================
 
 /**
@@ -61,21 +67,21 @@ export async function sendEmailWithAttachments(options: SendEmailOptions): Promi
     // 无附件，使用普通发送
     try {
       const result = await resend.emails.send({
-        from: options.from || 'Machrio <support@machrio.com>',
+        from: options.from || FROM_EMAIL,
         to: options.to,
         subject: options.subject,
         html: options.html,
       })
       return { success: true, messageId: result.data?.id }
-    } catch (err: any) {
-      return { success: false, error: err.message }
+    } catch (err: unknown) {
+      return { success: false, error: getErrorMessage(err) }
     }
   }
 
   // 带附件发送
   try {
     const result = await resend.emails.send({
-      from: options.from || 'Machrio <support@machrio.com>',
+      from: options.from || FROM_EMAIL,
       to: options.to,
       subject: options.subject,
       html: options.html,
@@ -86,8 +92,8 @@ export async function sendEmailWithAttachments(options: SendEmailOptions): Promi
       })),
     })
     return { success: true, messageId: result.data?.id }
-  } catch (err: any) {
-    return { success: false, error: err.message }
+  } catch (err: unknown) {
+    return { success: false, error: getErrorMessage(err) }
   }
 }
 
@@ -216,9 +222,10 @@ export async function deleteAttachmentTemplate(id: string, tenantId: string): Pr
 /**
  * 从 OSS 下载附件并转为 Base64
  */
-export async function getAttachmentAsBase64(storageKey: string): Promise<string | null> {
+export async function getAttachmentAsBase64(_storageKey: string): Promise<string | null> {
   // 实际实现：从 OSS 下载文件并转为 Base64
   // 这里需要集成 OSS 客户端
+  void _storageKey
   try {
     // const ossClient = getOSSClient()
     // const result = await ossClient.get(storageKey)

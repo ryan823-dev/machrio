@@ -329,7 +329,7 @@ export const AIConversations: CollectionConfig = {
           },
           fields: [
             {
-              name: 'productId',
+              name: 'id',
               type: 'text',
               admin: { readOnly: true },
             },

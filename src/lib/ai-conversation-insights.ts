@@ -67,15 +67,11 @@ function uniqueStrings(values: Array<string | undefined | null>): string[] {
   return [...new Set(values.map((value) => (value || '').trim()).filter(Boolean))]
 }
 
-function normalizeProduct(
-  product: (Partial<TrackedProduct> & { productId?: string }) | null | undefined,
-): TrackedProduct | null {
-  const productId = product?.id || product?.productId
-
-  if (!productId || !product?.name || !product?.sku) return null
+function normalizeProduct(product: Partial<TrackedProduct> | null | undefined): TrackedProduct | null {
+  if (!product?.id || !product?.name || !product?.sku) return null
 
   return {
-    id: String(productId),
+    id: String(product.id),
     name: clamp(String(product.name).trim(), 200),
     sku: clamp(String(product.sku).trim(), 80),
     price: product.price ? clamp(String(product.price).trim(), 80) : undefined,

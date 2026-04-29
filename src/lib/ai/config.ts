@@ -1,6 +1,6 @@
-// AI Provider Configuration
-// Primary route: OpenAI GPT-5.4
-// Backup route: GLM-5 reached through a Qwen-planning or GLM-compatible gateway
+// AI provider configuration.
+// Primary route: any OpenAI-compatible /v1 chat completion gateway.
+// Backup route: an optional secondary provider, such as a GLM-compatible gateway.
 
 export type AIProvider = 'openai' | 'glm' | 'openrouter' | 'anthropic'
 
@@ -190,7 +190,7 @@ export function getConfiguredProviderConfigs(): ProviderConfig[] {
   return getLegacyProviderConfigs()
 }
 
-// Shared system prompt used by both GPT-5.4 and GLM-5.
+// Shared system prompt used across the assistant providers.
 export const SYSTEM_PROMPT = `You are the Machrio Homepage AI Sourcing Assistant.
 
 IDENTITY

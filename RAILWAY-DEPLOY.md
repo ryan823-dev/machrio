@@ -34,7 +34,8 @@ ALIYUN_OSS_ACCESS_KEY_SECRET=your-secret-key
 ```bash
 # Email Service
 RESEND_API_KEY=your-resend-api-key
-RFQ_NOTIFICATION_EMAIL=sales@machrio.com
+EMAIL_FROM="Machrio <support@machrio.com>"
+ADMIN_EMAIL=support@machrio.com
 
 # Payment (PayPal)
 NEXT_PUBLIC_PAYPAL_CLIENT_ID=your-paypal-client-id

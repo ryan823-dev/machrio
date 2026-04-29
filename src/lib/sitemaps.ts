@@ -66,13 +66,24 @@ export async function getSitemapEntries(section: SitemapSection): Promise<Metada
   }
 
   if (section === 'knowledge') {
-    const articleResults = await getArticles({ page: 1, limit: 2000 })
-    return articleResults.docs.map((article) => ({
-      url: `${baseUrl}/knowledge-center/${article.slug}`,
-      lastModified: new Date(article.updatedAt || article.publishedAt || now),
-      changeFrequency: 'monthly',
-      priority: 0.7,
-    }))
+    try {
+      const articleResults = await Promise.race([
+        getArticles({ page: 1, limit: 2000 }),
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error('Knowledge sitemap query timeout')), 10000),
+        ),
+      ])
+
+      return articleResults.docs.map((article) => ({
+        url: `${baseUrl}/knowledge-center/${article.slug}`,
+        lastModified: new Date(article.updatedAt || article.publishedAt || now),
+        changeFrequency: 'monthly',
+        priority: 0.7,
+      }))
+    } catch (error) {
+      console.error('[sitemaps] Failed to build knowledge sitemap:', error)
+      return []
+    }
   }
 
   if (section === 'glossary') {

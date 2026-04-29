@@ -90,7 +90,8 @@ CRON_SECRET=生成的 64 位随机密钥
 ```bash
 # Email
 RESEND_API_KEY=your-resend-api-key
-RFQ_NOTIFICATION_EMAIL=sales@machrio.com
+EMAIL_FROM="Machrio <support@machrio.com>"
+ADMIN_EMAIL=support@machrio.com
 
 # AI
 AI_PROVIDER=openrouter
