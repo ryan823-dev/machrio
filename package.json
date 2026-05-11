@@ -16,6 +16,7 @@
     "check:shipping": "npx tsx scripts/check-shipping-readiness.ts",
     "normalize:package-units": "tsx scripts/normalize-package-units.ts",
     "check-links": "tsx scripts/check-links.ts",
+    "audit:content-quality": "tsx scripts/audit-content-quality.ts",
     "sync:product-redirects": "tsx scripts/sync-product-source-redirects.ts",
     "sync:priority-seo": "tsx scripts/sync-priority-seo-content.ts"
   },

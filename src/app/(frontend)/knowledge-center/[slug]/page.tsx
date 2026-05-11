@@ -30,6 +30,69 @@ const categoryColors: Record<string, string> = {
   'product-comparison': 'bg-purple-50 text-purple-700',
 }
 
+function collapseWhitespace(value: string): string {
+  return value.replace(/\s+/g, ' ').trim()
+}
+
+function extractSentenceSummary(
+  value: string,
+  options: { maxSentences?: number; maxChars?: number } = {},
+): string {
+  const normalized = collapseWhitespace(value)
+  if (!normalized) return ''
+
+  const maxSentences = options.maxSentences ?? 2
+  const maxChars = options.maxChars ?? 220
+  const sentences = normalized.match(/[^.!?]+[.!?]?/g)?.map((sentence) => sentence.trim()).filter(Boolean) || []
+
+  if (sentences.length > 0) {
+    const selected: string[] = []
+
+    for (const sentence of sentences) {
+      const next = [...selected, sentence].join(' ')
+      if (selected.length > 0 && next.length > maxChars) break
+      selected.push(sentence)
+      if (selected.length >= maxSentences || next.length >= maxChars) break
+    }
+
+    if (selected.length > 0) return selected.join(' ')
+  }
+
+  if (normalized.length <= maxChars) return normalized
+
+  const truncated = normalized.slice(0, maxChars)
+  const lastSpace = truncated.lastIndexOf(' ')
+  return `${(lastSpace > 80 ? truncated.slice(0, lastSpace) : truncated).trim()}...`
+}
+
+function normalizeArticleTitle(rawTitle: string, category: string): string {
+  let title = rawTitle
+    .replace(/\|\s*Machrio\b/gi, '')
+    .replace(/\bBuy Online\b/gi, '')
+    .replace(/\s*-\s*Industry\s*$/i, ' Industry Insight')
+    .replace(/\s*-\s*Product\s*$/i, ' Product Comparison')
+    .replace(/\s*-\s*Guide\s*$/i, ' Guide')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/\s+([|:-])/g, '$1')
+    .replace(/([|:-])(?=\S)/g, '$1 ')
+    .replace(/[|:\-\s]+$/g, '')
+
+  title = collapseWhitespace(title)
+
+  if (!title) return rawTitle
+
+  const categoryLabel = categoryLabels[category] || ''
+  if (
+    categoryLabel &&
+    !new RegExp(categoryLabel, 'i').test(title) &&
+    /industry insight|buying guide|product comparison|how-to/i.test(rawTitle)
+  ) {
+    return `${title} | ${categoryLabel}`
+  }
+
+  return title
+}
+
 // ---------------------------------------------------------------------------
 // Metadata
 // ---------------------------------------------------------------------------
@@ -46,8 +109,16 @@ export async function generateMetadata({
     return { title: withBrandSuffix('Article Not Found') }
   }
 
-  const title = withBrandSuffix(article.metaTitle || article.title)
-  const description = article.metaDescription || article.excerpt || ''
+  const normalizedTitle = normalizeArticleTitle(article.title, article.category || 'buying-guide')
+  const normalizedMetaTitle = normalizeArticleTitle(
+    article.metaTitle || normalizedTitle,
+    article.category || 'buying-guide',
+  )
+  const title = withBrandSuffix(normalizedMetaTitle)
+  const description = extractSentenceSummary(
+    article.quickAnswer || article.metaDescription || article.excerpt || '',
+    { maxSentences: 2, maxChars: 240 },
+  )
   const imageUrl = article.featuredImage
 
   return {
@@ -88,12 +159,18 @@ export default async function ArticlePage({
 
   const serverUrl = process.env.NEXT_PUBLIC_SERVER_URL || 'https://machrio.com'
   const publishedAt = article.publishedAt || article.createdAt
+  const updatedAt = article.updatedAt || publishedAt
   const author = article.author || 'Machrio Team'
   const category = article.category || 'buying-guide'
+  const normalizedTitle = normalizeArticleTitle(article.title, category)
   const contentHtml = lexicalToHtml(article.content)
   const headings = extractHeadings(article.content)
   const plainText = extractPlainText(article.content)
   const readingTime = article.readingTime || Math.ceil(plainText.split(/\s+/).filter(Boolean).length / 200) || 3
+  const quickAnswerText = extractSentenceSummary(article.quickAnswer || article.excerpt || plainText, {
+    maxSentences: 2,
+    maxChars: 240,
+  })
 
   const imageUrl = article.featuredImage
 
@@ -123,8 +200,8 @@ export default async function ArticlePage({
   const blogPostingSchema = {
     '@context': 'https://schema.org',
     '@type': 'BlogPosting',
-    headline: article.title,
-    description: article.excerpt,
+    headline: normalizedTitle,
+    description: quickAnswerText || article.excerpt,
     articleSection: categoryLabels[category] || category,
     inLanguage: 'en',
     wordCount,
@@ -141,7 +218,7 @@ export default async function ArticlePage({
       },
     },
     datePublished: publishedAt,
-    dateModified: article.updatedAt,
+    dateModified: updatedAt,
     ...(imageUrl && { image: imageUrl }),
     publisher: {
       '@type': 'Organization',
@@ -156,12 +233,16 @@ export default async function ArticlePage({
       '@type': 'WebPage',
       '@id': `${serverUrl}/knowledge-center/${slug}/`,
     },
+    speakable: {
+      '@type': 'SpeakableSpecification',
+      cssSelector: ['[data-speakable="headline"]', '[data-speakable="summary"]'],
+    },
   }
 
   const breadcrumbs = [
     { label: 'Home', href: '/' },
     { label: 'Knowledge Center', href: '/knowledge-center' },
-    { label: article.title },
+    { label: normalizedTitle },
   ]
 
   return (
@@ -181,10 +262,10 @@ export default async function ArticlePage({
           </span>
         </div>
         <h1 data-speakable="headline" className="mt-3 text-3xl font-bold leading-tight text-secondary-900">
-          {article.title}
+          {normalizedTitle}
         </h1>
         <p data-speakable="summary" className="mt-3 text-lg text-secondary-600">
-          {article.excerpt}
+          {quickAnswerText || article.excerpt}
         </p>
         <div className="mt-4 flex items-center gap-4 text-sm text-secondary-500">
           <span>By {author}</span>
@@ -196,16 +277,29 @@ export default async function ArticlePage({
               day: 'numeric',
             })}
           </time>
+          {updatedAt !== publishedAt && (
+            <>
+              <span>|</span>
+              <span>
+                Last reviewed{' '}
+                {new Date(updatedAt).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </span>
+            </>
+          )}
         </div>
       </header>
 
-      {article.quickAnswer && (
+      {quickAnswerText && (
         <section className="mt-6 rounded-lg border border-primary-200 bg-primary-50 p-5">
           <p className="text-xs font-semibold uppercase tracking-wider text-primary-700">
             Quick Answer
           </p>
           <p className="mt-2 text-sm leading-relaxed text-primary-900">
-            {article.quickAnswer}
+            {quickAnswerText}
           </p>
         </section>
       )}
@@ -215,7 +309,7 @@ export default async function ArticlePage({
         <div className="mt-6 overflow-hidden rounded-lg">
           <img
             src={imageUrl}
-            alt={article.title}
+            alt={normalizedTitle}
             className="h-auto w-full object-cover"
           />
         </div>

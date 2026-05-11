@@ -19,6 +19,8 @@ export const metadata: Metadata = {
 
 const SITE_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://machrio.com'
 const GUIDE_PATH = '/knowledge-center/air-respirator-buying-guide'
+const PUBLISHED_AT = '2026-04-14T02:00:00.000Z'
+const UPDATED_AT = '2026-05-11T00:00:00.000Z'
 const guideSchema = {
   '@context': 'https://schema.org',
   '@type': 'BlogPosting',
@@ -32,6 +34,8 @@ const guideSchema = {
   },
   inLanguage: 'en',
   articleSection: 'Industrial Safety',
+  datePublished: PUBLISHED_AT,
+  dateModified: UPDATED_AT,
   image: `${SITE_URL}/og-image.png`,
   author: {
     '@type': 'Organization',
@@ -46,6 +50,10 @@ const guideSchema = {
       '@type': 'ImageObject',
       url: `${SITE_URL}/machrio-icon.png`,
     },
+  },
+  speakable: {
+    '@type': 'SpeakableSpecification',
+    cssSelector: ['[data-speakable="headline"]', '[data-speakable="summary"]'],
   },
 }
 
@@ -89,11 +97,18 @@ export default function AirRespiratorGuide() {
 
       {/* Header */}
       <header className="mt-4">
-        <h1 className="text-3xl font-bold text-secondary-900">
+        <h1 data-speakable="headline" className="text-3xl font-bold text-secondary-900">
           What Are the Key Features to Consider When Purchasing an Air Respirator?
         </h1>
-        <p className="mt-4 text-lg text-secondary-600 max-w-4xl">
+        <p data-speakable="summary" className="mt-4 text-lg text-secondary-600 max-w-4xl">
           The key features to consider when purchasing an air respirator include <strong>protection type, respirator design, filter compatibility, face fit, comfort, breathing resistance, durability, compatibility with other PPE, and safety compliance</strong>. Buyers should first identify the workplace hazard, such as dust, fumes, vapors, or chemical gases, and then select a respirator designed for that specific risk.
+        </p>
+        <p className="mt-3 text-sm text-secondary-500">
+          Last reviewed {new Date(UPDATED_AT).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+          })}
         </p>
       </header>
 

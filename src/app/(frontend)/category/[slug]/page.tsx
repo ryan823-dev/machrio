@@ -141,6 +141,15 @@ interface ChildCategory {
   productCount?: number
 }
 
+interface CategoryCommercialSignals {
+  publishedProductCount: number
+  directCheckoutCount: number
+  rfqEnabledCount: number
+  pricedProductCount: number
+  distinctBrandCount: number
+  lastCatalogUpdate: string | null
+}
+
 // 使用 PostgreSQL 直接查询获取分类数据（纯数据库，无回退）
 async function getCategoryData(slug: string) {
   const pool = getPool()
@@ -210,6 +219,83 @@ async function getCategoryData(slug: string) {
   const children = childrenResult.rows
 
   return { category, parent, grandparent, children }
+}
+
+async function getCategoryCommercialSignals(categoryId: string): Promise<CategoryCommercialSignals> {
+  const pool = getPool()
+  const result = await pool.query<{
+    published_product_count: number | string | null
+    direct_checkout_count: number | string | null
+    rfq_enabled_count: number | string | null
+    priced_product_count: number | string | null
+    distinct_brand_count: number | string | null
+    last_catalog_update: string | null
+  }>(
+    `WITH RECURSIVE category_tree AS (
+       SELECT id
+       FROM categories
+       WHERE id = $1::uuid
+       UNION ALL
+       SELECT c.id
+       FROM categories c
+       INNER JOIN category_tree ct ON c.parent_id = ct.id
+     )
+     SELECT
+       COUNT(*) FILTER (WHERE p.status = 'published')::int AS published_product_count,
+       COUNT(*) FILTER (
+         WHERE p.status = 'published'
+           AND (
+             p.purchase_mode IS NULL
+             OR LOWER(TRIM(p.purchase_mode)) IN ('both', 'buy-online', 'buy online')
+             OR LOWER(p.purchase_mode) LIKE '%buy-online%'
+             OR LOWER(p.purchase_mode) LIKE '%buy online%'
+             OR LOWER(p.purchase_mode) LIKE '%checkout%'
+             OR LOWER(p.purchase_mode) LIKE '%cart%'
+           )
+       )::int AS direct_checkout_count,
+       COUNT(*) FILTER (
+         WHERE p.status = 'published'
+           AND (
+             p.purchase_mode IS NULL
+             OR LOWER(TRIM(p.purchase_mode)) IN ('both', 'rfq-only', 'rfq only', 'quote-only', 'quote only', 'rfq', 'quote')
+             OR LOWER(p.purchase_mode) LIKE '%rfq%'
+             OR LOWER(p.purchase_mode) LIKE '%quote%'
+             OR LOWER(p.purchase_mode) LIKE '%contact%'
+             OR LOWER(p.purchase_mode) LIKE '%inquiry%'
+             OR LOWER(p.purchase_mode) LIKE '%enquiry%'
+             OR LOWER(p.purchase_mode) LIKE '%custom%'
+           )
+       )::int AS rfq_enabled_count,
+       COUNT(*) FILTER (WHERE p.status = 'published' AND p.pricing IS NOT NULL)::int AS priced_product_count,
+       COUNT(DISTINCT NULLIF(TRIM(COALESCE(p.brand, '')), '')) FILTER (WHERE p.status = 'published')::int AS distinct_brand_count,
+       MAX(p.updated_at)::text FILTER (WHERE p.status = 'published') AS last_catalog_update
+     FROM category_tree ct
+     LEFT JOIN products p ON p.primary_category_id = ct.id`,
+    [categoryId],
+  )
+
+  const row = result.rows[0]
+
+  return {
+    publishedProductCount: Number(row?.published_product_count || 0),
+    directCheckoutCount: Number(row?.direct_checkout_count || 0),
+    rfqEnabledCount: Number(row?.rfq_enabled_count || 0),
+    pricedProductCount: Number(row?.priced_product_count || 0),
+    distinctBrandCount: Number(row?.distinct_brand_count || 0),
+    lastCatalogUpdate: row?.last_catalog_update || null,
+  }
+}
+
+function formatCatalogDate(value: string | null): string | null {
+  if (!value) return null
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return null
+
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  })
 }
 
 // 获取分类产品（支持分页）
@@ -347,6 +433,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   const productsResult = isL3 || isLeafCategory
     ? await getCategoryProducts(category.id, slug, currentPage)
     : { docs: [], totalDocs: 0, page: 1, totalPages: 0, hasMore: false }
+  const commercialSignals = await getCategoryCommercialSignals(category.id)
 
   const breadcrumbs = [
     { label: 'Home', href: '/' },
@@ -380,33 +467,57 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
       : []
   )
   const categoryPreviewText = getCategoryPreviewText(category)
-  const categorySummaryAnswer = categoryPreviewText || (
-    isLeafCategory || isL3
-      ? `Use this ${category.name.toLowerCase()} page to compare in-stock options, specification fit, and order conditions before moving to an individual product SKU.`
-      : `Start with the most relevant ${category.name.toLowerCase()} subcategory, then narrow by application, specification fit, and purchasing workflow.`
-  )
+  const lastCatalogUpdateLabel = formatCatalogDate(commercialSignals.lastCatalogUpdate)
+  const categorySummaryAnswer = commercialSignals.publishedProductCount > 0
+    ? `${category.name} currently rolls up ${commercialSignals.publishedProductCount} published SKU${commercialSignals.publishedProductCount === 1 ? '' : 's'}${children.length > 0 ? ` across ${children.length} direct subcategor${children.length === 1 ? 'y' : 'ies'}` : ''}. ${commercialSignals.directCheckoutCount > 0 ? `${commercialSignals.directCheckoutCount} are configured for direct checkout` : 'Most items in this catalog route through quote review first'}, and ${commercialSignals.rfqEnabledCount > 0 ? `${commercialSignals.rfqEnabledCount} support RFQ workflows` : 'RFQ-enabled coverage is limited in the current assortment'}, so buyers can separate fast-order items from quote-led sourcing before comparing exact specifications.`
+    : categoryPreviewText || (
+        isLeafCategory || isL3
+          ? `Use this ${category.name.toLowerCase()} page to compare specification fit, purchase conditions, and next-step sourcing workflow before drilling into a specific SKU.`
+          : `Start with the most relevant ${category.name.toLowerCase()} subcategory, then narrow by application, specification fit, and purchasing workflow.`
+      )
   const categorySnapshotItems = [
+    commercialSignals.publishedProductCount > 0
+      ? `${commercialSignals.publishedProductCount} published SKU${commercialSignals.publishedProductCount === 1 ? '' : 's'} are currently mapped to this category tree.`
+      : 'This category currently acts more as a navigation hub than a stocked catalog slice.',
     children.length > 0
-      ? `${children.length} subcategories available to narrow the buyer journey.`
+      ? `${children.length} direct subcategor${children.length === 1 ? 'y is' : 'ies are'} available to narrow the buyer journey.`
       : 'This category routes directly into individual product-level comparison.',
-    productsResult.totalDocs > 0
-      ? `${productsResult.totalDocs} published products are available in this category view.`
-      : 'Use subcategory navigation to reach the most relevant product family faster.',
+    commercialSignals.distinctBrandCount > 0
+      ? `${commercialSignals.distinctBrandCount} distinct brand label${commercialSignals.distinctBrandCount === 1 ? '' : 's'} appear in the current source data.`
+      : 'Brand coverage is still sparse in the source data for this category.',
+    lastCatalogUpdateLabel
+      ? `Catalog rows in this category were last updated on ${lastCatalogUpdateLabel}.`
+      : 'Catalog freshness date is not yet available for this category.',
     parent
       ? `Located under ${parent.name}${grandparent ? ` within ${grandparent.name}` : ''} for easier sourcing context.`
       : 'Acts as a top-level buying hub for this product family.',
   ].filter(Boolean)
+  const categoryCommercialItems = [
+    commercialSignals.directCheckoutCount > 0
+      ? `${commercialSignals.directCheckoutCount} SKU${commercialSignals.directCheckoutCount === 1 ? '' : 's'} currently support direct checkout.`
+      : 'Direct-checkout coverage is currently limited; expect more quote-led buying in this category.',
+    commercialSignals.rfqEnabledCount > 0
+      ? `${commercialSignals.rfqEnabledCount} SKU${commercialSignals.rfqEnabledCount === 1 ? '' : 's'} are configured for RFQ or mixed quote/checkout workflows.`
+      : 'Most items are currently positioned for direct purchase rather than RFQ review.',
+    commercialSignals.pricedProductCount > 0
+      ? `${commercialSignals.pricedProductCount} SKU${commercialSignals.pricedProductCount === 1 ? '' : 's'} expose pricing data that can be surfaced in list and detail views.`
+      : 'Price data is still sparse here, so buyers should expect more manual quote confirmation.',
+  ]
   const categoryComparisonItems = seoOverride?.buyingFactors?.slice(0, 3) || [
     `Match ${category.name.toLowerCase()} to the real application, duty cycle, and environment before comparing price.`,
-    isLeafCategory || isL3
+    commercialSignals.directCheckoutCount > 0 && commercialSignals.rfqEnabledCount > 0
+      ? 'Separate fast-order replenishment items from project RFQs before short-listing specific SKUs.'
+      : isLeafCategory || isL3
       ? 'Use product specs, pack quantity, and availability details to short-list the right SKU quickly.'
       : 'Use subcategories to separate product families before reviewing detailed specifications.',
     'Check compatibility, size, material, and replenishment requirements before purchasing.',
   ]
   const categoryRfqItems = seoOverride?.procurementChecklist?.slice(0, 3) || [
-    'Request a quote when you need bulk pricing, recurring replenishment, or mixed-SKU comparison.',
-    'Use RFQ when compatibility, dimensions, or material selection need confirmation before order.',
-    'Escalate to sourcing when landed cost, lead time, or substitution risk matters more than one-off unit price.',
+    commercialSignals.rfqEnabledCount > 0
+      ? 'Request a quote when you need bulk pricing, recurring replenishment, or mixed-SKU comparison.'
+      : 'Use a sourcing request when this category still needs manual commercial review or special handling.',
+    'Use RFQ when compatibility, dimensions, material selection, or approved substitutes need confirmation before order.',
+    'Escalate to sourcing when landed cost, lead time, packaging constraints, or stocking risk matters more than one-off unit price.',
   ]
 
   return (
@@ -426,7 +537,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
           <div className="mt-2 prose prose-sm prose-secondary max-w-none text-secondary-600" dangerouslySetInnerHTML={{ __html: lexicalToHtml(category.description) }} />
         ) : (
           <p className="mt-2 text-sm leading-relaxed text-secondary-600">
-            {category.short_description || `Browse our selection of ${category.name} products.`}
+            {categoryPreviewText || `Browse our selection of ${category.name} products.`}
           </p>
         )}
       </div>
@@ -437,7 +548,8 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
           title={`How to Source ${category.name}`}
           answer={categorySummaryAnswer}
           sections={[
-            { title: 'Category Snapshot', items: categorySnapshotItems },
+            { title: 'Catalog Signals', items: categorySnapshotItems },
+            { title: 'Commercial Signals', items: categoryCommercialItems },
             { title: 'What to Compare', items: categoryComparisonItems },
             { title: 'Use RFQ When', items: categoryRfqItems },
           ]}
