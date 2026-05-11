@@ -268,7 +268,7 @@ async function getCategoryCommercialSignals(categoryId: string): Promise<Categor
        )::int AS rfq_enabled_count,
        COUNT(*) FILTER (WHERE p.status = 'published' AND p.pricing IS NOT NULL)::int AS priced_product_count,
        COUNT(DISTINCT NULLIF(TRIM(COALESCE(p.brand, '')), '')) FILTER (WHERE p.status = 'published')::int AS distinct_brand_count,
-       MAX(p.updated_at)::text FILTER (WHERE p.status = 'published') AS last_catalog_update
+       (MAX(p.updated_at) FILTER (WHERE p.status = 'published'))::text AS last_catalog_update
      FROM category_tree ct
      LEFT JOIN products p ON p.primary_category_id = ct.id`,
     [categoryId],
