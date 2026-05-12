@@ -63,6 +63,7 @@ interface ProductPageRecord {
   pricing: unknown | null
   images: unknown | null
   specifications: unknown | null
+  faq: unknown | null
   status: string
   availability: string | null
   lead_time: string | null
@@ -204,7 +205,7 @@ const getProductBySlugFromDB = cache(async (slug: string) => {
   const result = await safeQuery<ProductPageRecord>(
     `SELECT
        p.id, p.name, p.slug, p.sku, p.short_description, p.full_description,
-       p.pricing, p.images, p.specifications, p.status,
+       p.pricing, p.images, p.specifications, p.faq, p.status,
        p.availability, p.lead_time, p.min_order_quantity,
        p.package_qty, p.package_unit, p.purchase_mode, p.external_image_url,
        NULLIF(TRIM(p.brand), '') AS brand_name,
@@ -461,6 +462,32 @@ function renderLegacyDescriptionContent(value: unknown): string {
   return text ? formatPlainDescription(text) : ''
 }
 
+function parseProductFAQs(faq: unknown): { question: string; answer: string }[] {
+  if (!faq) return []
+
+  let faqData = faq
+  if (typeof faqData === 'string') {
+    try {
+      faqData = JSON.parse(faqData)
+    } catch {
+      return []
+    }
+  }
+
+  if (!Array.isArray(faqData)) return []
+
+  return faqData
+    .map((item) => {
+      if (!item || typeof item !== 'object') return null
+      const record = item as Record<string, unknown>
+      const question = typeof record.question === 'string' ? record.question.trim() : ''
+      const answer = typeof record.answer === 'string' ? record.answer.trim() : ''
+
+      return question && answer ? { question, answer } : null
+    })
+    .filter((item): item is { question: string; answer: string } => item !== null)
+}
+
 // Generate product FAQs
 function generateProductFAQs(product: {
   name: string
@@ -708,7 +735,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
     : `${seoProductName} is an industrial ${catName.toLowerCase()} option with live specification, availability, and ordering data on this page.`
 
   // FAQs
-  const productFAQs = generateProductFAQs({
+  const manualProductFAQs = parseProductFAQs(product.faq)
+  const productFAQs = manualProductFAQs.length > 0 ? manualProductFAQs : generateProductFAQs({
     name: seoProductName,
     brand_name: product.brand_name,
     category_name: catName,
