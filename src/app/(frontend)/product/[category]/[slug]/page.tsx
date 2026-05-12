@@ -12,7 +12,7 @@ import { TieredPricingTable } from '@/components/product/TieredPricingTable'
 import { TrustBadges } from '@/components/product/TrustBadges'
 import { AddToQuoteButton } from '@/components/product/AddToQuoteButton'
 import { RelatedProductsAsync } from '@/components/product/RelatedProductsAsync'
-import { ImageZoom } from '@/components/product/ImageZoom'
+import { ProductImageGallery } from '@/components/product/ProductImageGallery'
 import { RecentlyViewed, TrackProductView } from '@/components/product/RecentlyViewed'
 import { AlsoViewed, TrackProductViewServer } from '@/components/product/AlsoViewed'
 import { BoughtTogether } from '@/components/product/BoughtTogether'
@@ -824,7 +824,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
         {/* Image */}
         <div className="rounded-lg border border-secondary-200 bg-secondary-50">
           {imageUrl ? (
-            <ImageZoom src={imageUrl} alt={product.name} />
+            <ProductImageGallery images={schemaImageUrls} alt={product.name} />
           ) : (
             <div className="flex aspect-square items-center justify-center text-secondary-300">
               <svg className="h-32 w-32" fill="currentColor" viewBox="0 0 20 20">
