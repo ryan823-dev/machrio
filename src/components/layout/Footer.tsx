@@ -1,4 +1,8 @@
+'use client'
+
 import Link from 'next/link'
+import { useLocale } from '@/contexts/LocaleContext'
+import { withLocalePath } from '@/i18n/routing'
 
 const footerLinks = {
   company: [
@@ -36,6 +40,9 @@ const footerLinks = {
 }
 
 export function Footer() {
+  const { dictionary: t, locale } = useLocale()
+  const localHref = (href: string) => withLocalePath(href, locale)
+
   return (
     <footer className="mt-auto border-t border-secondary-200 bg-secondary-900 text-secondary-300">
       <div className="container-main py-12">
@@ -46,10 +53,10 @@ export function Footer() {
               Mach<span className="text-amber-400">rio</span>
             </span>
             <p className="mt-3 text-sm leading-relaxed">
-              Your trusted source for tools, parts, and industrial essentials with transparent pricing, DDP global shipping, and lifetime technical support.
+              {t.footer.tagline}
             </p>
             <p className="mt-3 text-xs text-secondary-400">
-              Operated by VERTAX LIMITED, Hong Kong.
+              {t.footer.operatedBy}
             </p>
             <div className="mt-3 space-y-2">
               <a href="mailto:support@machrio.com" className="block text-sm font-medium text-white hover:text-amber-400">
@@ -71,11 +78,11 @@ export function Footer() {
 
           {/* Company */}
           <div>
-            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-white">About Machrio</h3>
+            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-white">{t.footer.aboutMachrio}</h3>
             <ul className="space-y-2">
               {footerLinks.company.map((link) => (
                 <li key={link.href + link.label}>
-                  <Link href={link.href} className="text-sm hover:text-white">
+                  <Link href={localHref(link.href)} className="text-sm hover:text-white">
                     {link.label}
                   </Link>
                 </li>
@@ -85,11 +92,11 @@ export function Footer() {
 
           {/* Industries */}
           <div>
-            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-white">Industries</h3>
+            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-white">{t.footer.industries}</h3>
             <ul className="space-y-2">
               {footerLinks.industries.map((link) => (
                 <li key={link.href + link.label}>
-                  <Link href={link.href} className="text-sm hover:text-white">
+                  <Link href={localHref(link.href)} className="text-sm hover:text-white">
                     {link.label}
                   </Link>
                 </li>
@@ -99,11 +106,11 @@ export function Footer() {
 
           {/* Support */}
           <div>
-            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-white">Customer Support</h3>
+            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-white">{t.footer.customerSupport}</h3>
             <ul className="space-y-2">
               {footerLinks.support.map((link) => (
                 <li key={link.href + link.label}>
-                  <Link href={link.href} className="text-sm hover:text-white">
+                  <Link href={localHref(link.href)} className="text-sm hover:text-white">
                     {link.label}
                   </Link>
                 </li>
@@ -113,11 +120,11 @@ export function Footer() {
 
           {/* Services */}
           <div>
-            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-white">Business Services</h3>
+            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-white">{t.footer.businessServices}</h3>
             <ul className="space-y-2">
               {footerLinks.services.map((link) => (
                 <li key={link.href + link.label}>
-                  <Link href={link.href} className="text-sm hover:text-white">
+                  <Link href={localHref(link.href)} className="text-sm hover:text-white">
                     {link.label}
                   </Link>
                 </li>
@@ -127,31 +134,31 @@ export function Footer() {
 
           {/* Trust Signals */}
           <div>
-            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-white">Shop With Confidence</h3>
+            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-white">{t.footer.shopWithConfidence}</h3>
             <ul className="space-y-2 text-sm">
               <li className="flex items-center gap-2">
                 <svg className="h-4 w-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
-                3-Year Warranty
+                {t.footer.warranty}
               </li>
               <li className="flex items-center gap-2">
                 <svg className="h-4 w-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
-                30-Day Returns
+                {t.footer.returns}
               </li>
               <li className="flex items-center gap-2">
                 <svg className="h-4 w-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
-                DDP Duty-Free Shipping
+                {t.footer.ddpShipping}
               </li>
               <li className="flex items-center gap-2">
                 <svg className="h-4 w-4 text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                 </svg>
-                Secure Checkout
+                {t.footer.secureCheckout}
               </li>
             </ul>
           </div>
@@ -159,10 +166,10 @@ export function Footer() {
 
         {/* Bottom bar */}
         <div className="mt-10 flex flex-col items-center justify-between border-t border-secondary-700 pt-6 sm:flex-row">
-          <p className="text-xs">&copy; {new Date().getFullYear()} Machrio.com. Operated by VERTAX LIMITED.</p>
+          <p className="text-xs">&copy; {new Date().getFullYear()} {t.footer.copyright}</p>
           <div className="mt-2 flex gap-4 sm:mt-0">
             {footerLinks.legal.map((link) => (
-              <Link key={link.href} href={link.href} className="text-xs hover:text-white">
+              <Link key={link.href} href={localHref(link.href)} className="text-xs hover:text-white">
                 {link.label}
               </Link>
             ))}

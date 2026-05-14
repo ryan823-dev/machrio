@@ -2,6 +2,8 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import Link from 'next/link'
+import { useLocale } from '@/contexts/LocaleContext'
+import { withLocalePath } from '@/i18n/routing'
 import type { NavCategory } from './CategoryFlyoutMenu'
 
 interface CategoryDrawerMenuProps {
@@ -11,6 +13,7 @@ interface CategoryDrawerMenuProps {
 }
 
 export function CategoryDrawerMenu({ categories, isOpen, onClose }: CategoryDrawerMenuProps) {
+  const { dictionary: t, locale } = useLocale()
   const [expandedL1, setExpandedL1] = useState<string | null>(null)
   const [expandedL2, setExpandedL2] = useState<string | null>(null)
 
@@ -70,7 +73,7 @@ export function CategoryDrawerMenu({ categories, isOpen, onClose }: CategoryDraw
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-secondary-200 px-4 py-3">
-          <span className="text-lg font-semibold text-secondary-900">Categories</span>
+          <span className="text-lg font-semibold text-secondary-900">{t.header.categories}</span>
           <button
             type="button"
             onClick={onClose}
@@ -91,7 +94,7 @@ export function CategoryDrawerMenu({ categories, isOpen, onClose }: CategoryDraw
                 {/* L1 Header */}
                 <div className="flex items-center">
                   <Link
-                    href={`/category/${l1.slug}`}
+                    href={withLocalePath(`/category/${l1.slug}`, locale)}
                     onClick={onClose}
                     className="flex-1 px-4 py-3 text-sm font-medium text-secondary-900 hover:bg-secondary-50"
                   >
@@ -125,7 +128,7 @@ export function CategoryDrawerMenu({ categories, isOpen, onClose }: CategoryDraw
                         {/* L2 Header */}
                         <div className="flex items-center">
                           <Link
-                            href={`/category/${l2.slug}`}
+                            href={withLocalePath(`/category/${l2.slug}`, locale)}
                             onClick={onClose}
                             className="flex-1 py-2.5 pl-8 pr-4 text-sm text-secondary-700 hover:bg-secondary-100 hover:text-primary-700"
                           >
@@ -157,7 +160,7 @@ export function CategoryDrawerMenu({ categories, isOpen, onClose }: CategoryDraw
                             {l2.children.map((l3) => (
                               <Link
                                 key={l3.id}
-                                href={`/category/${l3.slug}`}
+                                href={withLocalePath(`/category/${l3.slug}`, locale)}
                                 onClick={onClose}
                                 className="block py-2 pl-12 pr-4 text-sm text-secondary-600 hover:bg-primary-50 hover:text-primary-700"
                               >
@@ -178,11 +181,11 @@ export function CategoryDrawerMenu({ categories, isOpen, onClose }: CategoryDraw
         {/* Footer */}
         <div className="border-t border-secondary-200 p-4">
           <Link
-            href="/category"
+            href={withLocalePath('/category', locale)}
             onClick={onClose}
             className="block w-full rounded-lg bg-primary-600 py-2.5 text-center text-sm font-medium text-white hover:bg-primary-700"
           >
-            View All Categories
+            {t.nav.allCategories}
           </Link>
         </div>
       </div>

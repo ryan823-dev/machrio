@@ -2,6 +2,8 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 import Link from 'next/link'
+import { useLocale } from '@/contexts/LocaleContext'
+import { withLocalePath } from '@/i18n/routing'
 
 export interface NavCategory {
   id: string
@@ -16,6 +18,7 @@ interface CategoryFlyoutMenuProps {
 }
 
 export function CategoryFlyoutMenu({ categories, onClose }: CategoryFlyoutMenuProps) {
+  const { locale } = useLocale()
   const [activeL1, setActiveL1] = useState<string | null>(null)
   const [activeL2, setActiveL2] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -95,7 +98,7 @@ export function CategoryFlyoutMenu({ categories, onClose }: CategoryFlyoutMenuPr
               onMouseEnter={() => handleL1Enter(l1.id)}
             >
               <Link
-                href={`/category/${l1.slug}`}
+                href={withLocalePath(`/category/${l1.slug}`, locale)}
                 onClick={onClose}
                 className={`flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${
                   activeL1 === l1.id 
@@ -133,7 +136,7 @@ export function CategoryFlyoutMenu({ categories, onClose }: CategoryFlyoutMenuPr
         >
           <div className="border-b border-secondary-100 bg-secondary-50 px-4 py-2">
             <Link
-              href={`/category/${activeL1Cat?.slug}`}
+              href={withLocalePath(`/category/${activeL1Cat?.slug}`, locale)}
               onClick={onClose}
               className="text-sm font-semibold text-secondary-900 hover:text-primary-700"
             >
@@ -148,7 +151,7 @@ export function CategoryFlyoutMenu({ categories, onClose }: CategoryFlyoutMenuPr
                 onMouseEnter={() => handleL2Enter(l2.id)}
               >
                 <Link
-                  href={`/category/${l2.slug}`}
+                  href={withLocalePath(`/category/${l2.slug}`, locale)}
                   onClick={onClose}
                   className={`flex items-center justify-between px-4 py-2 text-sm transition-colors ${
                     activeL2 === l2.id 
@@ -187,7 +190,7 @@ export function CategoryFlyoutMenu({ categories, onClose }: CategoryFlyoutMenuPr
         >
           <div className="border-b border-secondary-100 bg-secondary-50 px-4 py-2">
             <Link
-              href={`/category/${activeL2Cat?.slug}`}
+              href={withLocalePath(`/category/${activeL2Cat?.slug}`, locale)}
               onClick={onClose}
               className="text-sm font-semibold text-secondary-900 hover:text-primary-700"
             >
@@ -198,7 +201,7 @@ export function CategoryFlyoutMenu({ categories, onClose }: CategoryFlyoutMenuPr
             {l3Children.map((l3) => (
               <Link
                 key={l3.id}
-                href={`/category/${l3.slug}`}
+                href={withLocalePath(`/category/${l3.slug}`, locale)}
                 onClick={onClose}
                 className="block px-4 py-2 text-sm text-secondary-600 transition-colors hover:bg-primary-50 hover:text-primary-700"
                 role="menuitem"
@@ -214,7 +217,7 @@ export function CategoryFlyoutMenu({ categories, onClose }: CategoryFlyoutMenuPr
       {activeL1 && l2Children.length === 0 && (
         <div className="flex w-60 items-center justify-center p-8 text-sm text-secondary-400">
           <Link
-            href={`/category/${activeL1Cat?.slug}`}
+            href={withLocalePath(`/category/${activeL1Cat?.slug}`, locale)}
             onClick={onClose}
             className="text-center hover:text-primary-600"
           >

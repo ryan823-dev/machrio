@@ -8,6 +8,8 @@ import { TopicClusterLinks } from '@/components/shared/TopicClusterLinks'
 import { getAdjacentArticles, getArticleBySlug } from '@/lib/db/articles'
 import { extractHeadings, extractPlainText, lexicalToHtml } from '@/lib/lexical-utils'
 import { getArticleTopicCluster, withBrandSuffix } from '@/lib/seo'
+import { getRequestLocale } from '@/i18n/server'
+import { getLocalizedAlternates } from '@/i18n/seo'
 
 // SSR: query merged database + builtin content
 export const dynamic = 'force-dynamic'
@@ -103,7 +105,8 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>
 }): Promise<Metadata> {
   const { slug } = await params
-  const article = await getArticleBySlug(slug)
+  const locale = await getRequestLocale()
+  const article = await getArticleBySlug(slug, locale)
 
   if (!article) {
     return { title: withBrandSuffix('Article Not Found') }
@@ -124,7 +127,7 @@ export async function generateMetadata({
   return {
     title,
     description,
-    alternates: { canonical: `/knowledge-center/${slug}` },
+    alternates: getLocalizedAlternates(`/knowledge-center/${slug}`, locale),
     openGraph: {
       title,
       description,
@@ -151,7 +154,8 @@ export default async function ArticlePage({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  const article = await getArticleBySlug(slug)
+  const locale = await getRequestLocale()
+  const article = await getArticleBySlug(slug, locale)
 
   if (!article) {
     notFound()

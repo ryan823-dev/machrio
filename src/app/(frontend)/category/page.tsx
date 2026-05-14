@@ -2,6 +2,9 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs'
 import { getPool } from '@/lib/db'
+import { getRequestLocale } from '@/i18n/server'
+import { withLocalePath } from '@/i18n/routing'
+import { applyCategoryTranslation } from '@/lib/i18n-content'
 
 // 动态渲染 - 从数据库获取实时数据
 export const dynamic = 'force-dynamic'
@@ -58,7 +61,11 @@ async function getTopLevelCategories() {
 }
 
 export default async function AllCategoriesPage() {
-  const categories = await getTopLevelCategories()
+  const locale = await getRequestLocale()
+  const rawCategories = await getTopLevelCategories()
+  const categories = await Promise.all(
+    rawCategories.map(async (category) => applyCategoryTranslation(category, locale) || category),
+  ).then((items) => items.filter((item): item is NonNullable<typeof item> => item !== null))
 
   const breadcrumbs = [
     { label: 'Home', href: '/' },
@@ -79,7 +86,7 @@ export default async function AllCategoriesPage() {
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {categories.map((cat) => (
           <div key={cat.id} className="rounded-lg border border-secondary-200 bg-white p-6 transition-shadow hover:shadow-md">
-            <Link href={`/category/${cat.slug}`} className="block">
+            <Link href={withLocalePath(`/category/${cat.slug}`, locale)} className="block">
               <div className="flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary-50 text-primary-600">
                   <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -100,7 +107,7 @@ export default async function AllCategoriesPage() {
                 {cat.subcategories.map((sub) => (
                   <Link
                     key={sub.slug}
-                    href={`/category/${sub.slug}`}
+                    href={withLocalePath(`/category/${sub.slug}`, locale)}
                     className="rounded-full border border-secondary-200 px-2.5 py-1 text-xs text-secondary-600 transition-colors hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700"
                   >
                     {sub.name}

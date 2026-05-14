@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { DEFAULT_LOCALE, isLocale } from '@/i18n/config'
+import { stripLocaleFromPathname } from '@/i18n/routing'
 
 /**
  * Active middleware for:
@@ -8,6 +10,9 @@ import type { NextRequest } from 'next/server'
  */
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+  const locale = pathname.split('/').filter(Boolean)[0]
+  const activeLocale = isLocale(locale) ? locale : DEFAULT_LOCALE
+  const normalizedPathname = stripLocaleFromPathname(pathname)
   const forwardedHost = request.headers.get('x-forwarded-host') || request.headers.get('host')
   const forwardedProto = request.headers.get('x-forwarded-proto') || 'https'
   const publicBaseUrl = forwardedHost
@@ -30,7 +35,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url, 308)
   }
 
-  const glossaryMatch = pathname.match(/^\/glossary\/([^/]+)\/?$/)
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set('x-machrio-locale', activeLocale)
+  requestHeaders.set('x-machrio-pathname', pathname)
+
+  const glossaryMatch = normalizedPathname.match(/^\/glossary\/([^/]+)\/?$/)
   if (glossaryMatch) {
     const slug = glossaryMatch[1]
     const controller = new AbortController()
@@ -39,7 +48,7 @@ export async function middleware(request: NextRequest) {
     try {
       const checkUrl = new URL('/api/internal/check-glossary', publicBaseUrl)
       checkUrl.searchParams.set('slug', slug)
-      checkUrl.searchParams.set('pathname', pathname)
+      checkUrl.searchParams.set('pathname', normalizedPathname)
 
       const response = await fetch(checkUrl.toString(), {
         method: 'GET',
@@ -59,9 +68,12 @@ export async function middleware(request: NextRequest) {
           statusCode?: number
         }
 
-        if (data.redirectTo && data.redirectTo !== pathname) {
+        if (data.redirectTo && data.redirectTo !== normalizedPathname) {
           const url = request.nextUrl.clone()
           url.pathname = data.redirectTo
+          if (activeLocale !== DEFAULT_LOCALE) {
+            url.pathname = `/${activeLocale}${url.pathname}`
+          }
           return NextResponse.redirect(url, data.statusCode || 301)
         }
       }
@@ -76,7 +88,21 @@ export async function middleware(request: NextRequest) {
     }
   }
 
-  return NextResponse.next()
+  if (activeLocale !== DEFAULT_LOCALE) {
+    const url = request.nextUrl.clone()
+    url.pathname = normalizedPathname
+    return NextResponse.rewrite(url, {
+      request: {
+        headers: requestHeaders,
+      },
+    })
+  }
+
+  return NextResponse.next({
+    request: {
+      headers: requestHeaders,
+    },
+  })
 }
 
 export const config = {

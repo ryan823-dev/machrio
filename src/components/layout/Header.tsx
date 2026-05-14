@@ -1,9 +1,12 @@
 'use client'
 
 import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useCart } from '@/contexts/CartContext'
+import { useLocale } from '@/contexts/LocaleContext'
+import { LOCALE_LABELS, LOCALES, type Locale } from '@/i18n/config'
+import { switchLocalePath, withLocalePath } from '@/i18n/routing'
 import { CategoryFlyoutMenu, type NavCategory } from './CategoryFlyoutMenu'
 import { CategoryDrawerMenu } from './CategoryDrawerMenu'
 
@@ -12,15 +15,6 @@ import { CategoryDrawerMenu } from './CategoryDrawerMenu'
 
 const HISTORY_KEY = 'machrio_search_history'
 const MAX_HISTORY = 5
-
-const mainNav = [
-  { label: 'Industries', href: '/industry/manufacturing' },
-  { label: 'New Arrivals', href: '/new-arrivals' },
-  { label: 'Volume Pricing', href: '/deals' },
-  { label: 'Knowledge Center', href: '/knowledge-center' },
-  { label: 'Partner Program', href: '/partner-program' },
-  { label: 'Request a Quote', href: '/rfq' },
-]
 
 interface ProductSuggestion {
   name: string
@@ -75,7 +69,9 @@ function addToSearchHistory(query: string) {
 
 export function Header() {
   const { itemCount } = useCart()
+  const { dictionary: t, locale } = useLocale()
   const router = useRouter()
+  const pathname = usePathname()
   const [searchQuery, setSearchQuery] = useState('')
   const [products, setProducts] = useState<ProductSuggestion[]>([])
   const [categories, setCategories] = useState<CategorySuggestion[]>([])
@@ -195,7 +191,7 @@ export function Header() {
       setSearchHistory(getSearchHistory())
       setShowDropdown(false)
       setShowHistory(false)
-      router.push(`/search?q=${encodeURIComponent(query)}`)
+      router.push(withLocalePath(`/search?q=${encodeURIComponent(query)}`, locale))
     }
   }
 
@@ -212,7 +208,7 @@ export function Header() {
     setShowHistory(false)
     addToSearchHistory(q)
     setSearchHistory(getSearchHistory())
-    router.push(`/search?q=${encodeURIComponent(q)}`)
+    router.push(withLocalePath(`/search?q=${encodeURIComponent(q)}`, locale))
   }
 
   // Accessibility: Keyboard navigation for mega-menu
@@ -233,6 +229,15 @@ export function Header() {
   }, [])
 
   const trimmedQuery = useMemo(() => searchQuery.trim(), [searchQuery])
+  const localHref = useCallback((href: string) => withLocalePath(href, locale), [locale])
+  const mainNav = useMemo(() => [
+    { label: t.nav.industries, href: '/industry/manufacturing' },
+    { label: t.nav.newArrivals, href: '/new-arrivals' },
+    { label: t.nav.volumePricing, href: '/deals' },
+    { label: t.nav.knowledgeCenter, href: '/knowledge-center' },
+    { label: t.nav.partnerProgram, href: '/partner-program' },
+    { label: t.nav.requestQuote, href: '/rfq' },
+  ], [t])
 
   return (
     <header className="sticky top-0 z-50 border-b border-secondary-200 bg-white">
@@ -245,20 +250,20 @@ export function Header() {
                 <path d="M8 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0zM15 16.5a1.5 1.5 0 11-3 0 1.5 1.5 0 013 0z" />
                 <path d="M3 4a1 1 0 00-1 1v10a1 1 0 001 1h1.05a2.5 2.5 0 014.9 0H10a1 1 0 001-1v-1h3.05a2.5 2.5 0 014.9 0H19a1 1 0 001-1v-4a.5.5 0 00-.146-.354l-3-3A.5.5 0 0016.5 6H15V5a1 1 0 00-1-1H3z" />
               </svg>
-              Flexible Shipping
+              {t.header.flexibleShipping}
             </span>
             <span className="hidden sm:flex items-center gap-1.5">
               <svg className="h-4 w-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
-              Quality Guaranteed
+              {t.header.qualityGuaranteed}
             </span>
             <span className="hidden md:flex items-center gap-1.5">
               <svg className="h-4 w-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
                 <path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" />
                 <path fillRule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm3 4a1 1 0 000 2h.01a1 1 0 100-2H7zm3 0a1 1 0 000 2h3a1 1 0 100-2h-3zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H7zm3 0a1 1 0 100 2h3a1 1 0 100-2h-3z" clipRule="evenodd" />
               </svg>
-              Free Quotes in 24h
+              {t.header.freeQuotes}
             </span>
           </div>
           <div className="flex items-center gap-5 text-sm">
@@ -270,16 +275,16 @@ export function Header() {
               support@machrio.com
             </a>
             <Link
-              href="/find-order"
+              href={localHref('/find-order')}
               className="hidden md:flex items-center gap-1.5 text-white/90 transition-colors hover:text-amber-300"
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 5h6m-8 4h10m-5 4h5m-9.5 6.5a2.5 2.5 0 113.536-3.536 2.5 2.5 0 01-3.536 3.536zm0 0L4 22" />
               </svg>
-              Find Order
+              {t.nav.findOrder}
             </Link>
-            <Link href="/rfq" className="rounded-full bg-amber-500 px-4 py-1 font-semibold text-primary-900 hover:bg-amber-400 transition-colors">
-              Get a Quote
+            <Link href={localHref('/rfq')} className="rounded-full bg-amber-500 px-4 py-1 font-semibold text-primary-900 hover:bg-amber-400 transition-colors">
+              {t.nav.getQuote}
             </Link>
           </div>
         </div>
@@ -287,7 +292,7 @@ export function Header() {
 
       {/* Main header */}
       <div className="container-main flex items-center gap-6 py-3">
-        <Link href="/" className="flex-shrink-0">
+        <Link href={localHref('/')} className="flex-shrink-0">
           <span className="text-2xl font-bold text-primary-800">
             Mach<span className="text-amber-500">rio</span>
           </span>
@@ -298,7 +303,7 @@ export function Header() {
           <form onSubmit={handleSearch} className="relative w-full max-w-2xl" role="search">
             {/* Accessibility: Screen reader label for search input */}
             <label htmlFor="header-search-input" className="sr-only">
-              Search products, brands, and SKUs
+              {t.header.searchLabel}
             </label>
             <input
               id="header-search-input"
@@ -306,10 +311,10 @@ export function Header() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               onFocus={handleFocus}
-              placeholder="Search products, brands, SKUs..."
+              placeholder={t.header.searchPlaceholder}
               className="input-field w-full py-2.5 pl-4 pr-10"
               autoComplete="off"
-              aria-label="Search products, brands, and SKUs"
+              aria-label={t.header.searchLabel}
               aria-describedby={showDropdown && hasSuggestions ? 'search-suggestions-status' : undefined}
               aria-expanded={showDropdown && hasSuggestions}
               aria-controls={showDropdown && hasSuggestions ? 'search-suggestions-dropdown' : undefined}
@@ -318,7 +323,7 @@ export function Header() {
             <button
               type="submit"
               className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary-400 hover:text-primary-600"
-              aria-label="Submit search"
+              aria-label={t.header.submitSearch}
             >
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -327,7 +332,7 @@ export function Header() {
 
             {/* Accessibility: Live region for search status */}
             <div id="search-suggestions-status" className="sr-only" aria-live="polite">
-              {isLoading && 'Searching...'}
+              {isLoading && t.header.searching}
               {!isLoading && hasSuggestions && `${products.length} products, ${categories.length} categories, ${brands.length} brands found`}
             </div>
 
@@ -335,7 +340,7 @@ export function Header() {
             {showHistory && searchHistory.length > 0 && !showDropdown && (
               <div className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-lg border border-secondary-200 bg-white shadow-lg">
                 <div className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-secondary-400">
-                  Recent Searches
+                  {t.header.recentSearches}
                 </div>
                 {searchHistory.map((h, i) => (
                   <button
@@ -361,19 +366,19 @@ export function Header() {
                 className="absolute left-0 right-0 top-full z-50 mt-1 overflow-hidden rounded-lg border border-secondary-200 bg-white shadow-lg"
               >
                 {isLoading && !hasSuggestions ? (
-                  <div className="px-4 py-3 text-sm text-secondary-400">Searching...</div>
+                  <div className="px-4 py-3 text-sm text-secondary-400">{t.header.searching}</div>
                 ) : (
                   <>
                     {/* Products section */}
                     {products.length > 0 && (
                       <div>
                         <div className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-secondary-400">
-                          Products
+                          {t.header.products}
                         </div>
                         {products.map((item) => (
                           <Link
                             key={item.slug}
-                            href={`/product/${item.categorySlug}/${item.slug}`}
+                            href={localHref(`/product/${item.categorySlug}/${item.slug}`)}
                             onClick={() => { setShowDropdown(false); setSearchQuery('') }}
                             className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-secondary-50"
                           >
@@ -409,12 +414,12 @@ export function Header() {
                     {categories.length > 0 && (
                       <div className={products.length > 0 ? 'border-t border-secondary-100' : ''}>
                         <div className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-secondary-400">
-                          Categories
+                          {t.header.categories}
                         </div>
                         {categories.map((cat) => (
                           <Link
                             key={cat.slug}
-                            href={`/category/${cat.slug}`}
+                            href={localHref(`/category/${cat.slug}`)}
                             onClick={() => { setShowDropdown(false); setSearchQuery('') }}
                             className="flex items-center justify-between px-4 py-2.5 transition-colors hover:bg-secondary-50"
                           >
@@ -438,12 +443,12 @@ export function Header() {
                     {brands.length > 0 && (
                       <div className={(products.length > 0 || categories.length > 0) ? 'border-t border-secondary-100' : ''}>
                         <div className="px-4 py-2 text-xs font-semibold uppercase tracking-wider text-secondary-400">
-                          Brands
+                          {t.header.brands}
                         </div>
                         {brands.map((brand) => (
                           <Link
                             key={brand.slug}
-                            href={`/search?q=${encodeURIComponent(brand.name)}`}
+                            href={localHref(`/search?q=${encodeURIComponent(brand.name)}`)}
                             onClick={() => { setShowDropdown(false); setSearchQuery('') }}
                             className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-secondary-50"
                           >
@@ -460,7 +465,7 @@ export function Header() {
 
                     {/* View all results link */}
                     <Link
-                      href={`/search?q=${encodeURIComponent(trimmedQuery)}`}
+                      href={localHref(`/search?q=${encodeURIComponent(trimmedQuery)}`)}
                       onClick={() => {
                         addToSearchHistory(trimmedQuery)
                         setSearchHistory(getSearchHistory())
@@ -468,7 +473,7 @@ export function Header() {
                       }}
                       className="block border-t border-secondary-100 px-4 py-2.5 text-center text-sm font-medium text-primary-600 hover:bg-primary-50"
                     >
-                      View all results for &ldquo;{trimmedQuery}&rdquo;
+                      {t.header.viewAllResults} &ldquo;{trimmedQuery}&rdquo;
                     </Link>
                   </>
                 )}
@@ -479,25 +484,25 @@ export function Header() {
 
         {/* Right actions */}
         <div className="flex items-center gap-4">
-          <Link 
-            href="/account" 
+          <Link
+            href={localHref('/account')}
             className="flex min-h-[44px] min-w-[44px] flex-col items-center justify-center text-xs text-secondary-600 hover:text-primary-700"
-            aria-label="My account"
+            aria-label={t.nav.account}
           >
             <svg className="mb-0.5 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
             </svg>
-            Account
+            {t.nav.account}
           </Link>
-          <Link 
-            href="/cart" 
+          <Link
+            href={localHref('/cart')}
             className="relative flex min-h-[44px] min-w-[44px] flex-col items-center justify-center text-xs text-secondary-600 hover:text-primary-700"
             aria-label={`Shopping cart${itemCount > 0 ? `, ${itemCount} ${itemCount === 1 ? 'item' : 'items'}` : ', empty'}`}
           >
             <svg className="mb-0.5 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" />
             </svg>
-            <span aria-hidden="true">Cart</span>
+            <span aria-hidden="true">{t.nav.cart}</span>
             <span className="sr-only">{itemCount > 0 ? `${itemCount} items in cart` : 'Cart is empty'}</span>
             {itemCount > 0 && (
               <span className="absolute -right-2 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white" aria-hidden="true">
@@ -509,6 +514,18 @@ export function Header() {
           <div aria-live="polite" aria-atomic="true" className="sr-only">
             {cartAnnouncement}
           </div>
+          <label className="sr-only" htmlFor="language-switcher">{t.header.language}</label>
+          <select
+            id="language-switcher"
+            value={locale}
+            onChange={(event) => router.push(switchLocalePath(pathname, event.target.value as Locale))}
+            className="hidden rounded-md border border-secondary-200 bg-white px-2 py-1.5 text-xs text-secondary-700 md:block"
+            aria-label={t.header.language}
+          >
+            {LOCALES.map((item) => (
+              <option key={item} value={item}>{LOCALE_LABELS[item]}</option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -520,7 +537,7 @@ export function Header() {
             type="button"
             className="flex items-center gap-1.5 px-3 py-2.5 text-sm font-medium text-secondary-700 transition-colors hover:bg-primary-50 hover:text-primary-700 md:hidden"
             onClick={() => setShowMobileMenu(true)}
-            aria-label="Open category menu"
+            aria-label={t.header.openCategoryMenu}
           >
             <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
@@ -552,7 +569,7 @@ export function Header() {
               <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
-              All Categories
+              {t.nav.allCategories}
               <svg className={`h-3 w-3 transition-transform ${showMegaMenu ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
@@ -572,7 +589,7 @@ export function Header() {
             {mainNav.map((item) => (
               <Link
                 key={item.href}
-                href={item.href}
+                href={localHref(item.href)}
                 className="px-4 py-2.5 text-sm font-medium text-secondary-700 transition-colors hover:bg-primary-50 hover:text-primary-700"
               >
                 {item.label}

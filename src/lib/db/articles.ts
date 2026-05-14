@@ -1,6 +1,8 @@
 import { getPool } from '@/lib/db'
 import { builtinKnowledgeArticles, type KnowledgeArticle } from '@/content/knowledge-articles'
 import { normalizeRichTextContent } from '@/lib/lexical-utils'
+import type { Locale } from '@/i18n/config'
+import { applyArticleTranslation } from '@/lib/i18n-content'
 
 type ArticleRow = Record<string, any>
 
@@ -251,13 +253,17 @@ export async function getArticles(options: {
   }
 }
 
-export async function getArticleBySlug(slug: string): Promise<KnowledgeArticle | null> {
+export async function getArticleBySlug(slug: string, locale?: Locale): Promise<KnowledgeArticle | null> {
+  let article: KnowledgeArticle | null = null
+
   if (BUILTIN_BY_SLUG.has(slug) || process.env.DATABASE_URI) {
     const articles = await getMergedArticles()
-    return articles.find((article) => article.slug === slug) || null
+    article = articles.find((item) => item.slug === slug) || null
+  } else {
+    article = BUILTIN_BY_SLUG.get(slug) || null
   }
 
-  return BUILTIN_BY_SLUG.get(slug) || null
+  return locale ? applyArticleTranslation(article, locale) : article
 }
 
 export async function getAdjacentArticles(

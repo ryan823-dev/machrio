@@ -1,8 +1,10 @@
 'use client'
 
 import { useState, type FormEvent } from 'react'
+import { useLocale } from '@/contexts/LocaleContext'
 
 export function ContactForm() {
+  const { dictionary: t } = useLocale()
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
 
@@ -53,15 +55,15 @@ export function ContactForm() {
         <svg className="mx-auto h-10 w-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <h3 className="mt-3 text-lg font-semibold text-green-800">Message Sent!</h3>
+        <h3 className="mt-3 text-lg font-semibold text-green-800">{t.forms.successMessage}</h3>
         <p className="mt-1 text-sm text-green-600">
-          Thank you for reaching out. We&apos;ll respond within 1 business day.
+          {t.forms.successContactText}
         </p>
         <button
           onClick={() => setStatus('idle')}
           className="mt-4 text-sm font-medium text-primary-600 hover:text-primary-800"
         >
-          Send another message
+          {t.forms.sendAnother}
         </button>
       </div>
     )
@@ -72,7 +74,7 @@ export function ContactForm() {
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="name" className="block text-sm font-medium text-secondary-700">
-            Name <span className="text-red-500">*</span>
+            {t.forms.name} <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
@@ -85,7 +87,7 @@ export function ContactForm() {
         </div>
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-secondary-700">
-            Email <span className="text-red-500">*</span>
+            {t.forms.email} <span className="text-red-500">*</span>
           </label>
           <input
             type="email"
@@ -101,7 +103,7 @@ export function ContactForm() {
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="phone" className="block text-sm font-medium text-secondary-700">
-            Phone
+            {t.forms.phone}
           </label>
           <input
             type="tel"
@@ -113,7 +115,7 @@ export function ContactForm() {
         </div>
         <div>
           <label htmlFor="company" className="block text-sm font-medium text-secondary-700">
-            Company
+            {t.forms.company}
           </label>
           <input
             type="text"
@@ -127,7 +129,7 @@ export function ContactForm() {
 
       <div>
         <label htmlFor="subject" className="block text-sm font-medium text-secondary-700">
-          Subject <span className="text-red-500">*</span>
+          {t.forms.subject} <span className="text-red-500">*</span>
         </label>
         <select
           id="subject"
@@ -136,19 +138,19 @@ export function ContactForm() {
           className="input-field mt-1 w-full"
           defaultValue=""
         >
-          <option value="" disabled>Select a topic</option>
-          <option value="general">General Inquiry</option>
-          <option value="support">Customer Support</option>
-          <option value="order">Order Status</option>
-          <option value="return">Returns &amp; Refunds</option>
-          <option value="partnership">Business Partnership</option>
-          <option value="other">Other</option>
+          <option value="" disabled>{t.forms.selectTopic}</option>
+          <option value="general">{t.forms.general}</option>
+          <option value="support">{t.forms.support}</option>
+          <option value="order">{t.forms.order}</option>
+          <option value="return">{t.forms.returns}</option>
+          <option value="partnership">{t.forms.partnership}</option>
+          <option value="other">{t.forms.other}</option>
         </select>
       </div>
 
       <div>
         <label htmlFor="message" className="block text-sm font-medium text-secondary-700">
-          Message <span className="text-red-500">*</span>
+          {t.forms.message} <span className="text-red-500">*</span>
         </label>
         <textarea
           id="message"
@@ -156,7 +158,7 @@ export function ContactForm() {
           rows={5}
           required
           className="input-field mt-1 w-full"
-          placeholder="How can we help you?"
+          placeholder={t.forms.helpPlaceholder}
         />
       </div>
 
@@ -175,10 +177,10 @@ export function ContactForm() {
           disabled={status === 'loading'}
           className="btn-primary w-full py-3 disabled:opacity-60"
         >
-          {status === 'loading' ? 'Sending...' : 'Send Message'}
+          {status === 'loading' ? t.forms.sending : t.forms.sendMessage}
         </button>
         <p className="mt-2 text-center text-xs text-secondary-500">
-          We typically respond within 1 business day.
+          {t.contactPage.intro}
         </p>
       </div>
     </form>

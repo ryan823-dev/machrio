@@ -6,12 +6,14 @@ import Link from 'next/link'
 export const dynamic = 'force-static'
 import { useRouter } from 'next/navigation'
 import { useCart } from '@/contexts/CartContext'
+import { useLocale } from '@/contexts/LocaleContext'
 import StripePayment from '@/components/StripePayment'
 import { FREE_SHIPPING_THRESHOLD_USD, formatUsd } from '@/lib/shipping/rules'
 import { fetchWithAuth } from '@/lib/account'
 import { clearCheckoutDraft, readCheckoutDraft, writeCheckoutDraft } from '@/lib/checkout-draft'
 import { appendQueryParamsToPath } from '@/lib/order-access-links'
 import { preloadStripe } from '@/lib/stripe-client'
+import { withLocalePath } from '@/i18n/routing'
 
 interface CheckoutForm {
   name: string
@@ -190,6 +192,7 @@ interface PendingOrder {
 }
 
 export default function CheckoutPage() {
+  const { dictionary: t, locale } = useLocale()
   const router = useRouter()
   const {
     items, selectedItems, itemCount, subtotal, shippingCost, total,
@@ -218,15 +221,15 @@ export default function CheckoutPage() {
   const selectedCartItems = items.filter(i => selectedItems.has(i.productId))
   const selectedQuote = shippingQuotes.find(q => q.code === shippingMethodCode)
   const shippingDisplay = selectedQuote
-    ? (selectedQuote.isFreeShipping ? 'FREE' : `$${selectedQuote.cost.toFixed(2)}`)
+    ? (selectedQuote.isFreeShipping ? t.cart.free : `$${selectedQuote.cost.toFixed(2)}`)
     : shippingLoading
-      ? 'Updating...'
-      : 'Quote required'
+      ? t.cart.updating
+      : t.cart.quoteRequiredShort
   const totalDisplay = selectedQuote
     ? `$${total.toFixed(2)}`
     : shippingLoading
-      ? 'Updating...'
-      : 'Awaiting quote'
+      ? t.cart.updating
+      : t.cart.awaitingQuote
   const canSubmitOrder = Boolean(selectedQuote)
   const selectedSavedAddress = selectedSavedAddressIndex !== null
     ? savedShippingAddresses[selectedSavedAddressIndex] || null
@@ -494,7 +497,7 @@ export default function CheckoutPage() {
     setError('')
 
     if (!selectedQuote) {
-      setError('A live shipping quote is required before you can place this order.')
+      setError(t.checkout.shippingQuoteRequiredError)
       return
     }
 
@@ -607,7 +610,7 @@ export default function CheckoutPage() {
   // 取消嵌入式支付，回退到跳转式支付
   function handleStripeCancel() {
     setShowStripePayment(false)
-    router.push(appendQueryParamsToPath('/checkout', {
+    router.push(appendQueryParamsToPath(withLocalePath('/checkout', locale), {
       payment: 'cancelled',
       provider: 'stripe',
       order: pendingOrder?.orderNumber,
@@ -619,7 +622,7 @@ export default function CheckoutPage() {
     return (
       <div className="container-main py-8">
         <div className="max-w-2xl mx-auto">
-          <h1 className="text-2xl font-bold text-secondary-900 mb-6">Complete Your Payment</h1>
+          <h1 className="text-2xl font-bold text-secondary-900 mb-6">{t.checkout.paymentTitle}</h1>
           <p className="text-secondary-600 mb-4">
             Order <span className="font-semibold">{pendingOrder.orderNumber}</span> has been created.
             Please complete your payment below.
@@ -648,10 +651,10 @@ export default function CheckoutPage() {
   if (itemCount === 0) {
     return (
       <div className="container-main py-16 text-center">
-        <h1 className="text-2xl font-bold text-secondary-900">No items to checkout</h1>
-        <p className="mt-2 text-secondary-500">Your cart is empty.</p>
-        <Link href="/category" className="btn-primary mt-6 inline-block">
-          Browse Products
+        <h1 className="text-2xl font-bold text-secondary-900">{t.checkout.noItems}</h1>
+        <p className="mt-2 text-secondary-500">{t.checkout.empty}</p>
+        <Link href={withLocalePath('/category', locale)} className="btn-primary mt-6 inline-block">
+          {t.checkout.browseProducts}
         </Link>
       </div>
     )
@@ -659,7 +662,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="container-main py-8">
-      <h1 className="text-2xl font-bold text-secondary-900">Checkout</h1>
+      <h1 className="text-2xl font-bold text-secondary-900">{t.checkout.title}</h1>
 
       {cancelledPaymentProvider && (cancelledPaymentProvider === 'stripe' || cancelledPaymentProvider === 'paypal') && (
         <div className="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-4">
@@ -667,7 +670,7 @@ export default function CheckoutPage() {
             <svg className="h-5 w-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
-            <span className="font-semibold text-amber-800">Payment was cancelled</span>
+            <span className="font-semibold text-amber-800">{t.checkout.cancelled}</span>
           </div>
           <p className="mt-1 text-sm text-amber-700">
             {cancelledOrderNumber
@@ -682,10 +685,10 @@ export default function CheckoutPage() {
         <div className="lg:col-span-2 space-y-6">
           {/* Customer Information */}
           <section className="rounded-lg border border-secondary-200 bg-white p-6">
-            <h2 className="text-lg font-bold text-secondary-900">Customer Information</h2>
+            <h2 className="text-lg font-bold text-secondary-900">{t.checkout.customerInfo}</h2>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="block text-sm font-medium text-secondary-700">Full Name *</label>
+                <label className="block text-sm font-medium text-secondary-700">{t.checkout.fullName} *</label>
                 <input
                   type="text"
                   required
@@ -696,7 +699,7 @@ export default function CheckoutPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-secondary-700">Company *</label>
+                <label className="block text-sm font-medium text-secondary-700">{t.checkout.company} *</label>
                 <input
                   type="text"
                   required
@@ -707,7 +710,7 @@ export default function CheckoutPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-secondary-700">Email *</label>
+                <label className="block text-sm font-medium text-secondary-700">{t.checkout.email} *</label>
                 <input
                   type="email"
                   required
@@ -718,7 +721,7 @@ export default function CheckoutPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-secondary-700">Phone</label>
+                <label className="block text-sm font-medium text-secondary-700">{t.checkout.phone}</label>
                 <input
                   type="tel"
                   value={form.phone}
@@ -734,7 +737,7 @@ export default function CheckoutPage() {
           <section className="rounded-lg border border-secondary-200 bg-white p-6">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h2 className="text-lg font-bold text-secondary-900">Shipping Address</h2>
+                <h2 className="text-lg font-bold text-secondary-900">{t.checkout.shippingAddress}</h2>
                 {savedShippingAddresses.length > 0 ? (
                   <p className="mt-1 text-sm text-secondary-500">
                     Choose a saved address or switch to a new delivery location for this order.
@@ -879,13 +882,13 @@ export default function CheckoutPage() {
 
           {/* Billing & Tax */}
           <section className="rounded-lg border border-secondary-200 bg-white p-6">
-            <h2 className="text-lg font-bold text-secondary-900">Billing & Tax</h2>
+            <h2 className="text-lg font-bold text-secondary-900">{t.checkout.billingTax}</h2>
             <p className="mt-1 text-sm text-secondary-500">
               Optional, but useful if you need invoice details prefilled for repeat orders.
             </p>
             <div className="mt-4 grid gap-4 sm:grid-cols-2">
               <div>
-                <label className="block text-sm font-medium text-secondary-700">Legal Company Name</label>
+                <label className="block text-sm font-medium text-secondary-700">{t.checkout.legalCompany}</label>
                 <input
                   type="text"
                   value={form.companyLegalName}
@@ -895,7 +898,7 @@ export default function CheckoutPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-secondary-700">Tax ID / VAT Number</label>
+                <label className="block text-sm font-medium text-secondary-700">{t.checkout.taxId}</label>
                 <input
                   type="text"
                   value={form.taxId}
@@ -905,7 +908,7 @@ export default function CheckoutPage() {
                 />
               </div>
               <div className="sm:col-span-2">
-                <label className="block text-sm font-medium text-secondary-700">Billing Address</label>
+                <label className="block text-sm font-medium text-secondary-700">{t.checkout.billingAddress}</label>
                 <textarea
                   rows={2}
                   value={form.billingAddress}
@@ -919,7 +922,7 @@ export default function CheckoutPage() {
 
           {/* Payment Method */}
           <section className="rounded-lg border border-secondary-200 bg-white p-6">
-            <h2 className="text-lg font-bold text-secondary-900">Payment Method</h2>
+            <h2 className="text-lg font-bold text-secondary-900">{t.checkout.paymentMethod}</h2>
             <div className="mt-4 space-y-3">
               <label className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition-colors ${form.paymentMethod === 'stripe' ? 'border-primary-500 bg-primary-50' : 'border-secondary-200 hover:bg-secondary-50'}`}>
                 <input
@@ -931,7 +934,7 @@ export default function CheckoutPage() {
                   className="mt-0.5"
                 />
                 <div>
-                  <span className="text-sm font-semibold text-secondary-900">Pay Online (Credit Card)</span>
+                  <span className="text-sm font-semibold text-secondary-900">{t.checkout.payCard}</span>
                   <p className="mt-0.5 text-xs text-secondary-500">
                     Secure payment via Stripe. Visa, Mastercard, Amex accepted.
                   </p>
@@ -948,7 +951,7 @@ export default function CheckoutPage() {
                     className="mt-0.5"
                   />
                   <div>
-                    <span className="text-sm font-semibold text-secondary-900">PayPal</span>
+                    <span className="text-sm font-semibold text-secondary-900">{t.checkout.paypal}</span>
                     <p className="mt-0.5 text-xs text-secondary-500">
                       Pay securely with your PayPal account or debit/credit card.
                     </p>
@@ -965,7 +968,7 @@ export default function CheckoutPage() {
                   className="mt-0.5"
                 />
                 <div>
-                  <span className="text-sm font-semibold text-secondary-900">Bank Transfer / Wire</span>
+                  <span className="text-sm font-semibold text-secondary-900">{t.checkout.bankTransfer}</span>
                   <p className="mt-0.5 text-xs text-secondary-500">
                     A Proforma Invoice with bank details will be generated after order placement. After payment, you can submit the amount, transfer date, and sender name from your order page.
                   </p>
@@ -1013,7 +1016,7 @@ export default function CheckoutPage() {
 
           {/* Order Notes */}
           <section className="rounded-lg border border-secondary-200 bg-white p-6">
-            <h2 className="text-lg font-bold text-secondary-900">Order Notes (Optional)</h2>
+            <h2 className="text-lg font-bold text-secondary-900">{t.checkout.orderNotes}</h2>
             <textarea
               rows={3}
               value={form.notes}
@@ -1027,7 +1030,7 @@ export default function CheckoutPage() {
         {/* Right: Order summary */}
         <div className="lg:col-span-1">
           <div className="rounded-lg border border-secondary-200 bg-white p-6 sticky top-24">
-            <h2 className="text-lg font-bold text-secondary-900">Order Summary</h2>
+            <h2 className="text-lg font-bold text-secondary-900">{t.checkout.orderSummary}</h2>
 
             {/* Items */}
             <div className="mt-4 max-h-64 space-y-3 overflow-y-auto">
@@ -1049,12 +1052,12 @@ export default function CheckoutPage() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
-                Updating shipping...
+                {t.cart.updating}
               </div>
             ) : shippingQuotes.length > 0 ? (
               <div className="mt-4 border-t border-secondary-200 pt-3">
                 <div className="mb-2 space-y-1">
-                  <label className="block text-xs font-medium text-secondary-600">Shipping Method</label>
+                  <label className="block text-xs font-medium text-secondary-600">{t.cart.shippingMethod}</label>
                   <p className="text-xs leading-relaxed text-secondary-500">
                     Shipping is calculated from total shipment weight and destination. Orders over{' '}
                     {formatUsd(FREE_SHIPPING_THRESHOLD_USD)} ship free.
@@ -1078,7 +1081,7 @@ export default function CheckoutPage() {
                       />
                       <span className="flex-1 font-medium text-secondary-800">{q.name}</span>
                       <span className={`font-semibold ${q.isFreeShipping ? 'text-green-600' : 'text-secondary-900'}`}>
-                        {q.isFreeShipping ? 'FREE' : `$${q.cost.toFixed(2)}`}
+                        {q.isFreeShipping ? t.cart.free : `$${q.cost.toFixed(2)}`}
                       </span>
                     </label>
                   ))}
@@ -1106,7 +1109,7 @@ export default function CheckoutPage() {
               </div>
             ) : (
               <div className="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-700">
-                <p className="font-medium">We do not have a live shipping rate for this destination yet.</p>
+                <p className="font-medium">{t.cart.noRate}</p>
                 <p className="mt-1">
                   Update the shipping country or contact <a href="mailto:support@machrio.com" className="underline">support@machrio.com</a> for a manual freight quote.
                 </p>
@@ -1116,15 +1119,15 @@ export default function CheckoutPage() {
             {/* Totals */}
             <div className="mt-4 border-t border-secondary-200 pt-4 space-y-2 text-sm">
               <div className="flex justify-between text-secondary-600">
-                <span>Subtotal</span>
+                <span>{t.cart.subtotal}</span>
                 <span>${subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-secondary-600">
-                <span>Shipping</span>
+                <span>{t.cart.shipping}</span>
                 <span>{shippingDisplay}</span>
               </div>
               <div className="border-t border-secondary-200 pt-2 flex justify-between font-bold text-secondary-900 text-base">
-                <span>Total</span>
+                <span>{t.cart.total}</span>
                 <span>{totalDisplay}</span>
               </div>
             </div>
@@ -1146,10 +1149,10 @@ export default function CheckoutPage() {
               disabled={submitting || !canSubmitOrder}
               className="btn-primary mt-6 w-full disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {submitting ? 'Placing Order...' : canSubmitOrder ? 'Place Order' : 'Shipping Quote Required'}
+              {submitting ? t.checkout.placingOrder : canSubmitOrder ? t.checkout.placeOrder : t.checkout.quoteRequired}
             </button>
 
-            <Link href="/cart" className="mt-3 block text-center text-sm text-secondary-500 hover:text-primary-700">
+            <Link href={withLocalePath('/cart', locale)} className="mt-3 block text-center text-sm text-secondary-500 hover:text-primary-700">
               Back to Cart
             </Link>
           </div>

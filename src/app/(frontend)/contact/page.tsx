@@ -1,36 +1,46 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { ContactForm } from '@/components/forms/ContactForm'
+import { getRequestLocale } from '@/i18n/server'
+import { getDictionary } from '@/i18n/dictionaries'
+import { withLocalePath } from '@/i18n/routing'
+import { getLocalizedAlternates } from '@/i18n/seo'
 
-// 完全静态生成，构建时生成 HTML
-export const dynamic = 'force-static'
+export const dynamic = 'force-dynamic'
 
-export const metadata: Metadata = {
-  title: 'Contact Us | Machrio',
-  description: 'Get in touch with Machrio for customer support, quotations, or business partnerships. We respond within 1 business day.',
-  alternates: { canonical: '/contact' },
-  openGraph: {
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getRequestLocale()
+  return {
     title: 'Contact Us | Machrio',
     description: 'Get in touch with Machrio for customer support, quotations, or business partnerships. We respond within 1 business day.',
-  },
+    alternates: getLocalizedAlternates('/contact', locale),
+    openGraph: {
+      title: 'Contact Us | Machrio',
+      description: 'Get in touch with Machrio for customer support, quotations, or business partnerships. We respond within 1 business day.',
+    },
+  }
 }
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  const locale = await getRequestLocale()
+  const t = getDictionary(locale)
+
   return (
     <div className="container-main py-12">
-      <h1 className="text-3xl font-bold text-secondary-900">Contact Us</h1>
+      <h1 className="text-3xl font-bold text-secondary-900">{t.contactPage.title}</h1>
       <p className="mt-2 text-secondary-600">
-        Have questions? We&apos;re here to help. Reach out to us and we&apos;ll respond within 1 business day.
+        {t.contactPage.intro}
       </p>
 
       <div className="mt-10 grid gap-8 lg:grid-cols-2">
         {/* Contact Information */}
         <div>
-          <h2 className="text-xl font-semibold text-secondary-800">Get in Touch</h2>
+          <h2 className="text-xl font-semibold text-secondary-800">{t.contactPage.getInTouch}</h2>
           
           <div className="mt-6 space-y-6">
             {/* WhatsApp */}
             <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-5">
-              <h3 className="font-semibold text-secondary-800">Chat with Us</h3>
+              <h3 className="font-semibold text-secondary-800">{t.contactPage.chat}</h3>
               <div className="mt-3">
                 <a 
                   href="https://wa.me/15793001335" 
@@ -47,29 +57,29 @@ export default function ContactPage() {
                   </div>
                 </a>
                 <p className="mt-2 text-sm text-secondary-500">
-                  Available Mon-Fri, 9am-6pm (EST)
+                  {t.contactPage.available}
                 </p>
               </div>
             </div>
 
             {/* Email Contacts */}
             <div className="rounded-lg border border-secondary-200 bg-white p-5">
-              <h3 className="font-semibold text-secondary-800">Email Us</h3>
+              <h3 className="font-semibold text-secondary-800">{t.contactPage.emailUs}</h3>
               <div className="mt-3 space-y-3">
                 <div>
-                  <p className="text-sm text-secondary-500">Customer Support</p>
+                  <p className="text-sm text-secondary-500">{t.contactPage.support}</p>
                   <a href="mailto:support@machrio.com" className="text-primary-600 hover:text-primary-800">
                     support@machrio.com
                   </a>
                 </div>
                 <div>
-                  <p className="text-sm text-secondary-500">Quotes &amp; Procurement</p>
+                  <p className="text-sm text-secondary-500">{t.contactPage.quotes}</p>
                   <a href="mailto:support@machrio.com" className="text-primary-600 hover:text-primary-800">
                     support@machrio.com
                   </a>
                 </div>
                 <div>
-                  <p className="text-sm text-secondary-500">Business Partnerships</p>
+                  <p className="text-sm text-secondary-500">{t.contactPage.partnerships}</p>
                   <a href="mailto:support@machrio.com" className="text-primary-600 hover:text-primary-800">
                     support@machrio.com
                   </a>
@@ -79,7 +89,7 @@ export default function ContactPage() {
 
             {/* Office Addresses */}
             <div className="rounded-lg border border-secondary-200 bg-white p-5">
-              <h3 className="font-semibold text-secondary-800">Our Offices</h3>
+              <h3 className="font-semibold text-secondary-800">{t.contactPage.offices}</h3>
               <div className="mt-3 space-y-4">
                 <div>
                   <p className="text-sm font-medium text-secondary-700">Hong Kong (HQ)</p>
@@ -102,13 +112,12 @@ export default function ContactPage() {
 
             {/* Company Info */}
             <div className="rounded-lg border border-secondary-200 bg-white p-5">
-              <h3 className="font-semibold text-secondary-800">Company Information</h3>
+              <h3 className="font-semibold text-secondary-800">{t.contactPage.companyInfo}</h3>
               <div className="mt-3 text-sm text-secondary-600">
-                <p><strong>Legal Entity:</strong> VERTAX LIMITED</p>
-                <p><strong>Registered in:</strong> Hong Kong</p>
+                <p><strong>{t.contactPage.legalEntity}</strong> VERTAX LIMITED</p>
+                <p><strong>{t.contactPage.registeredIn}</strong> Hong Kong</p>
                 <p className="mt-2 text-secondary-500">
-                  Machrio is operated by VERTAX LIMITED, a Hong Kong registered company 
-                  specializing in industrial supply chain solutions.
+                  {t.contactPage.companyBlurb}
                 </p>
               </div>
             </div>
@@ -117,9 +126,13 @@ export default function ContactPage() {
 
         {/* Contact Form */}
         <div>
-          <h2 className="text-xl font-semibold text-secondary-800">Send Us a Message</h2>
+          <h2 className="text-xl font-semibold text-secondary-800">{t.contactPage.sendMessage}</h2>
           <p className="mt-1 text-sm text-secondary-500">
-            For product quotes, please use our <a href="/rfq" className="text-primary-600 hover:underline">Request a Quote</a> page.
+            {t.contactPage.quoteHint}{' '}
+            <Link href={withLocalePath('/rfq', locale)} className="text-primary-600 hover:underline">
+              {t.contactPage.quoteLink}
+            </Link>
+            .
           </p>
           <ContactForm />
         </div>
@@ -127,20 +140,12 @@ export default function ContactPage() {
 
       {/* Quick Links */}
       <div className="mt-12 rounded-lg border border-primary-200 bg-primary-50 p-6">
-        <h2 className="text-lg font-semibold text-primary-800">Looking for something specific?</h2>
+        <h2 className="text-lg font-semibold text-primary-800">{t.contactPage.quickTitle}</h2>
         <div className="mt-4 flex flex-wrap gap-3">
-          <a href="/rfq" className="btn-accent">
-            Request a Quote
-          </a>
-          <a href="/faq" className="btn-secondary">
-            FAQ
-          </a>
-          <a href="/shipping-policy" className="btn-secondary">
-            Shipping Info
-          </a>
-          <a href="/return-refund" className="btn-secondary">
-            Returns Policy
-          </a>
+          <Link href={withLocalePath('/rfq', locale)} className="btn-accent">{t.contactPage.quoteLink}</Link>
+          <Link href={withLocalePath('/faq', locale)} className="btn-secondary">{t.contactPage.faq}</Link>
+          <Link href={withLocalePath('/shipping-policy', locale)} className="btn-secondary">{t.contactPage.shippingInfo}</Link>
+          <Link href={withLocalePath('/return-refund', locale)} className="btn-secondary">{t.contactPage.returnsPolicy}</Link>
         </div>
       </div>
     </div>

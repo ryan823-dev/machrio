@@ -22,6 +22,9 @@ import {
   getPrimaryGuideForCategory,
   withBrandSuffix,
 } from '@/lib/seo'
+import { getRequestLocale } from '@/i18n/server'
+import { getLocalizedAlternates } from '@/i18n/seo'
+import { applyCategoryTranslation } from '@/lib/i18n-content'
 
 // 强制动态渲染（SSR）
 export const dynamic = 'force-dynamic'
@@ -382,12 +385,14 @@ interface CategoryPageProps {
 
 export async function generateMetadata({ params }: CategoryPageProps): Promise<Metadata> {
   const { slug } = await params
+  const locale = await getRequestLocale()
   const data = await getCategoryData(slug)
   if (!data) {
     return { title: withBrandSuffix('Category Not Found') }
   }
 
-  const { category, parent, grandparent } = data
+  const category = await applyCategoryTranslation(data.category, locale) || data.category
+  const { parent, grandparent } = data
   const seoOverride = getCategorySeoOverride(slug)
   const parentName = parent ? `${parent.name} - ` : ''
   const gpName = grandparent ? `${grandparent.name} - ` : ''
@@ -397,7 +402,7 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
   return {
     title: withBrandSuffix(title),
     description,
-    alternates: { canonical: `/category/${slug}` },
+    alternates: getLocalizedAlternates(`/category/${slug}`, locale),
     openGraph: {
       title: withBrandSuffix(title),
       description,
@@ -407,13 +412,16 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
 
 export default async function CategoryPage({ params, searchParams }: CategoryPageProps) {
   const { slug } = await params
+  const locale = await getRequestLocale()
   const { page: pageParam } = await searchParams
   const currentPage = parseInt(pageParam || '1', 10)
 
   const data = await getCategoryData(slug)
   if (!data) notFound()
 
-  const { category, parent, grandparent, children } = data
+  const translatedCategory = await applyCategoryTranslation(data.category, locale)
+  const { parent, grandparent, children } = data
+  const category = translatedCategory || data.category
   const seoOverride = getCategorySeoOverride(slug)
   const fallbackGuide = getPrimaryGuideForCategory(slug)
   const relatedGuides = seoOverride?.guideSlugs?.length

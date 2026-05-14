@@ -2,6 +2,8 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useLocale } from '@/contexts/LocaleContext'
+import { withLocalePath } from '@/i18n/routing'
 
 interface Category {
   id?: string
@@ -52,6 +54,7 @@ const categoryIcons: Record<string, string> = {
 }
 
 export function CategoryPagination({ categories, itemsPerPage = 12 }: CategoryPaginationProps) {
+  const { locale } = useLocale()
   const [currentPage, setCurrentPage] = useState(1)
   const totalPages = Math.ceil(categories.length / itemsPerPage)
 
@@ -76,7 +79,7 @@ export function CategoryPagination({ categories, itemsPerPage = 12 }: CategoryPa
         {currentCategories.map((cat) => (
           <Link
             key={cat.id || cat.slug}
-            href={`/category/${cat.slug}`}
+            href={withLocalePath(`/category/${cat.slug}`, locale)}
             className="card flex flex-col items-center py-6 text-center transition-all hover:border-primary-200 hover:shadow-md"
           >
             <span className="text-3xl">{cat.iconEmoji || categoryIcons[cat.slug] || '📦'}</span>

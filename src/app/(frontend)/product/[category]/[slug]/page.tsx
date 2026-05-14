@@ -19,6 +19,9 @@ import { BoughtTogether } from '@/components/product/BoughtTogether'
 import { ProductDescriptionSection } from '@/components/product/ProductDescriptionSection'
 import { RelatedGuide } from '@/components/shared/RelatedGuide'
 import { normalizeRichTextContent } from '@/lib/lexical-utils'
+import { getRequestLocale } from '@/i18n/server'
+import { getLocalizedAlternates } from '@/i18n/seo'
+import { applyProductTranslation } from '@/lib/i18n-content'
 import {
   normalizePurchaseMode,
   supportsOnlineCheckout,
@@ -548,7 +551,9 @@ function generateProductFAQs(product: {
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params
-  const { product } = await getProductBySlugFromDB(slug)
+  const locale = await getRequestLocale()
+  const { product: baseProduct } = await getProductBySlugFromDB(slug)
+  const product = await applyProductTranslation(baseProduct, locale)
   
   if (!product) {
     return { title: withBrandSuffix('Product Not Found') }
@@ -578,7 +583,7 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
   return {
     title,
     description,
-    alternates: { canonical: canonicalPath },
+    alternates: getLocalizedAlternates(canonicalPath, locale),
     openGraph: {
       title,
       description,
@@ -600,7 +605,9 @@ export async function generateMetadata({ params }: ProductPageProps): Promise<Me
 
 export default async function ProductPage({ params }: ProductPageProps) {
   const { category, slug } = await params
-  const { product } = await getProductBySlugFromDB(slug)
+  const locale = await getRequestLocale()
+  const { product: baseProduct } = await getProductBySlugFromDB(slug)
+  const product = await applyProductTranslation(baseProduct, locale)
   
   if (!product) {
     const legacyPath = `/product/${category}/${slug}`

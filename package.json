@@ -18,7 +18,8 @@
     "check-links": "tsx scripts/check-links.ts",
     "audit:content-quality": "tsx scripts/audit-content-quality.ts",
     "sync:product-redirects": "tsx scripts/sync-product-source-redirects.ts",
-    "sync:priority-seo": "tsx scripts/sync-priority-seo-content.ts"
+    "sync:priority-seo": "tsx scripts/sync-priority-seo-content.ts",
+    "i18n:create-drafts": "tsx scripts/create-translation-drafts.ts"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "3.17.1",

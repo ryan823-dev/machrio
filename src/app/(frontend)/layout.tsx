@@ -1,5 +1,6 @@
 import { Suspense } from 'react'
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
 import Script from 'next/script'
 import '@/styles/globals.css'
 import { Header } from '@/components/layout/Header'
@@ -10,7 +11,10 @@ import { CartToast } from '@/components/shared/CartToast'
 import { CartProvider } from '@/contexts/CartContext'
 import { CompareProvider } from '@/contexts/CompareContext'
 import { AIAssistantVisibilityProvider } from '@/contexts/AIAssistantVisibilityContext'
+import { LocaleProvider } from '@/contexts/LocaleContext'
 import { WebVitalsReporter } from '@/components/shared/WebVitalsReporter'
+import { DEFAULT_LOCALE, LOCALE_HTML_LANG, isLocale } from '@/i18n/config'
+import { getDictionary } from '@/i18n/dictionaries'
 
 const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID
 const SITE_URL = process.env.NEXT_PUBLIC_SERVER_URL || 'https://machrio.com'
@@ -115,9 +119,14 @@ const organizationSchema = {
   ],
 }
 
-export default function FrontendLayout({ children }: { children: React.ReactNode }) {
+export default async function FrontendLayout({ children }: { children: React.ReactNode }) {
+  const headerStore = await headers()
+  const headerLocale = headerStore.get('x-machrio-locale')
+  const locale = isLocale(headerLocale) ? headerLocale : DEFAULT_LOCALE
+  const dictionary = getDictionary(locale)
+
   return (
-    <html lang="en">
+    <html lang={LOCALE_HTML_LANG[locale]}>
       <body>
         <script
           type="application/ld+json"
@@ -144,21 +153,23 @@ export default function FrontendLayout({ children }: { children: React.ReactNode
           </>
         )}
         <div className="flex min-h-screen flex-col">
-          <CartProvider>
-            <CompareProvider>
-              <AIAssistantVisibilityProvider>
-                <Header />
-                <main className="flex-1">{children}</main>
-                <Footer />
-                <CartToast />
-                <WhatsAppButton />
-                <Suspense fallback={null}>
-                  <AIAssistantLauncher />
-                </Suspense>
-                <WebVitalsReporter />
-              </AIAssistantVisibilityProvider>
-            </CompareProvider>
-          </CartProvider>
+          <LocaleProvider locale={locale} dictionary={dictionary}>
+            <CartProvider>
+              <CompareProvider>
+                <AIAssistantVisibilityProvider>
+                  <Header />
+                  <main className="flex-1">{children}</main>
+                  <Footer />
+                  <CartToast />
+                  <WhatsAppButton />
+                  <Suspense fallback={null}>
+                    <AIAssistantLauncher />
+                  </Suspense>
+                  <WebVitalsReporter />
+                </AIAssistantVisibilityProvider>
+              </CompareProvider>
+            </CartProvider>
+          </LocaleProvider>
         </div>
       </body>
     </html>

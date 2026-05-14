@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, type FormEvent } from 'react'
 import { clearRfqDraft, getRfqDraft, type RfqDraft } from '@/lib/rfq-draft'
+import { useLocale } from '@/contexts/LocaleContext'
 
 interface FormErrors {
   name?: string
@@ -35,6 +36,7 @@ const EMPTY_FORM_VALUES: FormValues = {
 }
 
 export function RFQForm() {
+  const { dictionary: t } = useLocale()
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
   const [errorMsg, setErrorMsg] = useState('')
   const [fieldErrors, setFieldErrors] = useState<FormErrors>({})
@@ -79,14 +81,14 @@ export function RFQForm() {
     const company = values.company.trim()
     const message = values.message.trim()
 
-    if (!name) errors.name = 'Full name is required'
+    if (!name) errors.name = t.forms.requiredName
     if (!email) {
-      errors.email = 'Email is required'
+      errors.email = t.forms.requiredEmail
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      errors.email = 'Please enter a valid email address'
+      errors.email = t.forms.invalidEmail
     }
-    if (!company) errors.company = 'Company name is required'
-    if (!message) errors.message = 'Please describe your requirements'
+    if (!company) errors.company = t.forms.requiredCompany
+    if (!message) errors.message = t.forms.requiredMessage
 
     return errors
   }
@@ -118,7 +120,7 @@ export function RFQForm() {
     if (Object.keys(errors).length > 0) {
       setFieldErrors(errors)
       setStatus('error')
-      setErrorMsg('Please fix the errors below')
+      setErrorMsg(t.forms.fixErrors)
       return
     }
 
@@ -179,16 +181,16 @@ export function RFQForm() {
         <svg className="mx-auto h-10 w-10 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
           <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
-        <h3 className="mt-3 text-lg font-semibold text-green-800">Quote Request Submitted!</h3>
+        <h3 className="mt-3 text-lg font-semibold text-green-800">{t.forms.quoteSubmitted}</h3>
         <p className="mt-1 text-sm text-green-600">
-          Thank you! Our team will review your request and respond within 24 hours.
+          {t.forms.quoteSubmittedText}
         </p>
         <button
           type="button"
           onClick={() => setStatus('idle')}
           className="mt-4 text-sm font-medium text-primary-600 hover:text-primary-800"
         >
-          Submit another request
+          {t.forms.submitAnotherQuote}
         </button>
       </div>
     )
@@ -244,7 +246,7 @@ export function RFQForm() {
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="name" className="mb-1 block text-sm text-secondary-700">
-              Full Name <span className="text-red-500" aria-hidden="true">*</span>
+              {t.forms.fullName} <span className="text-red-500" aria-hidden="true">*</span>
               <span className="sr-only">(required)</span>
             </label>
             <input 
@@ -262,7 +264,7 @@ export function RFQForm() {
           </div>
           <div>
             <label htmlFor="company" className="mb-1 block text-sm text-secondary-700">
-              Company <span className="text-red-500" aria-hidden="true">*</span>
+              {t.forms.company} <span className="text-red-500" aria-hidden="true">*</span>
               <span className="sr-only">(required)</span>
             </label>
             <input 
@@ -280,7 +282,7 @@ export function RFQForm() {
           </div>
           <div>
             <label htmlFor="email" className="mb-1 block text-sm text-secondary-700">
-              Email <span className="text-red-500" aria-hidden="true">*</span>
+              {t.forms.email} <span className="text-red-500" aria-hidden="true">*</span>
               <span className="sr-only">(required)</span>
             </label>
             <input 
@@ -298,7 +300,7 @@ export function RFQForm() {
           </div>
           <div>
             <label htmlFor="phone" className="mb-1 block text-sm text-secondary-700">
-              Phone
+              {t.forms.phone}
             </label>
             <input
               type="tel"
@@ -318,7 +320,7 @@ export function RFQForm() {
         <div className="space-y-4">
           <div>
             <label htmlFor="products" className="mb-1 block text-sm text-secondary-700">
-              Product Name(s) or SKU(s)
+              {t.forms.products}
             </label>
             <input
               type="text"
@@ -333,7 +335,7 @@ export function RFQForm() {
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <label htmlFor="quantity" className="mb-1 block text-sm text-secondary-700">
-                Quantity Needed
+                {t.forms.quantity}
               </label>
               <input
                 type="text"
@@ -347,7 +349,7 @@ export function RFQForm() {
             </div>
             <div>
               <label htmlFor="timeline" className="mb-1 block text-sm text-secondary-700">
-                Delivery Timeline
+                {t.forms.timeline}
               </label>
               <input
                 type="text"
@@ -362,7 +364,7 @@ export function RFQForm() {
           </div>
           <div>
             <label htmlFor="message" className="mb-1 block text-sm text-secondary-700">
-              Additional Details <span className="text-red-500" aria-hidden="true">*</span>
+              {t.forms.requirements} <span className="text-red-500" aria-hidden="true">*</span>
               <span className="sr-only">(required)</span>
             </label>
             <textarea
@@ -404,7 +406,7 @@ export function RFQForm() {
           className="btn-accent px-8 disabled:opacity-60"
           aria-busy={status === 'loading'}
         >
-          {status === 'loading' ? 'Submitting...' : 'Submit Quote Request'}
+          {status === 'loading' ? t.forms.submitting : t.forms.submitQuote}
         </button>
         <p className="text-xs text-secondary-400">
           We typically respond within 24 hours on business days.

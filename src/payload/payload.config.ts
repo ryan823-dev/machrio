@@ -30,6 +30,9 @@ import { Industries } from './collections/Industries'
 import { Redirects } from './collections/Redirects'
 import { GlossaryTerms } from './collections/GlossaryTerms'
 import { AIConversations } from './collections/AIConversations'
+import { ProductTranslations } from './collections/ProductTranslations'
+import { CategoryTranslations } from './collections/CategoryTranslations'
+import { ArticleTranslations } from './collections/ArticleTranslations'
 
 import { Homepage } from './globals/Homepage'
 import { SiteSettings } from './globals/SiteSettings'
@@ -106,6 +109,9 @@ export default buildConfig({
     Redirects,
     GlossaryTerms,
     AIConversations,
+    ProductTranslations,
+    CategoryTranslations,
+    ArticleTranslations,
   ],
   globals: [
     Homepage,
