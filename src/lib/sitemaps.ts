@@ -101,6 +101,27 @@ export async function getProductSitemapIndexEntries(): Promise<Array<{ loc: stri
   }))
 }
 
+export async function getSitemapIndexEntries(): Promise<Array<{ loc: string; lastModified?: Date }>> {
+  const baseUrl = getPublicBaseUrl()
+  const now = new Date()
+
+  const [pages, categories, knowledge, glossary, productSitemaps] = await Promise.all([
+    getSitemapEntries('pages'),
+    getSitemapEntries('categories'),
+    getSitemapEntries('knowledge'),
+    getSitemapEntries('glossary'),
+    getProductSitemapIndexEntries(),
+  ])
+
+  return [
+    pages.length > 0 ? { loc: `${baseUrl}/page-sitemap.xml`, lastModified: now } : null,
+    categories.length > 0 ? { loc: `${baseUrl}/category-sitemap.xml`, lastModified: now } : null,
+    knowledge.length > 0 ? { loc: `${baseUrl}/knowledge-sitemap.xml`, lastModified: now } : null,
+    glossary.length > 0 ? { loc: `${baseUrl}/glossary-sitemap.xml`, lastModified: now } : null,
+    ...productSitemaps,
+  ].filter((entry): entry is { loc: string; lastModified?: Date } => entry !== null)
+}
+
 export async function getProductSitemapEntries(page = 1): Promise<MetadataRoute.Sitemap> {
   if (!process.env.DATABASE_URI) return []
 
@@ -208,12 +229,40 @@ export async function getSitemapEntries(section: SitemapSection): Promise<Metada
     if (section === 'categories') {
       const categoriesResult = await Promise.race([
         safeQuery<{ slug: string; updated_at: string | null }>(
-          `SELECT slug, updated_at
-           FROM categories
-           WHERE status = 'published'
-             AND slug IS NOT NULL
-             AND btrim(slug) <> ''
-           ORDER BY display_order NULLS LAST, name`,
+          `WITH RECURSIVE published_categories AS (
+             SELECT id, parent_id, slug, updated_at, display_order, name
+             FROM categories
+             WHERE status = 'published'
+               AND slug IS NOT NULL
+               AND btrim(slug) <> ''
+           ),
+           category_tree AS (
+             SELECT id AS root_id, id
+             FROM published_categories
+             UNION ALL
+             SELECT ct.root_id, child.id
+             FROM category_tree ct
+             INNER JOIN published_categories child ON child.parent_id = ct.id
+           ),
+           category_product_counts AS (
+             SELECT
+               ct.root_id,
+               COUNT(p.id) AS published_product_count,
+               MAX(p.updated_at) AS latest_product_update
+             FROM category_tree ct
+             INNER JOIN products p ON p.primary_category_id = ct.id
+             WHERE p.status = 'published'
+               AND p.slug IS NOT NULL
+               AND btrim(p.slug) <> ''
+             GROUP BY ct.root_id
+           )
+           SELECT
+             c.slug,
+             GREATEST(c.updated_at, category_product_counts.latest_product_update) AS updated_at
+           FROM published_categories c
+           INNER JOIN category_product_counts ON category_product_counts.root_id = c.id
+           WHERE category_product_counts.published_product_count > 0
+           ORDER BY c.display_order NULLS LAST, c.name`,
         ),
         new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error('Categories sitemap query timeout')), 5000),
