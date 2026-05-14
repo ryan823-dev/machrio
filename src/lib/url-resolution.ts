@@ -30,6 +30,7 @@ interface ManagedRedirectEntry {
 
 const NO_MATCH_TOKEN = '__machrio_no_match__'
 const REDIRECT_CACHE_TTL_MS = 5 * 60 * 1000
+const PRODUCT_MANAGED_REDIRECT_TIMEOUT_MS = 800
 
 let redirectCache:
   | {
@@ -194,6 +195,21 @@ async function getManagedRedirect(pathname: string): Promise<PathResolution | nu
     redirectTo: match.redirectTo,
     statusCode: match.statusCode,
     matchedBy: 'payload-redirect',
+  }
+}
+
+async function getManagedRedirectWithTimeout(pathname: string): Promise<PathResolution | null> {
+  let timeout: ReturnType<typeof setTimeout> | undefined
+
+  try {
+    return await Promise.race([
+      getManagedRedirect(pathname),
+      new Promise<null>((resolve) => {
+        timeout = setTimeout(() => resolve(null), PRODUCT_MANAGED_REDIRECT_TIMEOUT_MS)
+      }),
+    ])
+  } finally {
+    if (timeout) clearTimeout(timeout)
   }
 }
 
@@ -457,11 +473,6 @@ export async function resolveProductPath(
       return { exists: true, matchedBy: 'exact-product-slug' }
     }
 
-    const managedRedirect = await getManagedRedirect(normalizedPath)
-    if (managedRedirect) {
-      return managedRedirect
-    }
-
     const exactSourceMatches = await findProductsBySourcePath(normalizedPath)
 
     if (exactSourceMatches.length > 0) {
@@ -504,6 +515,11 @@ export async function resolveProductPath(
           matchedBy: 'legacy-product-match',
         }
       }
+    }
+
+    const managedRedirect = await getManagedRedirectWithTimeout(normalizedPath)
+    if (managedRedirect) {
+      return managedRedirect
     }
 
     return { exists: false }
