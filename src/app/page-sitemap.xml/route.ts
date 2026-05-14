@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { buildSitemapXml, getSitemapEntries } from '@/lib/sitemaps'
 
 export const revalidate = 3600
+export const dynamic = 'force-dynamic'
 
 export async function GET() {
   const xml = buildSitemapXml(await getSitemapEntries('pages'))

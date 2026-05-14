@@ -1,11 +1,12 @@
 import type { MetadataRoute } from 'next'
-import { getGlossaryTerms, getPool } from '@/lib/db'
+import { getGlossaryTerms, safeQuery } from '@/lib/db'
 import { getArticles } from '@/lib/db/articles'
 import { getCanonicalProductCategory } from '@/lib/seo'
 
 type SitemapEntry = MetadataRoute.Sitemap[number]
 
 export type SitemapSection = 'pages' | 'categories' | 'knowledge' | 'glossary' | 'products'
+export const PRODUCT_SITEMAP_PAGE_SIZE = 2000
 
 const STATIC_PAGE_RULES: Array<{
   path: string
@@ -50,6 +51,109 @@ function dedupeEntries(entries: MetadataRoute.Sitemap): MetadataRoute.Sitemap {
 
 export function getPublicBaseUrl(): string {
   return process.env.NEXT_PUBLIC_SERVER_URL || 'https://machrio.com'
+}
+
+function getIndexableProductWhereClause(): string {
+  return `
+    p.status = 'published'
+    AND p.slug IS NOT NULL
+    AND btrim(p.slug) <> ''
+    AND p.primary_category_id IS NOT NULL
+    AND c.id IS NOT NULL
+    AND c.status = 'published'
+    AND c.slug IS NOT NULL
+    AND btrim(c.slug) <> ''
+  `
+}
+
+export async function getProductSitemapPageCount(pageSize = PRODUCT_SITEMAP_PAGE_SIZE): Promise<number> {
+  if (!process.env.DATABASE_URI) return 0
+
+  try {
+    const result = await Promise.race([
+      safeQuery<{ count: string }>(`
+        SELECT COUNT(*)::text AS count
+        FROM products p
+        INNER JOIN categories c ON p.primary_category_id = c.id
+        WHERE ${getIndexableProductWhereClause()}
+      `),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Product sitemap count query timeout')), 5000),
+      ),
+    ])
+
+    const count = Number.parseInt(result.rows[0]?.count || '0', 10)
+    return Number.isFinite(count) && count > 0 ? Math.ceil(count / pageSize) : 0
+  } catch (error) {
+    console.error('[sitemaps] Failed to count product sitemap pages:', error)
+    return 0
+  }
+}
+
+export async function getProductSitemapIndexEntries(): Promise<Array<{ loc: string; lastModified?: Date }>> {
+  const baseUrl = getPublicBaseUrl()
+  const pageCount = await getProductSitemapPageCount()
+  const now = new Date()
+
+  return Array.from({ length: pageCount }, (_, index) => ({
+    loc: `${baseUrl}/product-sitemaps/${index + 1}.xml`,
+    lastModified: now,
+  }))
+}
+
+export async function getProductSitemapEntries(page = 1): Promise<MetadataRoute.Sitemap> {
+  if (!process.env.DATABASE_URI) return []
+
+  const baseUrl = getPublicBaseUrl()
+  const now = new Date()
+  const safePage = Number.isFinite(page) && page > 0 ? Math.floor(page) : 1
+  const offset = (safePage - 1) * PRODUCT_SITEMAP_PAGE_SIZE
+
+  try {
+    const productsResult = await Promise.race([
+      safeQuery<{
+        name: string
+        slug: string
+        updated_at: string | null
+        category_slug: string
+        category_name: string
+      }>(`
+        SELECT
+          p.name,
+          p.slug,
+          p.updated_at,
+          c.slug AS category_slug,
+          c.name AS category_name
+        FROM products p
+        INNER JOIN categories c ON p.primary_category_id = c.id
+        WHERE ${getIndexableProductWhereClause()}
+        ORDER BY p.updated_at DESC NULLS LAST, p.created_at DESC NULLS LAST, p.id
+        LIMIT $1 OFFSET $2
+      `, [PRODUCT_SITEMAP_PAGE_SIZE, offset]),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Products sitemap page query timeout')), 5000),
+      ),
+    ])
+
+    return productsResult.rows.map((product) => {
+      const canonicalCategory = getCanonicalProductCategory({
+        name: product.name,
+        slug: product.slug,
+        categorySlug: product.category_slug,
+        categoryName: product.category_name,
+      })
+
+      return {
+        url: `${baseUrl}/product/${canonicalCategory.slug}/${product.slug}`,
+        lastModified: product.updated_at ? new Date(product.updated_at) : now,
+        changeFrequency: 'weekly',
+        priority: 0.6,
+      }
+    })
+  } catch (error) {
+    console.error(`[sitemaps] Failed to build products sitemap page ${safePage}:`, error)
+    return []
+  }
 }
 
 export async function getSitemapEntries(section: SitemapSection): Promise<MetadataRoute.Sitemap> {
@@ -100,13 +204,16 @@ export async function getSitemapEntries(section: SitemapSection): Promise<Metada
     return []
   }
 
-  const pool = getPool()
-
   try {
     if (section === 'categories') {
       const categoriesResult = await Promise.race([
-        pool.query<{ slug: string; updated_at: string | null }>(
-          'SELECT slug, updated_at FROM categories ORDER BY display_order NULLS LAST, name',
+        safeQuery<{ slug: string; updated_at: string | null }>(
+          `SELECT slug, updated_at
+           FROM categories
+           WHERE status = 'published'
+             AND slug IS NOT NULL
+             AND btrim(slug) <> ''
+           ORDER BY display_order NULLS LAST, name`,
         ),
         new Promise<never>((_, reject) =>
           setTimeout(() => reject(new Error('Categories sitemap query timeout')), 5000),
@@ -122,45 +229,7 @@ export async function getSitemapEntries(section: SitemapSection): Promise<Metada
     }
 
     if (section === 'products') {
-      const productsResult = await Promise.race([
-        pool.query<{
-          name: string
-          slug: string
-          updated_at: string | null
-          category_slug: string | null
-          category_name: string | null
-        }>(`
-          SELECT
-            p.name,
-            p.slug,
-            p.updated_at,
-            c.slug AS category_slug,
-            c.name AS category_name
-          FROM products p
-          LEFT JOIN categories c ON p.primary_category_id = c.id
-          WHERE p.status = 'published'
-          ORDER BY p.created_at DESC
-        `),
-        new Promise<never>((_, reject) =>
-          setTimeout(() => reject(new Error('Products sitemap query timeout')), 10000),
-        ),
-      ])
-
-      return productsResult.rows.map((product) => {
-        const canonicalCategory = getCanonicalProductCategory({
-          name: product.name,
-          slug: product.slug,
-          categorySlug: product.category_slug,
-          categoryName: product.category_name,
-        })
-
-        return {
-          url: `${baseUrl}/product/${canonicalCategory.slug}/${product.slug}`,
-          lastModified: product.updated_at ? new Date(product.updated_at) : now,
-          changeFrequency: 'weekly',
-          priority: 0.6,
-        }
-      })
+      return getProductSitemapEntries(1)
     }
   } catch (error) {
     console.error(`[sitemaps] Failed to build ${section} sitemap:`, error)
