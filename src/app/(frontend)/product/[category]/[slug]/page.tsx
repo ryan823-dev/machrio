@@ -219,7 +219,9 @@ const getProductBySlugFromDB = cache(async (slug: string) => {
      LEFT JOIN categories c ON p.primary_category_id = c.id
      LEFT JOIN categories pc ON c.parent_id = pc.id
      LEFT JOIN categories gc ON pc.parent_id = gc.id
-     WHERE p.slug = $1 AND p.status = 'published'
+     WHERE p.slug = $1
+       AND p.status = 'published'
+       AND c.status = 'published'
      LIMIT 1`,
     [slug],
   )

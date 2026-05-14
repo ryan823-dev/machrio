@@ -179,9 +179,9 @@ const CATEGORY_GUIDES: Record<string, string[]> = {
 
 const CATEGORY_OVERRIDES: Record<string, SeoCategoryOverride> = {
   'hot-melt-adhesives': {
-    metaTitle: 'Hot Melt Adhesives for Packaging, Assembly & Maintenance',
+    metaTitle: 'Hot Melt Adhesives & Glue Sticks for Industrial Assembly',
     metaDescription:
-      'Source hot melt adhesives by chemistry, application temperature, open time, stick diameter, and substrate compatibility for packaging and industrial assembly.',
+      'Source industrial hot melt adhesives and glue sticks by chemistry, application temperature, open time, stick diameter, substrate fit, and line-speed needs.',
     summary:
       'Hot melt adhesives are usually purchased on process fit, not on headline price. For Machrio, the page needs to help buyers compare adhesive chemistry, application method, set speed, bead control, and substrate compatibility so they can move from a broad search to a shortlist that actually works on the line.',
     buyingFactors: [
@@ -418,9 +418,9 @@ const CATEGORY_OVERRIDES: Record<string, SeoCategoryOverride> = {
     ],
   },
   'lockout-padlocks': {
-    metaTitle: 'Lockout Padlocks with Short Shackle & Nylon Bodies',
+    metaTitle: 'Lockout Padlocks, Shackle Safety Padlocks & Nylon LOTO Locks',
     metaDescription:
-      'Source lockout padlocks by keyed alike or keyed different setup, short shackle or small shackle fit, nylon body construction, and color coding for OSHA LOTO programs.',
+      'Source lockout padlocks, shackle safety padlocks, and nylon LOTO locks by keying policy, short shackle fit, color coding, and OSHA lockout workflow.',
     summary:
       'Lockout padlocks are one of the clearest purchase-intent categories on Machrio, so this page should act like a sourcing page for short shackle, small shackle, and nylon-body lockout needs instead of a generic catalog. Buyers usually want to settle keying policy, compact shackle fit, body material, and color control before they compare price.',
     buyingFactors: [

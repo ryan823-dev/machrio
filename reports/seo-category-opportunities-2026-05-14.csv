@@ -1,0 +1,635 @@
+rank,score,action,name,slug,url,clicks,impressions,ctr,position,subtree_product_count,priced_product_count,has_products,rfq_enabled_count,is_rfq_suitable,child_count,is_in_sitemap,is_indexable,has_intro,has_buying_guide,has_faq,has_seo_framework,has_seo_override,has_guide_cluster,has_related_knowledge_article,is_redirect_source
+1,82,improve_ctr_title_meta,Hot Melt Adhesives,hot-melt-adhesives,https://machrio.com/category/hot-melt-adhesives,0,169,0,85.6,7,7,true,0,true,0,true,true,false,false,true,true,true,true,true,false
+2,79,improve_ctr_title_meta,Lockout Padlocks,lockout-padlocks,https://machrio.com/category/lockout-padlocks,0,14,0,39.93,449,449,true,419,true,0,true,true,false,false,true,true,true,true,true,false
+3,76,strengthen_conversion,Lockout Tagout,lockout-tagout,https://machrio.com/category/lockout-tagout,0,2,0,82.5,667,667,true,559,true,5,true,true,false,true,true,true,true,true,true,false
+4,74,strengthen_conversion,"Wire, Cable & Cordsets",wire-cable-cordsets,https://machrio.com/category/wire-cable-cordsets,0,1,0,8,1347,1347,true,1347,true,3,true,true,false,true,true,true,false,false,false,false
+5,73,strengthen_conversion,Spherical Bearings,spherical-bearings,https://machrio.com/category/spherical-bearings,0,1,0,9,123,123,true,123,true,0,true,true,false,false,false,false,false,false,false,false
+6,72,fill_category_content,Plain Bearings,plain-bearings,https://machrio.com/category/plain-bearings,0,0,0,0,666,666,true,579,true,0,true,true,false,false,false,false,true,true,true,false
+7,68,strengthen_conversion,Wireways,wireways,https://machrio.com/category/wireways,0,4,0,19.5,265,265,true,225,true,0,true,true,false,false,false,false,false,false,false,false
+8,67,strengthen_conversion,Bag Air Filters,bag-air-filters,https://machrio.com/category/bag-air-filters,0,3,0,10,31,31,true,1,true,0,true,true,false,false,false,false,false,false,false,false
+9,67,strengthen_conversion,Electrical Lockout Devices,electrical-lockout-devices,https://machrio.com/category/electrical-lockout-devices,0,3,0,53.67,159,159,true,119,true,0,true,true,false,false,false,false,false,true,true,false
+10,66,strengthen_conversion,Handrail Brackets,handrail-brackets,https://machrio.com/category/handrail-brackets,0,9,0,25.33,22,22,true,22,true,0,true,true,false,false,false,false,true,false,false,false
+11,65,strengthen_conversion,Bulk Bags,bulk-bags,https://machrio.com/category/bulk-bags,0,1,0,10,169,169,true,164,true,0,true,true,false,false,false,false,false,false,false,false
+12,65,improve_ctr_title_meta,Plastic Perforated Sheets,plastic-perforated-sheets,https://machrio.com/category/plastic-perforated-sheets,0,129,0,61.78,1,1,true,1,true,0,true,true,false,false,true,true,true,true,true,false
+13,64,strengthen_conversion,Material Handling,material-handling,https://machrio.com/category/material-handling,0,1,0,8,849,849,true,727,true,7,true,true,false,true,true,true,false,false,false,false
+14,63,strengthen_conversion,Stem Casters,stem-casters,https://machrio.com/category/stem-casters,0,3,0,33,689,689,true,683,true,0,true,true,false,false,false,false,false,false,false,false
+15,62,strengthen_conversion,Cable Locks,cable-locks,https://machrio.com/category/cable-locks,0,3,0,71.67,279,279,true,279,true,0,true,true,false,false,false,false,false,false,false,false
+16,59,improve_ctr_title_meta,Valve Lockout Devices,valve-lockout-devices,https://machrio.com/category/valve-lockout-devices,0,47,0,76.64,1,1,true,1,true,0,true,true,false,false,true,true,true,true,true,false
+17,57,strengthen_conversion,Wire & Cable Management,wire-cable-management,https://machrio.com/category/wire-cable-management,0,1,0,6,265,265,true,225,true,1,true,true,false,true,true,true,false,false,false,false
+18,56,strengthen_conversion,Institutional Furniture,institutional-furniture,https://machrio.com/category/institutional-furniture,0,3,0,25,25,25,true,25,true,0,true,true,false,false,false,false,false,false,false,false
+19,56,strengthen_conversion,Mop Sinks,mop-sinks,https://machrio.com/category/mop-sinks,0,7,0,56.14,72,72,true,72,true,0,true,true,false,false,false,false,true,false,false,false
+20,55,improve_ctr_title_meta,Industrial Safety Pins,industrial-safety-pins,https://machrio.com/category/industrial-safety-pins,0,16,0,33.94,5,5,true,5,true,0,true,true,false,false,false,false,true,false,false,false
+21,54,strengthen_conversion,Adhesive & Sealant Surface Preparation,adhesive-sealant-surface-preparation,https://machrio.com/category/adhesive-sealant-surface-preparation,0,1,0,9,5,5,true,0,true,1,true,true,false,true,true,true,false,false,false,false
+22,54,fill_category_content,Caulks & Sealants,caulks-sealants,https://machrio.com/category/caulks-sealants,0,0,0,0,370,370,true,351,true,0,true,true,false,false,false,false,false,false,false,false
+23,54,fill_category_content,Computer Cables,computer-cables,https://machrio.com/category/computer-cables,0,0,0,0,771,771,true,771,true,0,true,true,false,false,false,false,false,false,false,false
+24,52,strengthen_conversion,Surface Protection Tape,surface-protection-tape,https://machrio.com/category/surface-protection-tape,0,1,0,45,890,890,true,713,true,0,true,true,false,false,false,false,false,false,false,false
+25,51,strengthen_conversion,Flat Cable,flat-cable,https://machrio.com/category/flat-cable,0,4,0,72.25,31,31,true,31,true,0,true,true,false,false,false,false,false,false,false,false
+26,50,fill_category_content,"Adhesives, Sealants and Tape",adhesives-sealants-and-tape,https://machrio.com/category/adhesives-sealants-and-tape,0,0,0,0,1317,1317,true,1085,true,4,true,true,false,true,true,true,false,false,false,false
+27,50,fill_category_content,Bearings,bearings,https://machrio.com/category/bearings,0,0,0,0,789,789,true,702,true,4,true,true,false,true,true,true,false,false,false,false
+28,50,fill_category_content,Casters & Wheels,casters-wheels,https://machrio.com/category/casters-wheels,0,0,0,0,741,741,true,715,true,2,true,true,false,true,true,true,false,false,false,false
+29,50,fill_category_content,"Caulks, Sealants & Gasket Makers",caulks-sealants-gasket-makers,https://machrio.com/category/caulks-sealants-gasket-makers,0,0,0,0,395,395,true,372,true,3,true,true,false,true,true,true,false,false,false,false
+30,50,fill_category_content,Electrical,electrical,https://machrio.com/category/electrical,0,0,0,0,2055,2055,true,2015,true,6,true,true,false,true,true,true,false,false,false,false
+31,50,strengthen_conversion,Fall Protection Kits,fall-protection-kits,https://machrio.com/category/fall-protection-kits,0,1,0,10,9,9,true,0,false,0,true,true,false,false,false,false,false,false,false,false
+32,50,fill_category_content,"Industrial Controls, Automation and Machine Safety",industrial-controls-automation-and-machine-safety,https://machrio.com/category/industrial-controls-automation-and-machine-safety,0,0,0,0,371,371,true,371,true,2,true,true,false,true,true,true,false,false,false,false
+33,50,fill_category_content,Packing & Shipping Bags,packing-shipping-bags,https://machrio.com/category/packing-shipping-bags,0,0,0,0,631,631,true,626,true,4,true,true,false,true,true,true,false,false,false,false
+34,50,fill_category_content,Safety,safety,https://machrio.com/category/safety,0,0,0,0,1378,1378,true,811,true,24,true,true,false,true,true,true,false,false,false,false
+35,49,strengthen_conversion,Emergency & Exit Lighting,emergency-exit-lighting,https://machrio.com/category/emergency-exit-lighting,0,1,0,7,54,54,true,54,true,1,true,true,false,true,true,true,false,false,false,false
+36,49,fill_category_content,Respiratory Protection,respiratory-protection,https://machrio.com/category/respiratory-protection,0,0,0,0,7,7,true,0,true,1,true,true,false,true,true,true,true,true,true,false
+37,49,fill_category_content,Safety Gloves,safety-gloves,https://machrio.com/category/safety-gloves,0,0,0,0,276,276,true,160,true,0,true,true,false,false,true,true,false,false,false,false
+38,48,strengthen_conversion,Bolts & Screws,bolts-screws,https://machrio.com/category/bolts-screws,0,1,0,2,588,588,true,588,true,12,true,true,false,true,true,true,false,false,false,false
+39,48,strengthen_conversion,Painting Equipment,painting-equipment,https://machrio.com/category/painting-equipment,0,1,0,9,13,13,true,13,true,1,true,true,false,true,true,true,false,false,false,false
+40,48,strengthen_conversion,Tape,tape,https://machrio.com/category/tape,0,1,0,3,890,890,true,713,true,1,true,true,false,true,true,true,false,false,false,false
+41,47,improve_ctr_title_meta,Shaft Grounding Rings,shaft-grounding-rings,https://machrio.com/category/shaft-grounding-rings,0,53,0,69,0,0,false,0,true,0,false,true,false,false,true,true,true,true,true,false
+42,46,improve_ctr_title_meta,Floor Protection Mats,floor-protection-mats,https://machrio.com/category/floor-protection-mats,0,15,0,73.4,51,51,true,18,true,0,true,true,false,false,false,false,false,false,false,false
+43,45,fill_category_content,Lockout Hasps,lockout-hasps,https://machrio.com/category/lockout-hasps,0,0,0,0,56,56,true,18,true,0,true,true,false,false,false,false,false,false,false,false
+44,44,fill_category_content,Bathroom Sinks,bathroom-sinks,https://machrio.com/category/bathroom-sinks,0,0,0,0,316,316,true,316,true,0,true,true,false,false,false,false,false,false,false,false
+45,44,seed_demand_capture_page,Electrical Generators & Power Stations,electrical-generators-power-stations,https://machrio.com/category/electrical-generators-power-stations,0,1,0,10,0,0,false,0,true,2,false,true,false,true,true,true,false,false,false,false
+46,44,fill_category_content,Floodlights,floodlights,https://machrio.com/category/floodlights,0,0,0,0,307,307,true,290,true,0,true,true,false,false,false,false,false,false,false,false
+47,44,fill_category_content,Hand Knobs,hand-knobs,https://machrio.com/category/hand-knobs,0,0,0,0,549,549,true,549,true,0,true,true,false,false,false,false,false,false,false,false
+48,44,fill_category_content,Hose Reels,hose-reels,https://machrio.com/category/hose-reels,0,0,0,0,318,318,true,228,true,0,true,true,false,false,false,false,false,false,false,false
+49,44,fill_category_content,Limit Switches,limit-switches,https://machrio.com/category/limit-switches,0,0,0,0,352,352,true,352,true,0,true,true,false,false,false,false,false,false,false,false
+50,44,fill_category_content,Portable Cord,portable-cord,https://machrio.com/category/portable-cord,0,0,0,0,545,545,true,545,true,0,true,true,false,false,false,false,false,false,false,false
+51,44,fill_category_content,Retail Bags,retail-bags,https://machrio.com/category/retail-bags,0,0,0,0,347,347,true,347,true,0,true,true,false,false,false,false,false,false,false,false
+52,44,fill_category_content,Track Light Fixtures,track-light-fixtures,https://machrio.com/category/track-light-fixtures,0,0,0,0,441,441,true,436,true,0,true,true,false,false,false,false,false,false,false,false
+53,44,seed_demand_capture_page,Water Safety,water-safety,https://machrio.com/category/water-safety,0,1,0,10,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+54,43,fill_category_content,Air Cylinders,air-cylinders,https://machrio.com/category/air-cylinders,0,0,0,0,240,240,true,240,true,0,true,true,false,false,false,false,false,false,false,false
+55,43,fill_category_content,Retaining Washers,retaining-washers,https://machrio.com/category/retaining-washers,0,0,0,0,256,256,true,256,true,0,true,true,false,false,false,false,false,false,false,false
+56,43,fill_category_content,Sharpening Stones,sharpening-stones,https://machrio.com/category/sharpening-stones,0,0,0,0,273,273,true,273,true,0,true,true,false,false,false,false,false,false,false,false
+57,43,strengthen_conversion,Welding Protective Clothing,welding-protective-clothing,https://machrio.com/category/welding-protective-clothing,0,1,0,7,51,51,true,5,true,0,true,true,false,false,false,false,false,false,false,false
+58,42,fill_category_content,Floor Mats,floor-mats,https://machrio.com/category/floor-mats,0,0,0,0,68,68,true,29,true,3,true,true,false,true,true,true,true,false,false,false
+59,42,strengthen_conversion,Medicine Vending Machines,medicine-vending-machines,https://machrio.com/category/medicine-vending-machines,0,1,0,53,42,42,true,2,true,0,true,true,false,false,false,false,false,false,false,false
+60,42,fill_category_content,Screwdriver Bits,screwdriver-bits,https://machrio.com/category/screwdriver-bits,0,0,0,0,230,230,true,230,true,0,true,true,false,false,false,false,false,false,false,false
+61,42,fill_category_content,Solenoid Valves,solenoid-valves,https://machrio.com/category/solenoid-valves,0,0,0,0,199,199,true,113,true,0,true,true,false,false,false,false,false,false,false,false
+62,42,strengthen_conversion,Spray Adhesives,spray-adhesives,https://machrio.com/category/spray-adhesives,0,1,0,3,5,5,true,0,true,0,true,true,false,false,false,false,false,false,false,false
+63,42,strengthen_conversion,Welding Screens,welding-screens,https://machrio.com/category/welding-screens,0,1,0,10,1,1,true,1,true,0,true,true,false,false,false,false,false,false,false,false
+64,41,strengthen_conversion,Cleaning and Janitorial,cleaning-and-janitorial,https://machrio.com/category/cleaning-and-janitorial,0,2,0,3.5,80,80,true,4,true,3,true,true,false,true,true,true,false,false,false,false
+65,41,fill_category_content,Protective Packaging,protective-packaging,https://machrio.com/category/protective-packaging,0,0,0,0,51,51,true,3,true,1,true,true,false,true,true,true,false,false,false,false
+66,41,fill_category_content,Shipping Mailers,shipping-mailers,https://machrio.com/category/shipping-mailers,0,0,0,0,57,57,true,57,true,1,true,true,false,true,true,true,false,false,false,false
+67,40,fill_category_content,Fasteners,fasteners,https://machrio.com/category/fasteners,0,0,0,0,1735,1735,true,1735,true,7,true,true,false,true,true,true,false,false,false,false
+68,40,fill_category_content,Glass Door Hardware,glass-door-hardware,https://machrio.com/category/glass-door-hardware,0,0,0,0,140,140,true,140,true,0,true,true,false,false,false,false,false,false,false,false
+69,40,fill_category_content,"Grounding Rods, Braids & Connectors",grounding-rods-braids-connectors,https://machrio.com/category/grounding-rods-braids-connectors,0,0,0,0,43,43,true,43,true,1,true,true,false,true,true,true,false,false,false,false
+70,40,fill_category_content,Hand & Arm Protection,hand-arm-protection,https://machrio.com/category/hand-arm-protection,0,0,0,0,288,288,true,162,true,3,true,true,false,true,true,true,false,false,false,false
+71,40,fill_category_content,"Handles, Pulls & Knobs",handles-pulls-knobs,https://machrio.com/category/handles-pulls-knobs,0,0,0,0,549,549,true,549,true,2,true,true,false,true,true,true,false,false,false,false
+72,40,fill_category_content,Hardware,hardware,https://machrio.com/category/hardware,0,0,0,0,1102,1102,true,1098,true,13,true,true,false,true,true,true,false,false,false,false
+73,40,fill_category_content,Hex Nuts,hex-nuts,https://machrio.com/category/hex-nuts,0,0,0,0,723,723,true,723,true,0,true,true,false,false,true,true,false,false,false,false
+74,40,strengthen_conversion,Hole Plugs,hole-plugs,https://machrio.com/category/hole-plugs,0,3,0,33.33,30,30,true,30,true,0,true,true,false,false,false,false,false,false,false,false
+75,40,fill_category_content,"Hose, Hose Fittings & Hose Reels",hose-hose-fittings-hose-reels,https://machrio.com/category/hose-hose-fittings-hose-reels,0,0,0,0,318,318,true,228,true,1,true,true,false,true,true,true,false,false,false,false
+76,40,fill_category_content,Lighting,lighting,https://machrio.com/category/lighting,0,0,0,0,813,813,true,791,true,3,true,true,false,true,true,true,false,false,false,false
+77,40,fill_category_content,Lighting Fixtures & Retrofit Kits,lighting-fixtures-retrofit-kits,https://machrio.com/category/lighting-fixtures-retrofit-kits,0,0,0,0,441,441,true,436,true,1,true,true,false,true,true,true,false,false,false,false
+78,40,fill_category_content,Locks,locks,https://machrio.com/category/locks,0,0,0,0,297,297,true,297,true,2,true,true,false,true,true,true,false,false,false,false
+79,40,fill_category_content,Machine Screws,machine-screws,https://machrio.com/category/machine-screws,0,0,0,0,511,511,true,511,true,0,true,true,false,false,true,true,false,false,false,false
+80,40,fill_category_content,Nuts,nuts,https://machrio.com/category/nuts,0,0,0,0,743,743,true,743,true,9,true,true,false,true,true,true,false,false,false,false
+81,40,fill_category_content,Outdoor Lighting,outdoor-lighting,https://machrio.com/category/outdoor-lighting,0,0,0,0,318,318,true,301,true,2,true,true,false,true,true,true,false,false,false,false
+82,40,fill_category_content,"Pipe, Hose, Tube & Fittings",pipe-hose-tube-fittings,https://machrio.com/category/pipe-hose-tube-fittings,0,0,0,0,318,318,true,228,true,1,true,true,false,true,true,true,false,false,false,false
+83,40,fill_category_content,Plumbing,plumbing,https://machrio.com/category/plumbing,0,0,0,0,587,587,true,501,true,3,true,true,false,true,true,true,false,false,false,false
+84,40,fill_category_content,Pneumatics,pneumatics,https://machrio.com/category/pneumatics,0,0,0,0,312,312,true,312,true,8,true,true,false,true,true,true,false,false,false,false
+85,40,fill_category_content,Power Transmission,power-transmission,https://machrio.com/category/power-transmission,0,0,0,0,789,789,true,702,true,7,true,true,false,true,true,true,false,false,false,false
+86,40,fill_category_content,Security,security,https://machrio.com/category/security,0,0,0,0,298,298,true,298,true,6,true,true,false,true,true,true,false,false,false,false
+87,40,fill_category_content,"Sinks, Wash Fountains & Repair Parts",sinks-wash-fountains-repair-parts,https://machrio.com/category/sinks-wash-fountains-repair-parts,0,0,0,0,388,388,true,388,true,2,true,true,false,true,true,true,false,false,false,false
+88,40,strengthen_conversion,Storage & Workspace,storage-workspace,https://machrio.com/category/storage-workspace,0,1,0,10,2,2,true,2,true,1,true,true,false,true,true,true,false,false,false,false
+89,40,fill_category_content,Tools,tools,https://machrio.com/category/tools,0,0,0,0,490,490,true,435,true,5,true,true,false,true,true,true,false,false,false,false
+90,40,fill_category_content,Vibration Isolating Mounts,vibration-isolating-mounts,https://machrio.com/category/vibration-isolating-mounts,0,0,0,0,141,141,true,141,true,0,true,true,false,false,false,false,false,false,false,false
+91,39,fill_category_content,Cotter Pins,cotter-pins,https://machrio.com/category/cotter-pins,0,0,0,0,110,110,true,110,true,0,true,true,false,false,false,false,false,false,false,false
+92,39,fill_category_content,Pneumatic Actuators,pneumatic-actuators,https://machrio.com/category/pneumatic-actuators,0,0,0,0,240,240,true,240,true,3,true,true,false,true,true,true,false,false,false,false
+93,39,fill_category_content,Respirator Fit Testing,respirator-fit-testing,https://machrio.com/category/respirator-fit-testing,0,0,0,0,7,7,true,0,true,0,true,true,false,false,true,true,false,true,true,false
+94,39,strengthen_conversion,Screen Door Hardware,screen-door-hardware,https://machrio.com/category/screen-door-hardware,0,6,0,88.33,19,19,true,19,true,0,true,true,false,false,false,false,false,false,false,false
+95,39,fill_category_content,Sharpening,sharpening,https://machrio.com/category/sharpening,0,0,0,0,273,273,true,273,true,1,true,true,false,true,true,true,false,false,false,false
+96,39,fill_category_content,Washers,washers,https://machrio.com/category/washers,0,0,0,0,261,261,true,261,true,3,true,true,false,true,true,true,false,false,false,false
+97,38,fill_category_content,Air Filters,air-filters,https://machrio.com/category/air-filters,0,0,0,0,31,31,true,1,true,1,true,true,false,true,true,true,false,false,false,false
+98,38,strengthen_conversion,Computer Supplies & Media,computer-supplies-media,https://machrio.com/category/computer-supplies-media,0,1,0,8,1,1,true,1,true,2,true,true,false,true,true,true,false,false,false,false
+99,38,seed_demand_capture_page,Desk Calendars,desk-calendars,https://machrio.com/category/desk-calendars,0,1,0,8,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+100,38,fill_category_content,Plumbing Valves,plumbing-valves,https://machrio.com/category/plumbing-valves,0,0,0,0,199,199,true,113,true,1,true,true,false,true,true,true,false,false,false,false
+101,38,fill_category_content,Poly Tubing,poly-tubing,https://machrio.com/category/poly-tubing,0,0,0,0,90,90,true,90,true,0,true,true,false,false,false,false,false,false,false,false
+102,38,seed_demand_capture_page,Pump Covers,pump-covers,https://machrio.com/category/pump-covers,0,1,0,16,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+103,38,fill_category_content,Sockets & Bits,sockets-bits,https://machrio.com/category/sockets-bits,0,0,0,0,234,234,true,234,true,3,true,true,false,true,true,true,false,false,false,false
+104,38,seed_demand_capture_page,Tamper-Evident Seals,tamper-evident-seals,https://machrio.com/category/tamper-evident-seals,0,2,0,8,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+105,38,fill_category_content,Tool Organizers,tool-organizers,https://machrio.com/category/tool-organizers,0,0,0,0,98,98,true,48,true,0,true,true,false,false,false,false,false,false,false,false
+106,37,improve_ctr_title_meta,Aerosol Can Recycling Equipment,aerosol-can-recycling-equipment,https://machrio.com/category/aerosol-can-recycling-equipment,0,46,0,77.65,0,0,false,0,true,0,false,true,false,false,true,true,true,false,false,false
+107,37,fill_category_content,Door Hardware,door-hardware,https://machrio.com/category/door-hardware,0,0,0,0,184,184,true,184,true,5,true,true,false,true,true,true,false,false,false,false
+108,37,fill_category_content,Pipe Sealants,pipe-sealants,https://machrio.com/category/pipe-sealants,0,0,0,0,24,24,true,20,true,0,true,true,false,false,true,true,false,false,false,false
+109,36,fill_category_content,Contact Adhesives,contact-adhesives,https://machrio.com/category/contact-adhesives,0,0,0,0,10,10,true,0,true,0,true,true,false,false,false,false,false,false,false,false
+110,36,fill_category_content,Fire Blankets,fire-blankets,https://machrio.com/category/fire-blankets,0,0,0,0,10,10,true,0,true,0,true,true,false,false,false,false,false,false,false,false
+111,36,fill_category_content,Pins,pins,https://machrio.com/category/pins,0,0,0,0,141,141,true,141,true,10,true,true,false,true,true,true,false,false,false,false
+112,36,fill_category_content,Rotary Dampers,rotary-dampers,https://machrio.com/category/rotary-dampers,0,0,0,0,62,62,true,62,true,0,true,true,false,false,false,false,false,false,false,false
+113,36,fill_category_content,Safety Flares,safety-flares,https://machrio.com/category/safety-flares,0,0,0,0,10,10,true,10,true,0,true,true,false,false,false,false,false,false,false,false
+114,36,fill_category_content,Stamping Tools,stamping-tools,https://machrio.com/category/stamping-tools,0,0,0,0,63,63,true,1,true,0,true,true,false,false,false,false,false,false,false,false
+115,36,fill_category_content,Vibration Control & Leveling Mounts,vibration-control-leveling-mounts,https://machrio.com/category/vibration-control-leveling-mounts,0,0,0,0,147,147,true,147,true,2,true,true,false,true,true,true,false,false,false,false
+116,35,fill_category_content,Bubble Mailers,bubble-mailers,https://machrio.com/category/bubble-mailers,0,0,0,0,57,57,true,57,true,0,true,true,false,false,false,false,false,false,false,false
+117,35,fill_category_content,Cleaning Buckets,cleaning-buckets,https://machrio.com/category/cleaning-buckets,0,0,0,0,53,53,true,1,true,0,true,true,false,false,false,false,false,false,false,false
+118,35,improve_ctr_title_meta,Fume Extractors,fume-extractors,https://machrio.com/category/fume-extractors,0,17,0,77.71,0,0,false,0,true,0,false,true,false,false,false,false,true,false,false,false
+119,35,fill_category_content,Hand Tools,hand-tools,https://machrio.com/category/hand-tools,0,0,0,0,127,127,true,127,true,3,true,true,false,true,true,true,false,false,false,false
+120,35,fill_category_content,Instant Foam,instant-foam,https://machrio.com/category/instant-foam,0,0,0,0,51,51,true,3,true,0,true,true,false,false,false,false,false,false,false,false
+121,35,fill_category_content,Lighted Exit Signs,lighted-exit-signs,https://machrio.com/category/lighted-exit-signs,0,0,0,0,54,54,true,54,true,0,true,true,false,false,false,false,false,false,false,false
+122,35,fill_category_content,Pneumatic Check Valves,pneumatic-check-valves,https://machrio.com/category/pneumatic-check-valves,0,0,0,0,56,56,true,56,true,0,true,true,false,false,false,false,false,false,false,false
+123,35,fill_category_content,Rainwear,rainwear,https://machrio.com/category/rainwear,0,0,0,0,60,60,true,24,true,0,true,true,false,false,false,false,false,false,false,false
+124,35,fill_category_content,Tool Storage,tool-storage,https://machrio.com/category/tool-storage,0,0,0,0,121,121,true,66,true,2,true,true,false,true,true,true,false,false,false,false
+125,35,fill_category_content,Track Wheels,track-wheels,https://machrio.com/category/track-wheels,0,0,0,0,52,52,true,32,true,0,true,true,false,false,false,false,false,false,false,false
+126,35,fill_category_content,Wrenches,wrenches,https://machrio.com/category/wrenches,0,0,0,0,111,111,true,111,true,0,true,true,false,false,true,true,false,false,false,false
+127,34,add_content_cluster,Abrasives,abrasives,https://machrio.com/category/abrasives,0,0,0,0,365,365,true,365,true,5,true,true,true,true,true,true,false,false,false,false
+128,34,fill_category_content,Compressed Air Filters,compressed-air-filters,https://machrio.com/category/compressed-air-filters,0,0,0,0,6,6,true,6,true,0,true,true,false,false,false,false,false,false,false,false
+129,34,strengthen_conversion,Lab Furniture & Accessories,lab-furniture-accessories,https://machrio.com/category/lab-furniture-accessories,0,1,0,7,20,20,true,0,false,3,true,true,false,true,true,true,false,false,false,false
+130,34,fill_category_content,Lifting Slings,lifting-slings,https://machrio.com/category/lifting-slings,0,0,0,0,46,46,true,7,true,0,true,true,false,false,false,false,false,false,false,false
+131,34,seed_demand_capture_page,Office Paper & Notebooks,office-paper-notebooks,https://machrio.com/category/office-paper-notebooks,0,1,0,9,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+132,34,fill_category_content,Pneumatic Safety Valves,pneumatic-safety-valves,https://machrio.com/category/pneumatic-safety-valves,0,0,0,0,6,6,true,6,true,0,true,true,false,false,false,false,false,false,false,false
+133,34,fill_category_content,Socket Head Cap Screws,socket-head-cap-screws,https://machrio.com/category/socket-head-cap-screws,0,0,0,0,50,50,true,50,true,0,true,true,false,false,false,false,false,false,false,false
+134,33,strengthen_conversion,Antislip Tape,antislip-tape,https://machrio.com/category/antislip-tape,0,6,0,63.67,5,5,true,5,true,0,true,true,false,false,false,false,false,false,false,false
+135,33,fill_category_content,Bump Caps,bump-caps,https://machrio.com/category/bump-caps,0,0,0,0,41,41,true,0,false,0,true,true,false,false,false,false,false,false,false,false
+136,33,fill_category_content,Cleaning Supplies,cleaning-supplies,https://machrio.com/category/cleaning-supplies,0,0,0,0,77,77,true,1,true,4,true,true,false,true,true,true,false,false,false,false
+137,33,fill_category_content,Instant Adhesives,instant-adhesives,https://machrio.com/category/instant-adhesives,0,0,0,0,5,5,true,0,true,0,true,true,false,false,false,false,false,false,false,false
+138,33,fill_category_content,Sanding Abrasives,sanding-abrasives,https://machrio.com/category/sanding-abrasives,0,0,0,0,79,79,true,79,true,2,true,true,false,true,true,true,false,false,false,false
+139,33,fill_category_content,Sanding Discs,sanding-discs,https://machrio.com/category/sanding-discs,0,0,0,0,79,79,true,79,true,0,true,true,false,false,true,true,false,false,false,false
+140,33,strengthen_conversion,Strapping Bands,strapping-bands,https://machrio.com/category/strapping-bands,0,2,0,72,6,6,true,0,false,0,true,true,false,false,false,false,false,false,false,false
+141,33,fill_category_content,Traffic Safety,traffic-safety,https://machrio.com/category/traffic-safety,0,0,0,0,12,12,true,12,true,4,true,true,false,true,true,true,false,false,false,false
+142,33,fill_category_content,Utility Hooks,utility-hooks,https://machrio.com/category/utility-hooks,0,0,0,0,36,36,true,36,true,0,true,true,false,false,false,false,false,false,false,false
+143,32,fill_category_content,Construction Adhesives,construction-adhesives,https://machrio.com/category/construction-adhesives,0,0,0,0,4,4,true,0,true,0,true,true,false,false,false,false,false,false,false,false
+144,32,fill_category_content,Fire Protection,fire-protection,https://machrio.com/category/fire-protection,0,0,0,0,10,10,true,0,true,2,true,true,false,true,true,true,false,false,false,false
+145,32,fill_category_content,"Furnishings, Appliances & Hospitality",furnishings-appliances-hospitality,https://machrio.com/category/furnishings-appliances-hospitality,0,0,0,0,64,64,true,64,true,5,true,true,false,true,true,true,false,false,false,false
+146,32,fill_category_content,Pneumatic System Components,pneumatic-system-components,https://machrio.com/category/pneumatic-system-components,0,0,0,0,62,62,true,62,true,2,true,true,false,true,true,true,false,false,false,false
+147,32,fill_category_content,Signs & Facility Identification Products,signs-facility-identification-products,https://machrio.com/category/signs-facility-identification-products,0,0,0,0,63,63,true,1,true,1,true,true,false,true,true,true,false,false,false,false
+148,32,fill_category_content,Springs,springs,https://machrio.com/category/springs,0,0,0,0,67,67,true,67,true,4,true,true,false,true,true,true,false,false,false,false
+149,32,fill_category_content,Window Opening Control Devices,window-opening-control-devices,https://machrio.com/category/window-opening-control-devices,0,0,0,0,29,29,true,29,true,0,true,true,false,false,false,false,false,false,false,false
+150,31,fill_category_content,Bird Control,bird-control,https://machrio.com/category/bird-control,0,0,0,0,27,27,true,27,true,0,true,true,false,false,false,false,false,false,false,false
+151,31,strengthen_conversion,Burlap Fabric,burlap-fabric,https://machrio.com/category/burlap-fabric,0,5,0,35,4,4,true,4,true,0,true,true,false,false,false,false,false,false,false,false
+152,31,fill_category_content,Cleaning Carts,cleaning-carts,https://machrio.com/category/cleaning-carts,0,0,0,0,24,24,true,0,false,0,true,true,false,false,false,false,false,false,false,false
+153,31,fill_category_content,Drawstring Bags,drawstring-bags,https://machrio.com/category/drawstring-bags,0,0,0,0,25,25,true,25,true,0,true,true,false,false,false,false,false,false,false,false
+154,31,fill_category_content,Earmuffs,earmuffs,https://machrio.com/category/earmuffs,0,0,0,0,25,25,true,0,false,0,true,true,false,false,false,false,false,false,false,false
+155,31,fill_category_content,Furniture,furniture,https://machrio.com/category/furniture,0,0,0,0,53,53,true,53,true,8,true,true,false,true,true,true,false,false,false,false
+156,31,fill_category_content,Hex Head Bolts,hex-head-bolts,https://machrio.com/category/hex-head-bolts,0,0,0,0,25,25,true,25,true,0,true,true,false,false,false,false,false,false,false,false
+157,31,fill_category_content,Modular Tool Storage Systems,modular-tool-storage-systems,https://machrio.com/category/modular-tool-storage-systems,0,0,0,0,23,23,true,18,true,0,true,true,false,false,false,false,false,false,false,false
+158,31,fill_category_content,Protective Clothing,protective-clothing,https://machrio.com/category/protective-clothing,0,0,0,0,51,51,true,5,true,1,true,true,false,true,true,true,false,false,false,false
+159,31,fill_category_content,Step Stools,step-stools,https://machrio.com/category/step-stools,0,0,0,0,25,25,true,0,false,0,true,true,false,false,false,false,false,false,false,false
+160,31,fill_category_content,Workwear,workwear,https://machrio.com/category/workwear,0,0,0,0,60,60,true,24,true,1,true,true,false,true,true,true,false,false,false,false
+161,30,fill_category_content,Coupling Nuts,coupling-nuts,https://machrio.com/category/coupling-nuts,0,0,0,0,20,20,true,20,true,0,true,true,false,false,false,false,false,false,false,false
+162,30,strengthen_conversion,Draw Latches,draw-latches,https://machrio.com/category/draw-latches,0,5,0,34.4,3,3,true,3,true,0,true,true,false,false,false,false,false,false,false,false
+163,30,fill_category_content,First Aid & Wound Care,first-aid-wound-care,https://machrio.com/category/first-aid-wound-care,0,0,0,0,42,42,true,2,true,1,true,true,false,true,true,true,false,false,false,false
+164,30,fill_category_content,Floor Coatings,floor-coatings,https://machrio.com/category/floor-coatings,0,0,0,0,22,22,true,22,true,0,true,true,false,false,false,false,false,false,false,false
+165,30,fill_category_content,Grounding Rods,grounding-rods,https://machrio.com/category/grounding-rods,0,0,0,0,43,43,true,43,true,0,true,true,false,false,true,true,false,false,false,false
+166,30,fill_category_content,Group Lockout Boxes,group-lockout-boxes,https://machrio.com/category/group-lockout-boxes,0,0,0,0,2,2,true,2,true,0,true,true,false,false,false,false,false,false,false,false
+167,30,fill_category_content,Label Protection Tape,label-protection-tape,https://machrio.com/category/label-protection-tape,0,0,0,0,19,19,true,9,true,0,true,true,false,false,false,false,false,false,false,false
+168,30,fill_category_content,Lab Tables,lab-tables,https://machrio.com/category/lab-tables,0,0,0,0,20,20,true,0,false,0,true,true,false,false,false,false,false,false,false,false
+169,30,fill_category_content,"Ladders, Platforms & Personnel Lifts",ladders-platforms-personnel-lifts,https://machrio.com/category/ladders-platforms-personnel-lifts,0,0,0,0,42,42,true,0,false,3,true,true,false,true,true,true,false,false,false,false
+170,30,fill_category_content,Sealing Supplies,sealing-supplies,https://machrio.com/category/sealing-supplies,0,0,0,0,47,47,true,47,true,2,true,true,false,true,true,true,false,false,false,false
+171,30,fill_category_content,Sliding Door Hardware,sliding-door-hardware,https://machrio.com/category/sliding-door-hardware,0,0,0,0,22,22,true,22,true,0,true,true,false,false,false,false,false,false,false,false
+172,30,fill_category_content,Suggestion Boxes,suggestion-boxes,https://machrio.com/category/suggestion-boxes,0,0,0,0,19,19,true,19,true,0,true,true,false,false,false,false,false,false,false,false
+173,30,fill_category_content,Tower Lights,tower-lights,https://machrio.com/category/tower-lights,0,0,0,0,19,19,true,19,true,0,true,true,false,false,false,false,false,false,false,false
+174,30,fill_category_content,Traction Devices,traction-devices,https://machrio.com/category/traction-devices,0,0,0,0,20,20,true,2,true,0,true,true,false,false,false,false,false,false,false,false
+175,29,strengthen_conversion,Diamond Polishing Pads,diamond-polishing-pads,https://machrio.com/category/diamond-polishing-pads,0,3,0,62,7,7,true,7,true,0,true,true,false,false,true,true,false,false,false,false
+176,29,fill_category_content,Entrance Mats,entrance-mats,https://machrio.com/category/entrance-mats,0,0,0,0,17,17,true,11,true,0,true,true,false,false,false,false,false,false,false,false
+177,29,fill_category_content,Head Protection,head-protection,https://machrio.com/category/head-protection,0,0,0,0,41,41,true,0,false,1,true,true,false,true,true,true,false,false,false,false
+178,29,fill_category_content,"Hooks, Eye Pulleys, & Snap Hooks",hooks-eye-pulleys-snap-hooks,https://machrio.com/category/hooks-eye-pulleys-snap-hooks,0,0,0,0,36,36,true,36,true,1,true,true,false,true,true,true,false,false,false,false
+179,29,fill_category_content,HVAC and Refrigeration,hvac-and-refrigeration,https://machrio.com/category/hvac-and-refrigeration,0,0,0,0,38,38,true,8,true,5,true,true,false,true,true,true,false,false,false,false
+180,29,fill_category_content,Hydraulic Rams,hydraulic-rams,https://machrio.com/category/hydraulic-rams,0,0,0,0,16,16,true,16,true,0,true,true,false,false,false,false,false,false,false,false
+181,29,fill_category_content,Multi-Tools,multi-tools,https://machrio.com/category/multi-tools,0,0,0,0,16,16,true,16,true,0,true,true,false,false,false,false,false,false,false,false
+182,29,fill_category_content,Outdoor Equipment,outdoor-equipment,https://machrio.com/category/outdoor-equipment,0,0,0,0,36,36,true,36,true,7,true,true,false,true,true,true,false,false,false,false
+183,29,fill_category_content,"Paints, Equipment and Supplies",paints-equipment-and-supplies,https://machrio.com/category/paints-equipment-and-supplies,0,0,0,0,35,35,true,35,true,2,true,true,false,true,true,true,false,false,false,false
+184,29,fill_category_content,Power Conditioners,power-conditioners,https://machrio.com/category/power-conditioners,0,0,0,0,16,16,true,16,true,0,true,true,false,false,false,false,false,false,false,false
+185,29,fill_category_content,Rubber Edging,rubber-edging,https://machrio.com/category/rubber-edging,0,0,0,0,17,17,true,17,true,0,true,true,false,false,false,false,false,false,false,false
+186,29,fill_category_content,Safety Alarms & Warning Lights,safety-alarms-warning-lights,https://machrio.com/category/safety-alarms-warning-lights,0,0,0,0,5,5,true,5,true,1,true,true,false,true,true,true,false,false,false,false
+187,29,fill_category_content,Spring Pins,spring-pins,https://machrio.com/category/spring-pins,0,0,0,0,18,18,true,18,true,0,true,true,false,false,false,false,false,false,false,false
+188,29,strengthen_conversion,Vehicle Diagnostic Tools,vehicle-diagnostic-tools,https://machrio.com/category/vehicle-diagnostic-tools,0,5,0,70,2,2,true,2,true,0,true,true,false,false,false,false,false,false,false,false
+189,29,fill_category_content,Work Platforms,work-platforms,https://machrio.com/category/work-platforms,0,0,0,0,17,17,true,0,false,0,true,true,false,false,false,false,false,false,false,false
+190,28,fill_category_content,Computer Connection Cables,computer-connection-cables,https://machrio.com/category/computer-connection-cables,0,0,0,0,1,1,true,1,true,0,true,true,false,false,false,false,false,false,false,false
+191,28,fill_category_content,Electrical Power Testing,electrical-power-testing,https://machrio.com/category/electrical-power-testing,0,0,0,0,4,4,true,4,true,2,true,true,false,true,true,true,false,false,false,false
+192,28,fill_category_content,Office Supplies,office-supplies,https://machrio.com/category/office-supplies,0,0,0,0,28,28,true,28,true,19,true,true,false,true,true,true,false,false,false,false
+193,28,fill_category_content,Packing Tape,packing-tape,https://machrio.com/category/packing-tape,0,0,0,0,28,28,true,10,true,4,true,true,false,true,true,true,false,false,false,false
+194,28,fill_category_content,Solar Charge Controllers,solar-charge-controllers,https://machrio.com/category/solar-charge-controllers,0,0,0,0,13,13,true,13,true,0,true,true,false,false,false,false,false,false,false,false
+195,28,fill_category_content,Valve Sealants,valve-sealants,https://machrio.com/category/valve-sealants,0,0,0,0,1,1,true,1,true,0,true,true,false,false,false,false,false,false,false,false
+196,28,fill_category_content,Wallpaper Tools,wallpaper-tools,https://machrio.com/category/wallpaper-tools,0,0,0,0,13,13,true,13,true,0,true,true,false,false,false,false,false,false,false,false
+197,28,fill_category_content,Window Hardware,window-hardware,https://machrio.com/category/window-hardware,0,0,0,0,29,29,true,29,true,1,true,true,false,true,true,true,false,false,false,false
+198,27,strengthen_conversion,Concealed Hinges,concealed-hinges,https://machrio.com/category/concealed-hinges,0,6,0,70.83,1,1,true,1,true,0,true,true,false,false,false,false,false,false,false,false
+199,27,strengthen_conversion,Fabrics,fabrics,https://machrio.com/category/fabrics,0,1,0,5,4,4,true,4,true,1,true,true,false,true,true,true,false,false,false,false
+200,27,fill_category_content,Hearing Protection,hearing-protection,https://machrio.com/category/hearing-protection,0,0,0,0,25,25,true,0,false,1,true,true,false,true,true,true,false,false,false,false
+201,27,fill_category_content,Insect & Wildlife Control,insect-wildlife-control,https://machrio.com/category/insect-wildlife-control,0,0,0,0,27,27,true,27,true,1,true,true,false,true,true,true,false,false,false,false
+202,27,fill_category_content,Protective Sleeves,protective-sleeves,https://machrio.com/category/protective-sleeves,0,0,0,0,12,12,true,2,true,0,true,true,false,false,false,false,false,false,false,false
+203,27,fill_category_content,Security Lights,security-lights,https://machrio.com/category/security-lights,0,0,0,0,11,11,true,11,true,0,true,true,false,false,false,false,false,false,false,false
+204,27,fill_category_content,Utility Tables,utility-tables,https://machrio.com/category/utility-tables,0,0,0,0,12,12,true,12,true,0,true,true,false,false,false,false,false,false,false,false
+205,26,fill_category_content,Braces & Brackets,braces-brackets,https://machrio.com/category/braces-brackets,0,0,0,0,22,22,true,22,true,1,true,true,false,true,true,true,false,false,false,false
+206,26,fill_category_content,Footwear & Footwear Accessories,footwear-footwear-accessories,https://machrio.com/category/footwear-footwear-accessories,0,0,0,0,20,20,true,2,true,1,true,true,false,true,true,true,false,false,false,false
+207,26,fill_category_content,Lab Supplies,lab-supplies,https://machrio.com/category/lab-supplies,0,0,0,0,20,20,true,0,false,5,true,true,false,true,true,true,false,false,false,false
+208,26,fill_category_content,Lifting Magnets,lifting-magnets,https://machrio.com/category/lifting-magnets,0,0,0,0,10,10,true,0,false,0,true,true,false,false,false,false,false,false,false,false
+209,26,strengthen_conversion,Marking Tools,marking-tools,https://machrio.com/category/marking-tools,0,1,0,46,1,1,true,1,true,0,true,true,false,false,false,false,false,false,false,false
+210,26,fill_category_content,Paints & Coatings,paints-coatings,https://machrio.com/category/paints-coatings,0,0,0,0,22,22,true,22,true,1,true,true,false,true,true,true,false,false,false,false
+211,26,fill_category_content,Retail Supplies,retail-supplies,https://machrio.com/category/retail-supplies,0,0,0,0,20,20,true,20,true,2,true,true,false,true,true,true,false,false,false,false
+212,25,fill_category_content,Bluetooth Padlocks,bluetooth-padlocks,https://machrio.com/category/bluetooth-padlocks,0,0,0,0,18,18,true,18,true,0,true,true,false,false,true,true,false,false,false,false
+213,25,fill_category_content,Dowel Pins,dowel-pins,https://machrio.com/category/dowel-pins,0,0,0,0,8,8,true,8,true,0,true,true,false,false,false,false,false,false,false,false
+214,25,fill_category_content,Flexible Magnets,flexible-magnets,https://machrio.com/category/flexible-magnets,0,0,0,0,8,8,true,8,true,0,true,true,false,false,false,false,false,false,false,false
+215,25,fill_category_content,Gate Hardware,gate-hardware,https://machrio.com/category/gate-hardware,0,0,0,0,8,8,true,8,true,0,true,true,false,false,false,false,false,false,false,false
+216,25,strengthen_conversion,Hand & Personal Care,hand-personal-care,https://machrio.com/category/hand-personal-care,0,1,0,6,3,3,true,3,true,1,true,true,false,true,true,true,false,false,false,false
+217,25,fill_category_content,Hydraulic Rams & Tools,hydraulic-rams-tools,https://machrio.com/category/hydraulic-rams-tools,0,0,0,0,16,16,true,16,true,1,true,true,false,true,true,true,false,false,false,false
+218,25,fill_category_content,Hydraulics,hydraulics,https://machrio.com/category/hydraulics,0,0,0,0,16,16,true,16,true,3,true,true,false,true,true,true,false,false,false,false
+219,25,fill_category_content,Quiet Packing Tape,quiet-packing-tape,https://machrio.com/category/quiet-packing-tape,0,0,0,0,8,8,true,0,false,0,true,true,false,false,false,false,false,false,false,false
+220,25,strengthen_conversion,Rubber,rubber,https://machrio.com/category/rubber,0,1,0,6,3,3,true,3,true,2,true,true,false,true,true,true,false,false,false,false
+221,25,fill_category_content,"Transformers, UPS & Power Supplies",transformers-ups-power-supplies,https://machrio.com/category/transformers-ups-power-supplies,0,0,0,0,16,16,true,16,true,1,true,true,false,true,true,true,false,false,false,false
+222,24,improve_ctr_title_meta,Asphalt Hand Tools,asphalt-hand-tools,https://machrio.com/category/asphalt-hand-tools,0,11,0,69.64,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+223,24,seed_demand_capture_page,Bearing Grease,bearing-grease,https://machrio.com/category/bearing-grease,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+224,24,seed_demand_capture_page,Bearing Heaters,bearing-heaters,https://machrio.com/category/bearing-heaters,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+225,24,seed_demand_capture_page,Cable Organizers,cable-organizers,https://machrio.com/category/cable-organizers,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+226,24,seed_demand_capture_page,Cable Reels,cable-reels-cable-reels,https://machrio.com/category/cable-reels-cable-reels,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+227,24,seed_demand_capture_page,Engine Air Filters,engine-air-filters,https://machrio.com/category/engine-air-filters,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+228,24,seed_demand_capture_page,Filter Paper,filter-paper,https://machrio.com/category/filter-paper,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+229,24,seed_demand_capture_page,Fire Escape Ladders,fire-escape-ladders,https://machrio.com/category/fire-escape-ladders,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+230,24,seed_demand_capture_page,Hydraulic Cable Cutters,hydraulic-cable-cutters,https://machrio.com/category/hydraulic-cable-cutters,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+231,24,fill_category_content,Leveling Mounts,leveling-mounts,https://machrio.com/category/leveling-mounts,0,0,0,0,6,6,true,6,true,0,true,true,false,false,false,false,false,false,false,false
+232,24,seed_demand_capture_page,Linear Bearings,linear-bearings,https://machrio.com/category/linear-bearings,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+233,24,fill_category_content,Power Tool Replacement Parts,power-tool-replacement-parts,https://machrio.com/category/power-tool-replacement-parts,0,0,0,0,6,6,true,6,true,0,true,true,false,false,false,false,false,false,false,false
+234,24,seed_demand_capture_page,Safety Cabinets,safety-cabinets,https://machrio.com/category/safety-cabinets,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+235,24,seed_demand_capture_page,Safety Showers,safety-showers,https://machrio.com/category/safety-showers,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+236,24,seed_demand_capture_page,Slewing Ring Bearings,slewing-ring-bearings,https://machrio.com/category/slewing-ring-bearings,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+237,24,fill_category_content,Solar Panels & Accessories,solar-panels-accessories,https://machrio.com/category/solar-panels-accessories,0,0,0,0,13,13,true,13,true,2,true,true,false,true,true,true,false,false,false,false
+238,24,fill_category_content,Stretch Wrap Rolls,stretch-wrap-rolls,https://machrio.com/category/stretch-wrap-rolls,0,0,0,0,6,6,true,2,true,0,true,true,false,false,false,false,false,false,false,false
+239,24,seed_demand_capture_page,Whole House Water Filter Systems,whole-house-water-filter-systems,https://machrio.com/category/whole-house-water-filter-systems,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+240,23,seed_demand_capture_page,Alnico Magnets,alnico-magnets,https://machrio.com/category/alnico-magnets,0,6,0,94.67,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+241,23,fill_category_content,Audible Alarms,audible-alarms,https://machrio.com/category/audible-alarms,0,0,0,0,5,5,true,5,true,0,true,true,false,false,false,false,false,false,false,false
+242,23,fill_category_content,Buffing & Polishing,buffing-polishing,https://machrio.com/category/buffing-polishing,0,0,0,0,12,12,true,12,true,2,true,true,false,true,true,true,false,false,false,false
+243,23,seed_demand_capture_page,Deer Fence,deer-fence,https://machrio.com/category/deer-fence,0,5,0,71,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+244,23,fill_category_content,Display Cases,display-cases,https://machrio.com/category/display-cases,0,0,0,0,11,11,true,11,true,0,true,true,false,false,true,true,false,false,false,false
+245,23,fill_category_content,Dock Bumpers,dock-bumpers,https://machrio.com/category/dock-bumpers,0,0,0,0,5,5,true,0,false,0,true,true,false,false,false,false,false,false,false,false
+246,23,seed_demand_capture_page,Erosion Control Blankets,erosion-control-blankets,https://machrio.com/category/erosion-control-blankets,0,7,0,65.71,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+247,23,fill_category_content,Extension Springs,extension-springs,https://machrio.com/category/extension-springs,0,0,0,0,5,5,true,5,true,0,true,true,false,false,false,false,false,false,false,false
+248,23,fill_category_content,Felt Bobs,felt-bobs,https://machrio.com/category/felt-bobs,0,0,0,0,5,5,true,5,true,0,true,true,false,false,false,false,false,false,false,false
+249,23,fill_category_content,Outdoor Benches,outdoor-benches,https://machrio.com/category/outdoor-benches,0,0,0,0,5,5,true,5,true,0,true,true,false,false,false,false,false,false,false,false
+250,23,fill_category_content,Outdoor Furniture,outdoor-furniture,https://machrio.com/category/outdoor-furniture,0,0,0,0,11,11,true,11,true,3,true,true,false,true,true,true,false,false,false,false
+251,22,fill_category_content,Air Tool Accessories,air-tool-accessories,https://machrio.com/category/air-tool-accessories,0,0,0,0,4,4,true,4,true,0,true,true,false,false,false,false,false,false,false,false
+252,22,fill_category_content,Capacitor Testers,capacitor-testers,https://machrio.com/category/capacitor-testers,0,0,0,0,4,4,true,4,true,0,true,true,false,false,false,false,false,false,false,false
+253,22,fill_category_content,Chalkboards,chalkboards,https://machrio.com/category/chalkboards,0,0,0,0,4,4,true,4,true,0,true,true,false,false,false,false,false,false,false,false
+254,22,fill_category_content,Classroom Furniture,classroom-furniture,https://machrio.com/category/classroom-furniture,0,0,0,0,4,4,true,4,true,0,true,true,false,false,false,false,false,false,false,false
+255,22,fill_category_content,Fall Protection,fall-protection,https://machrio.com/category/fall-protection,0,0,0,0,9,9,true,0,false,3,true,true,false,true,true,true,false,false,false,false
+256,22,seed_demand_capture_page,Finger Protection,finger-protection,https://machrio.com/category/finger-protection,0,1,0,48,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+257,22,fill_category_content,Industrial Cooling Fans,industrial-cooling-fans,https://machrio.com/category/industrial-cooling-fans,0,0,0,0,4,4,true,4,true,0,true,true,false,false,false,false,false,false,false,false
+258,22,seed_demand_capture_page,Lab Cabinets,lab-cabinets,https://machrio.com/category/lab-cabinets,0,2,0,36,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+259,22,seed_demand_capture_page,Lock Nuts,lock-nuts,https://machrio.com/category/lock-nuts,0,1,0,2,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+260,22,seed_demand_capture_page,Paper Folding Machines,paper-folding-machines,https://machrio.com/category/paper-folding-machines,0,1,0,4,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+261,22,fill_category_content,Picnic Tables,picnic-tables,https://machrio.com/category/picnic-tables,0,0,0,0,4,4,true,4,true,0,true,true,false,false,false,false,false,false,false,false
+262,22,seed_demand_capture_page,Plastic Tubes,plastic-tubes,https://machrio.com/category/plastic-tubes,0,1,0,7,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+263,22,seed_demand_capture_page,Power Factor Correction Capacitors,power-factor-correction-capacitors,https://machrio.com/category/power-factor-correction-capacitors,0,1,0,51,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+264,22,fill_category_content,Raw Materials,raw-materials,https://machrio.com/category/raw-materials,0,0,0,0,10,10,true,10,true,7,true,true,false,true,true,true,false,false,false,false
+265,22,fill_category_content,Structural Washers,structural-washers,https://machrio.com/category/structural-washers,0,0,0,0,4,4,true,4,true,0,true,true,false,false,false,false,false,false,false,false
+266,22,fill_category_content,Tarp Accessories,tarp-accessories,https://machrio.com/category/tarp-accessories,0,0,0,0,4,4,true,4,true,0,true,true,false,false,false,false,false,false,false,false
+267,22,seed_demand_capture_page,Welding Blankets,welding-blankets,https://machrio.com/category/welding-blankets,0,1,0,7,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+268,22,seed_demand_capture_page,Welding Magnets,welding-magnets,https://machrio.com/category/welding-magnets,0,2,0,7.5,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+269,22,seed_demand_capture_page,Welding Umbrellas,welding-umbrellas,https://machrio.com/category/welding-umbrellas,0,1,0,5,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+270,21,fill_category_content,Bit Holders,bit-holders,https://machrio.com/category/bit-holders,0,0,0,0,3,3,true,3,true,0,true,true,false,false,false,false,false,false,false,false
+271,21,fill_category_content,Cargo Nets,cargo-nets,https://machrio.com/category/cargo-nets,0,0,0,0,3,3,true,3,true,0,true,true,false,false,false,false,false,false,false,false
+272,21,fill_category_content,Fencing,fencing,https://machrio.com/category/fencing,0,0,0,0,8,8,true,8,true,5,true,true,false,true,true,true,false,false,false,false
+273,21,fill_category_content,Hand Dryers,hand-dryers,https://machrio.com/category/hand-dryers,0,0,0,0,3,3,true,3,true,0,true,true,false,false,false,false,false,false,false,false
+274,21,fill_category_content,Magnets & Magnetic Strips,magnets-magnetic-strips,https://machrio.com/category/magnets-magnetic-strips,0,0,0,0,8,8,true,8,true,3,true,true,false,true,true,true,false,false,false,false
+275,21,fill_category_content,Power Tools,power-tools,https://machrio.com/category/power-tools,0,0,0,0,7,7,true,7,true,3,true,true,false,true,true,true,false,false,false,false
+276,21,fill_category_content,Rubber Balls,rubber-balls,https://machrio.com/category/rubber-balls,0,0,0,0,3,3,true,3,true,0,true,true,false,false,false,false,false,false,false,false
+277,21,fill_category_content,Ventilation Fans,ventilation-fans,https://machrio.com/category/ventilation-fans,0,0,0,0,3,3,true,3,true,0,true,true,false,false,false,false,false,false,false,false
+278,20,fill_category_content,Binding Posts,binding-posts,https://machrio.com/category/binding-posts,0,0,0,0,2,2,true,2,true,0,true,true,false,false,false,false,false,false,false,false
+279,20,seed_demand_capture_page,Cable Reels,cable-reels,https://machrio.com/category/cable-reels,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+280,20,fill_category_content,Compressed Air Treatment,compressed-air-treatment,https://machrio.com/category/compressed-air-treatment,0,0,0,0,6,6,true,6,true,3,true,true,false,true,true,true,false,false,false,false
+281,20,fill_category_content,Door Thresholds,door-thresholds,https://machrio.com/category/door-thresholds,0,0,0,0,2,2,true,2,true,0,true,true,false,false,false,false,false,false,false,false
+282,20,fill_category_content,Exterior Sun Shades,exterior-sun-shades,https://machrio.com/category/exterior-sun-shades,0,0,0,0,2,2,true,2,true,0,true,true,false,false,false,false,false,false,false,false
+283,20,seed_demand_capture_page,Eyewash Equipment & Safety Showers,eyewash-equipment-safety-showers,https://machrio.com/category/eyewash-equipment-safety-showers,0,0,0,0,0,0,false,0,true,3,false,true,false,true,true,true,false,false,false,false
+284,20,seed_demand_capture_page,Lab Filters and Sieving,lab-filters-and-sieving,https://machrio.com/category/lab-filters-and-sieving,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+285,20,fill_category_content,Lockers,lockers,https://machrio.com/category/lockers,0,0,0,0,2,2,true,2,true,0,true,true,false,false,false,false,false,false,false,false
+286,20,fill_category_content,Portable Gas Detection,portable-gas-detection,https://machrio.com/category/portable-gas-detection,0,0,0,0,2,2,true,2,true,0,true,true,false,false,false,false,false,false,false,false
+287,20,seed_demand_capture_page,Safety Storage,safety-storage,https://machrio.com/category/safety-storage,0,0,0,0,0,0,false,0,true,2,false,true,false,true,true,true,false,false,false,false
+288,20,seed_demand_capture_page,"Shipping Boxes, Pads & Tubes",shipping-boxes-pads-tubes,https://machrio.com/category/shipping-boxes-pads-tubes,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+289,20,fill_category_content,Soft-Sided Coolers,soft-sided-coolers,https://machrio.com/category/soft-sided-coolers,0,0,0,0,2,2,true,2,true,0,true,true,false,false,false,false,false,false,false,false
+290,20,fill_category_content,Stick Welding,stick-welding,https://machrio.com/category/stick-welding,0,0,0,0,2,2,true,2,true,0,true,true,false,false,false,false,false,false,false,false
+291,20,fill_category_content,Strapping,strapping,https://machrio.com/category/strapping,0,0,0,0,6,6,true,0,false,3,true,true,false,true,true,true,false,false,false,false
+292,20,fill_category_content,Stretch Wrap,stretch-wrap,https://machrio.com/category/stretch-wrap,0,0,0,0,6,6,true,2,true,3,true,true,false,true,true,true,false,false,false,false
+293,20,seed_demand_capture_page,Vehicle & Equipment Filters,vehicle-equipment-filters,https://machrio.com/category/vehicle-equipment-filters,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+294,19,fill_category_content,"Antislip Tapes, Treads & Stair Nosings",antislip-tapes-treads-stair-nosings,https://machrio.com/category/antislip-tapes-treads-stair-nosings,0,0,0,0,5,5,true,5,true,1,true,true,false,true,true,true,false,false,false,false
+295,19,fill_category_content,Dock & Loading Equipment,dock-loading-equipment,https://machrio.com/category/dock-loading-equipment,0,0,0,0,5,5,true,0,false,3,true,true,false,true,true,true,false,false,false,false
+296,19,seed_demand_capture_page,Machine Bases,machine-bases,https://machrio.com/category/machine-bases,0,5,0,39,0,0,false,0,true,0,false,true,false,false,true,true,false,false,false,false
+297,19,fill_category_content,Test Instruments,test-instruments,https://machrio.com/category/test-instruments,0,0,0,0,5,5,true,5,true,3,true,true,false,true,true,true,false,false,false,false
+298,19,fill_category_content,Wood Glues,wood-glues,https://machrio.com/category/wood-glues,0,0,0,0,5,5,true,0,false,0,true,true,false,false,true,true,false,false,false,false
+299,18,fill_category_content,Alloy Steel,alloy-steel,https://machrio.com/category/alloy-steel,0,0,0,0,1,1,true,1,true,0,true,true,false,false,false,false,false,false,false,false
+300,18,fill_category_content,Bag Sealing Tape,bag-sealing-tape,https://machrio.com/category/bag-sealing-tape,0,0,0,0,1,1,true,1,true,0,true,true,false,false,false,false,false,false,false,false
+301,18,fill_category_content,Boards & Easels,boards-easels,https://machrio.com/category/boards-easels,0,0,0,0,4,4,true,4,true,1,true,true,false,true,true,true,false,false,false,false
+302,18,seed_demand_capture_page,Central Equipment,central-equipment,https://machrio.com/category/central-equipment,0,1,0,4,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+303,18,strengthen_conversion,Ceramic Weld Backing,ceramic-weld-backing,https://machrio.com/category/ceramic-weld-backing,1,1,1,80,1,1,true,1,true,0,true,true,false,false,false,false,false,false,false,false
+304,18,seed_demand_capture_page,"Coffee, Snacks & Condiments",coffee-snacks-condiments,https://machrio.com/category/coffee-snacks-condiments,0,1,0,5,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+305,18,fill_category_content,Cooling Fans,cooling-fans,https://machrio.com/category/cooling-fans,0,0,0,0,4,4,true,4,true,1,true,true,false,true,true,true,false,false,false,false
+306,18,fill_category_content,Counterfeit Detection,counterfeit-detection,https://machrio.com/category/counterfeit-detection,0,0,0,0,1,1,true,1,true,0,true,true,false,false,false,false,false,false,false,false
+307,18,fill_category_content,Door Ramps,door-ramps,https://machrio.com/category/door-ramps,0,0,0,0,1,1,true,1,true,0,true,true,false,false,false,false,false,false,false,false
+308,18,fill_category_content,Drill Bushings,drill-bushings,https://machrio.com/category/drill-bushings,0,0,0,0,1,1,true,1,true,0,true,true,false,false,false,false,false,false,false,false
+309,18,fill_category_content,File Folders,file-folders,https://machrio.com/category/file-folders,0,0,0,0,1,1,true,1,true,0,true,true,false,false,false,false,false,false,false,false
+310,18,fill_category_content,Flooring Hardware,flooring-hardware,https://machrio.com/category/flooring-hardware,0,0,0,0,4,4,true,0,false,1,true,true,false,true,true,true,false,false,false,false
+311,18,fill_category_content,Foam Tubes,foam-tubes,https://machrio.com/category/foam-tubes,0,0,0,0,1,1,true,1,true,0,true,true,false,false,false,false,false,false,false,false
+312,18,fill_category_content,Garden Hose Nozzles,garden-hose-nozzles,https://machrio.com/category/garden-hose-nozzles,0,0,0,0,1,1,true,1,true,0,true,true,false,false,false,false,false,false,false,false
+313,18,fill_category_content,Grounding Equipment,grounding-equipment,https://machrio.com/category/grounding-equipment,0,0,0,0,1,1,true,1,true,0,true,true,false,false,false,false,false,false,false,false
+314,18,fill_category_content,Hasps,hasps,https://machrio.com/category/hasps,0,0,0,0,1,1,true,1,true,0,true,true,false,false,false,false,false,false,false,false
+315,18,fill_category_content,"Hasps, Latches and Catches",hasps-latches-and-catches,https://machrio.com/category/hasps-latches-and-catches,0,0,0,0,4,4,true,4,true,2,true,true,false,true,true,true,false,false,false,false
+316,18,fill_category_content,Key Blanks,key-blanks,https://machrio.com/category/key-blanks,0,0,0,0,1,1,true,1,true,0,true,true,false,false,false,false,false,false,false,false
+317,18,fill_category_content,Laminating Machines,laminating-machines,https://machrio.com/category/laminating-machines,0,0,0,0,1,1,true,1,true,0,true,true,false,false,false,false,false,false,false,false
+318,18,fill_category_content,Plumbing Power Tools,plumbing-power-tools,https://machrio.com/category/plumbing-power-tools,0,0,0,0,1,1,true,1,true,0,true,true,false,false,false,false,false,false,false,false
+319,18,fill_category_content,Pneumatic Tools,pneumatic-tools,https://machrio.com/category/pneumatic-tools,0,0,0,0,4,4,true,4,true,2,true,true,false,true,true,true,false,false,false,false
+320,18,fill_category_content,Printer Accessories,printer-accessories,https://machrio.com/category/printer-accessories,0,0,0,0,1,1,true,1,true,0,true,true,false,false,false,false,false,false,false,false
+321,18,fill_category_content,Rod Hangers,rod-hangers,https://machrio.com/category/rod-hangers,0,0,0,0,1,1,true,1,true,0,true,true,false,false,false,false,false,false,false,false
+322,18,fill_category_content,Screwdriver Bit Sets,screwdriver-bit-sets,https://machrio.com/category/screwdriver-bit-sets,0,0,0,0,1,1,true,1,true,0,true,true,false,false,false,false,false,false,false,false
+323,18,fill_category_content,Spherical Washers,spherical-washers,https://machrio.com/category/spherical-washers,0,0,0,0,1,1,true,1,true,0,true,true,false,false,false,false,false,false,false,false
+324,18,fill_category_content,Stackable Chairs,stackable-chairs,https://machrio.com/category/stackable-chairs,0,0,0,0,1,1,true,1,true,0,true,true,false,false,false,false,false,false,false,false
+325,18,fill_category_content,Tarps & Tarp Accessories,tarps-tarp-accessories,https://machrio.com/category/tarps-tarp-accessories,0,0,0,0,4,4,true,4,true,1,true,true,false,true,true,true,false,false,false,false
+326,18,fill_category_content,Welding,welding,https://machrio.com/category/welding,0,0,0,0,4,4,true,4,true,9,true,true,false,true,true,true,false,false,false,false
+327,17,fill_category_content,Load Securing & Cargo Control,load-securing-cargo-control,https://machrio.com/category/load-securing-cargo-control,0,0,0,0,3,3,true,3,true,1,true,true,false,true,true,true,false,false,false,false
+328,17,fill_category_content,Ventilation Equipment,ventilation-equipment,https://machrio.com/category/ventilation-equipment,0,0,0,0,3,3,true,3,true,1,true,true,false,true,true,true,false,false,false,false
+329,16,fill_category_content,Anchors,anchors,https://machrio.com/category/anchors,0,0,0,0,2,2,true,2,true,3,true,true,false,true,true,true,false,false,false,false
+330,16,fill_category_content,Arc Welding,arc-welding,https://machrio.com/category/arc-welding,0,0,0,0,2,2,true,2,true,2,true,true,false,true,true,true,false,false,false,false
+331,16,fill_category_content,Fleet & Vehicle Maintenance,fleet-vehicle-maintenance,https://machrio.com/category/fleet-vehicle-maintenance,0,0,0,0,2,2,true,2,true,4,true,true,false,true,true,true,false,false,false,false
+332,16,fill_category_content,Gas Detection,gas-detection,https://machrio.com/category/gas-detection,0,0,0,0,2,2,true,2,true,2,true,true,false,true,true,true,false,false,false,false
+333,16,fill_category_content,Hydration Products,hydration-products,https://machrio.com/category/hydration-products,0,0,0,0,2,2,true,2,true,1,true,true,false,true,true,true,false,false,false,false
+334,16,fill_category_content,Robotics & Smart Devices,robotics-smart-devices,https://machrio.com/category/robotics-smart-devices,0,0,0,0,1,1,true,1,true,1,true,true,true,false,false,true,false,false,false,false
+335,16,fill_category_content,Vehicle Tools,vehicle-tools,https://machrio.com/category/vehicle-tools,0,0,0,0,2,2,true,2,true,1,true,true,false,true,true,true,false,false,false,false
+336,15,improve_ctr_title_meta,Abrasive Blasting Media,abrasive-blasting-media,https://machrio.com/category/abrasive-blasting-media,0,35,0,79.89,0,0,false,0,true,0,false,true,true,true,true,true,false,false,false,false
+337,14,add_content_cluster,Adhesive Anchors,adhesive-anchors,https://machrio.com/category/adhesive-anchors,0,0,0,0,1,1,true,1,true,0,true,true,true,true,true,true,false,false,false,false
+338,14,seed_demand_capture_page,Air Amplifiers,air-amplifiers,https://machrio.com/category/air-amplifiers,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+339,14,seed_demand_capture_page,Air Handlers,air-handlers,https://machrio.com/category/air-handlers,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+340,14,seed_demand_capture_page,Air Knives,air-knives,https://machrio.com/category/air-knives,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+341,14,seed_demand_capture_page,Air Tool Oil,air-tool-oil,https://machrio.com/category/air-tool-oil,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+342,14,seed_demand_capture_page,Air Wipes,air-wipes,https://machrio.com/category/air-wipes,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+343,14,seed_demand_capture_page,Analog Clocks,analog-clocks,https://machrio.com/category/analog-clocks,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+344,14,fill_category_content,Arc Flash Protection,arc-flash-protection,https://machrio.com/category/arc-flash-protection,0,0,0,0,1,1,true,1,true,1,true,true,false,true,true,true,false,false,false,false
+345,14,seed_demand_capture_page,Auto Body Equipment,auto-body-equipment,https://machrio.com/category/auto-body-equipment,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+346,14,seed_demand_capture_page,Auto Body Tools,auto-body-tools,https://machrio.com/category/auto-body-tools,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+347,14,seed_demand_capture_page,Back Supports,back-supports,https://machrio.com/category/back-supports,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+348,14,seed_demand_capture_page,Bench Scales,bench-scales,https://machrio.com/category/bench-scales,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+349,14,seed_demand_capture_page,Bevel Gears,bevel-gears,https://machrio.com/category/bevel-gears,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+350,14,seed_demand_capture_page,Binding Machines,binding-machines,https://machrio.com/category/binding-machines,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+351,14,seed_demand_capture_page,Blowers,blowers,https://machrio.com/category/blowers,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+352,14,seed_demand_capture_page,Body Clips,body-clips,https://machrio.com/category/body-clips,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+353,14,seed_demand_capture_page,Box Dumpers,box-dumpers,https://machrio.com/category/box-dumpers,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+354,14,seed_demand_capture_page,Breather Vents,breather-vents,https://machrio.com/category/breather-vents,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+355,14,seed_demand_capture_page,Broaches,broaches,https://machrio.com/category/broaches,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+356,14,seed_demand_capture_page,Butt Hinges,butt-hinges,https://machrio.com/category/butt-hinges,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+357,14,seed_demand_capture_page,Calibration Weights,calibration-weights,https://machrio.com/category/calibration-weights,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+358,14,seed_demand_capture_page,Captive Panel Screws,captive-panel-screws,https://machrio.com/category/captive-panel-screws,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+359,14,seed_demand_capture_page,Ceramic Magnets,ceramic-magnets,https://machrio.com/category/ceramic-magnets,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+360,14,seed_demand_capture_page,Chain Tools,chain-tools,https://machrio.com/category/chain-tools,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+361,14,seed_demand_capture_page,Chromatography Paper,chromatography-paper,https://machrio.com/category/chromatography-paper,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+362,14,seed_demand_capture_page,Clearance Bars,clearance-bars,https://machrio.com/category/clearance-bars,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+363,14,seed_demand_capture_page,Clevis Pins,clevis-pins,https://machrio.com/category/clevis-pins,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+364,14,seed_demand_capture_page,Closet Door Knobs,closet-door-knobs,https://machrio.com/category/closet-door-knobs,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+365,14,seed_demand_capture_page,CNC Router Bits,cnc-router-bits,https://machrio.com/category/cnc-router-bits,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+366,14,seed_demand_capture_page,Cold Air Guns,cold-air-guns,https://machrio.com/category/cold-air-guns,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+367,14,seed_demand_capture_page,Collated Nails,collated-nails,https://machrio.com/category/collated-nails,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+368,14,seed_demand_capture_page,Compressed Air Dryers,compressed-air-dryers,https://machrio.com/category/compressed-air-dryers,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+369,14,seed_demand_capture_page,Compressed Air Regulators,compressed-air-regulators,https://machrio.com/category/compressed-air-regulators,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+370,14,seed_demand_capture_page,Computer Monitor Arms,computer-monitor-arms,https://machrio.com/category/computer-monitor-arms,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+371,14,seed_demand_capture_page,Concrete Testing,concrete-testing,https://machrio.com/category/concrete-testing,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+372,14,seed_demand_capture_page,Conference Tables,conference-tables,https://machrio.com/category/conference-tables,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+373,14,seed_demand_capture_page,Connecting Rods,connecting-rods,https://machrio.com/category/connecting-rods,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+374,14,seed_demand_capture_page,Corner Protectors,corner-protectors,https://machrio.com/category/corner-protectors,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+375,14,seed_demand_capture_page,Counter Shutters,counter-shutters,https://machrio.com/category/counter-shutters,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+376,14,seed_demand_capture_page,Date Stamps,date-stamps,https://machrio.com/category/date-stamps,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+377,14,seed_demand_capture_page,Depository Safes,depository-safes,https://machrio.com/category/depository-safes,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+378,14,seed_demand_capture_page,Desiccant Breathers,desiccant-breathers,https://machrio.com/category/desiccant-breathers,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+379,14,seed_demand_capture_page,Digital Clocks,digital-clocks,https://machrio.com/category/digital-clocks,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+380,14,seed_demand_capture_page,Disposable Bowls,disposable-bowls,https://machrio.com/category/disposable-bowls,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+381,14,seed_demand_capture_page,Disposable Plates,disposable-plates,https://machrio.com/category/disposable-plates,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+382,14,seed_demand_capture_page,Dock Gates,dock-gates,https://machrio.com/category/dock-gates,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+383,14,seed_demand_capture_page,Drill Bits,drill-bits,https://machrio.com/category/drill-bits,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+384,14,fill_category_content,Drilling & Holemaking,drilling-holemaking,https://machrio.com/category/drilling-holemaking,0,0,0,0,1,1,true,1,true,4,true,true,false,true,true,true,false,false,false,false
+385,14,seed_demand_capture_page,Dry Lubricants,dry-lubricants,https://machrio.com/category/dry-lubricants,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+386,14,seed_demand_capture_page,Drywall Lifts,drywall-lifts,https://machrio.com/category/drywall-lifts,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+387,14,seed_demand_capture_page,Dye Penetrant Testing,dye-penetrant-testing,https://machrio.com/category/dye-penetrant-testing,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+388,14,seed_demand_capture_page,Edge Protectors,edge-protectors,https://machrio.com/category/edge-protectors,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+389,14,seed_demand_capture_page,Electric Fence Supplies,electric-fence-supplies,https://machrio.com/category/electric-fence-supplies,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+390,14,seed_demand_capture_page,Electric Process Heaters,electric-process-heaters,https://machrio.com/category/electric-process-heaters,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+391,14,seed_demand_capture_page,Electric Vibrators,electric-vibrators,https://machrio.com/category/electric-vibrators,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+392,14,seed_demand_capture_page,Electrostatic Sprayers,electrostatic-sprayers,https://machrio.com/category/electrostatic-sprayers,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+393,14,seed_demand_capture_page,End Mills,end-mills,https://machrio.com/category/end-mills,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+394,14,seed_demand_capture_page,Expandable File Folders,expandable-file-folders,https://machrio.com/category/expandable-file-folders,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+395,14,seed_demand_capture_page,Eye Bolts,eye-bolts,https://machrio.com/category/eye-bolts,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+396,14,seed_demand_capture_page,Eye Nuts,eye-nuts,https://machrio.com/category/eye-nuts,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+397,14,seed_demand_capture_page,Eyewash Stations,eyewash-stations,https://machrio.com/category/eyewash-stations,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+398,14,seed_demand_capture_page,File Boxes,file-boxes,https://machrio.com/category/file-boxes,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+399,14,fill_category_content,File Folders & Boxes,file-folders-boxes,https://machrio.com/category/file-folders-boxes,0,0,0,0,1,1,true,1,true,4,true,true,false,true,true,true,false,false,false,false
+400,14,seed_demand_capture_page,Fixed Gas Detection,fixed-gas-detection,https://machrio.com/category/fixed-gas-detection,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+401,14,seed_demand_capture_page,Flange Nuts,flange-nuts,https://machrio.com/category/flange-nuts,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+402,14,seed_demand_capture_page,Floor Scales,floor-scales,https://machrio.com/category/floor-scales,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+403,14,seed_demand_capture_page,Floor Scrubbers,floor-scrubbers,https://machrio.com/category/floor-scrubbers,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+404,14,fill_category_content,Foam,foam,https://machrio.com/category/foam,0,0,0,0,1,1,true,1,true,2,true,true,false,true,true,true,false,false,false,false
+405,14,seed_demand_capture_page,Foam Rings,foam-rings,https://machrio.com/category/foam-rings,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+406,14,seed_demand_capture_page,Garter Springs,garter-springs,https://machrio.com/category/garter-springs,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+407,14,seed_demand_capture_page,Gear Oils,gear-oils,https://machrio.com/category/gear-oils,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+408,14,seed_demand_capture_page,Generator Accessories,generator-accessories,https://machrio.com/category/generator-accessories,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+409,14,seed_demand_capture_page,Generator Transfer Switches,generator-transfer-switches,https://machrio.com/category/generator-transfer-switches,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+410,14,seed_demand_capture_page,Graphite Rods,graphite-rods,https://machrio.com/category/graphite-rods,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+411,14,seed_demand_capture_page,Grease Fittings,grease-fittings,https://machrio.com/category/grease-fittings,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+412,14,seed_demand_capture_page,Grooved Pins,grooved-pins,https://machrio.com/category/grooved-pins,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+413,14,seed_demand_capture_page,Handheld Metal Detectors,handheld-metal-detectors,https://machrio.com/category/handheld-metal-detectors,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+414,14,seed_demand_capture_page,Handle Nuts,handle-nuts,https://machrio.com/category/handle-nuts,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+415,14,seed_demand_capture_page,Hanging File Folders,hanging-file-folders,https://machrio.com/category/hanging-file-folders,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+416,14,seed_demand_capture_page,Hanging Scales,hanging-scales,https://machrio.com/category/hanging-scales,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+417,14,seed_demand_capture_page,Healthcare Lighting,healthcare-lighting,https://machrio.com/category/healthcare-lighting,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+418,14,seed_demand_capture_page,Heated Mats,heated-mats,https://machrio.com/category/heated-mats,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+419,14,seed_demand_capture_page,Helical Gears,helical-gears,https://machrio.com/category/helical-gears,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+420,14,seed_demand_capture_page,High Security Seals,high-security-seals,https://machrio.com/category/high-security-seals,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+421,14,fill_category_content,Hinges,hinges,https://machrio.com/category/hinges,0,0,0,0,1,1,true,1,true,6,true,true,false,true,true,true,false,false,false,false
+422,14,seed_demand_capture_page,Hitch Pins,hitch-pins,https://machrio.com/category/hitch-pins,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+423,14,seed_demand_capture_page,Horizontal Lifelines,horizontal-lifelines,https://machrio.com/category/horizontal-lifelines,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+424,14,seed_demand_capture_page,Hotel Safes,hotel-safes,https://machrio.com/category/hotel-safes,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+425,14,seed_demand_capture_page,Hydraulic Motors,hydraulic-motors,https://machrio.com/category/hydraulic-motors,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+426,14,seed_demand_capture_page,Hydraulic Oils,hydraulic-oils,https://machrio.com/category/hydraulic-oils,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+427,14,seed_demand_capture_page,Hydraulic Pipe Benders,hydraulic-pipe-benders,https://machrio.com/category/hydraulic-pipe-benders,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+428,14,seed_demand_capture_page,Hydraulic Torque Wrenches,hydraulic-torque-wrenches,https://machrio.com/category/hydraulic-torque-wrenches,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+429,14,seed_demand_capture_page,IV Supplies,iv-supplies,https://machrio.com/category/iv-supplies,1,2,0.5,79.5,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+430,14,seed_demand_capture_page,Key Cabinets,key-cabinets,https://machrio.com/category/key-cabinets,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+431,14,fill_category_content,Key Control & Duplication,key-control-duplication,https://machrio.com/category/key-control-duplication,0,0,0,0,1,1,true,1,true,4,true,true,false,true,true,true,false,false,false,false
+432,14,seed_demand_capture_page,Key Tags,key-tags,https://machrio.com/category/key-tags,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+433,14,seed_demand_capture_page,Kneeling Pads,kneeling-pads,https://machrio.com/category/kneeling-pads,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+434,14,seed_demand_capture_page,Knurling Tools,knurling-tools,https://machrio.com/category/knurling-tools,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+435,14,seed_demand_capture_page,Lab Shelving,lab-shelving,https://machrio.com/category/lab-shelving,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+436,14,fill_category_content,Laminating & Binding Equipment,laminating-binding-equipment,https://machrio.com/category/laminating-binding-equipment,0,0,0,0,1,1,true,1,true,2,true,true,false,true,true,true,false,false,false,false
+437,14,seed_demand_capture_page,Landscape Edging,landscape-edging,https://machrio.com/category/landscape-edging,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+438,14,seed_demand_capture_page,Laser Levels,laser-levels,https://machrio.com/category/laser-levels,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+439,14,seed_demand_capture_page,Lathes,lathes,https://machrio.com/category/lathes,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+440,14,seed_demand_capture_page,Literature Displays,literature-displays,https://machrio.com/category/literature-displays,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+441,14,seed_demand_capture_page,Lockboxes,lockboxes,https://machrio.com/category/lockboxes,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+442,14,seed_demand_capture_page,Loose Leaf Paper,loose-leaf-paper,https://machrio.com/category/loose-leaf-paper,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+443,14,seed_demand_capture_page,Lubrication Systems,lubrication-systems,https://machrio.com/category/lubrication-systems,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+444,14,seed_demand_capture_page,Lynch Pins,lynch-pins,https://machrio.com/category/lynch-pins,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+445,14,seed_demand_capture_page,Machine Keys,machine-keys,https://machrio.com/category/machine-keys,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+446,14,seed_demand_capture_page,Machine Oils,machine-oils,https://machrio.com/category/machine-oils,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+447,14,fill_category_content,Machining,machining,https://machrio.com/category/machining,0,0,0,0,1,1,true,1,true,6,true,true,false,true,true,true,false,false,false,false
+448,14,seed_demand_capture_page,Magnetic Particle Testing,magnetic-particle-testing,https://machrio.com/category/magnetic-particle-testing,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+449,14,seed_demand_capture_page,Mailing Tubes,mailing-tubes,https://machrio.com/category/mailing-tubes,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+450,14,fill_category_content,Measuring & Layout Tools,measuring-layout-tools,https://machrio.com/category/measuring-layout-tools,0,0,0,0,1,1,true,1,true,2,true,true,false,true,true,true,false,false,false,false
+451,14,seed_demand_capture_page,Metal Fabrication Machines,metal-fabrication-machines,https://machrio.com/category/metal-fabrication-machines,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+452,14,fill_category_content,Metals,metals,https://machrio.com/category/metals,0,0,0,0,1,1,true,1,true,1,true,true,false,true,true,true,false,false,false,false
+453,14,seed_demand_capture_page,Milling Machines,milling-machines,https://machrio.com/category/milling-machines,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+454,14,seed_demand_capture_page,Motor Run Capacitors,motor-run-capacitors,https://machrio.com/category/motor-run-capacitors,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+455,14,seed_demand_capture_page,Motor Start Capacitors,motor-start-capacitors,https://machrio.com/category/motor-start-capacitors,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+456,14,seed_demand_capture_page,Multiprocess Welders,multiprocess-welders,https://machrio.com/category/multiprocess-welders,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+457,14,seed_demand_capture_page,Multipurpose Grease,multipurpose-grease,https://machrio.com/category/multipurpose-grease,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+458,14,seed_demand_capture_page,Notary Books,notary-books,https://machrio.com/category/notary-books,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+459,14,seed_demand_capture_page,Nozzles for Pressure Washers,nozzles-for-pressure-washers,https://machrio.com/category/nozzles-for-pressure-washers,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+460,14,seed_demand_capture_page,Numbering Stamps,numbering-stamps,https://machrio.com/category/numbering-stamps,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+461,14,seed_demand_capture_page,Open Gear Grease,open-gear-grease,https://machrio.com/category/open-gear-grease,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+462,14,seed_demand_capture_page,O-Ring Grease,o-ring-grease,https://machrio.com/category/o-ring-grease,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+463,14,seed_demand_capture_page,Paper Clips,paper-clips,https://machrio.com/category/paper-clips,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+464,14,seed_demand_capture_page,Parking Curbs,parking-curbs,https://machrio.com/category/parking-curbs,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+465,14,seed_demand_capture_page,Pennants,pennants,https://machrio.com/category/pennants,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+466,14,seed_demand_capture_page,Personnel Lifts,personnel-lifts,https://machrio.com/category/personnel-lifts,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+467,14,seed_demand_capture_page,Pet Treats,pet-treats,https://machrio.com/category/pet-treats,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+468,14,seed_demand_capture_page,Pharmacy Safes,pharmacy-safes,https://machrio.com/category/pharmacy-safes,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+469,14,seed_demand_capture_page,pH Meters,ph-meters,https://machrio.com/category/ph-meters,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+470,14,seed_demand_capture_page,Piano Hinges,piano-hinges,https://machrio.com/category/piano-hinges,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+471,14,seed_demand_capture_page,Pivot Hinges,pivot-hinges,https://machrio.com/category/pivot-hinges,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+472,14,seed_demand_capture_page,Plasma Torches,plasma-torches,https://machrio.com/category/plasma-torches,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+473,14,fill_category_content,Plastics,plastics,https://machrio.com/category/plastics,0,0,0,0,1,1,true,1,true,2,true,true,false,true,true,true,false,false,false,false
+474,14,seed_demand_capture_page,Plastic Welders,plastic-welders,https://machrio.com/category/plastic-welders,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+475,14,seed_demand_capture_page,Plastic Welding Rods,plastic-welding-rods,https://machrio.com/category/plastic-welding-rods,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+476,14,seed_demand_capture_page,Plastic Welding Tips,plastic-welding-tips,https://machrio.com/category/plastic-welding-tips,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+477,14,seed_demand_capture_page,Plumbing Grease,plumbing-grease,https://machrio.com/category/plumbing-grease,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+478,14,seed_demand_capture_page,Pneumatic Grippers,pneumatic-grippers,https://machrio.com/category/pneumatic-grippers,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+479,14,seed_demand_capture_page,Pole Climbing Equipment,pole-climbing-equipment,https://machrio.com/category/pole-climbing-equipment,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+480,14,seed_demand_capture_page,Portable Eyewash Stations,portable-eyewash-stations,https://machrio.com/category/portable-eyewash-stations,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+481,14,seed_demand_capture_page,Pressure Washer Detergents,pressure-washer-detergents,https://machrio.com/category/pressure-washer-detergents,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+482,14,seed_demand_capture_page,Pressure Washer Pumps,pressure-washer-pumps,https://machrio.com/category/pressure-washer-pumps,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+483,14,fill_category_content,"Printers, Ink and Toners & Printer Accessories",printers-ink-and-toners-printer-accessories,https://machrio.com/category/printers-ink-and-toners-printer-accessories,0,0,0,0,1,1,true,1,true,1,true,true,false,true,true,true,false,false,false,false
+484,14,seed_demand_capture_page,Printing Calculators,printing-calculators,https://machrio.com/category/printing-calculators,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+485,14,seed_demand_capture_page,Projection Screens,projection-screens,https://machrio.com/category/projection-screens,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+486,14,seed_demand_capture_page,Push Pins,push-pins,https://machrio.com/category/push-pins,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+487,14,seed_demand_capture_page,Reamers,reamers,https://machrio.com/category/reamers,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+488,14,seed_demand_capture_page,Rescue Boats,rescue-boats,https://machrio.com/category/rescue-boats,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+489,14,seed_demand_capture_page,Rotary Actuators,rotary-actuators,https://machrio.com/category/rotary-actuators,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+490,14,seed_demand_capture_page,Rotary Evaporation,rotary-evaporation,https://machrio.com/category/rotary-evaporation,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+491,14,seed_demand_capture_page,Rotary Welding Positioners,rotary-welding-positioners,https://machrio.com/category/rotary-welding-positioners,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+492,14,seed_demand_capture_page,Round Head Bolts,round-head-bolts,https://machrio.com/category/round-head-bolts,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+493,14,seed_demand_capture_page,Rubber Tubes,rubber-tubes,https://machrio.com/category/rubber-tubes,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+494,14,seed_demand_capture_page,Sanding Belts,sanding-belts,https://machrio.com/category/sanding-belts,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+495,14,fill_category_content,Sanding Blocks,sanding-blocks,https://machrio.com/category/sanding-blocks,0,0,0,0,1,1,true,1,true,0,true,true,false,false,true,true,false,false,false,false
+496,14,seed_demand_capture_page,Scale Indicators,scale-indicators,https://machrio.com/category/scale-indicators,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+497,14,seed_demand_capture_page,Shoulder Screws,shoulder-screws,https://machrio.com/category/shoulder-screws,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+498,14,seed_demand_capture_page,Silt Fence,silt-fence,https://machrio.com/category/silt-fence,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+499,14,seed_demand_capture_page,Snap Buttons,snap-buttons,https://machrio.com/category/snap-buttons,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+500,14,seed_demand_capture_page,Snow Fence,snow-fence,https://machrio.com/category/snow-fence,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+501,14,seed_demand_capture_page,Solar Inverters,solar-inverters,https://machrio.com/category/solar-inverters,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+502,14,seed_demand_capture_page,Specialty Hinges,specialty-hinges,https://machrio.com/category/specialty-hinges,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+503,14,seed_demand_capture_page,Split Taper Bushings,split-taper-bushings,https://machrio.com/category/split-taper-bushings,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+504,14,seed_demand_capture_page,Spot Welding Tips,spot-welding-tips,https://machrio.com/category/spot-welding-tips,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+505,14,seed_demand_capture_page,Spring Anchors,spring-anchors,https://machrio.com/category/spring-anchors,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+506,14,seed_demand_capture_page,Spring Hinges,spring-hinges,https://machrio.com/category/spring-hinges,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+507,14,seed_demand_capture_page,Sprinkler Valves,sprinkler-valves,https://machrio.com/category/sprinkler-valves,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+508,14,seed_demand_capture_page,Spur Gears,spur-gears,https://machrio.com/category/spur-gears,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+509,14,seed_demand_capture_page,Square Head Bolts,square-head-bolts,https://machrio.com/category/square-head-bolts,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+510,14,seed_demand_capture_page,Square Nuts,square-nuts,https://machrio.com/category/square-nuts,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+511,14,seed_demand_capture_page,Staple Removers,staple-removers,https://machrio.com/category/staple-removers,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+512,14,seed_demand_capture_page,Strapping Machines,strapping-machines,https://machrio.com/category/strapping-machines,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+513,14,seed_demand_capture_page,Strapping Tape,strapping-tape,https://machrio.com/category/strapping-tape,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+514,14,seed_demand_capture_page,Strapping Tools,strapping-tools,https://machrio.com/category/strapping-tools,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+515,14,seed_demand_capture_page,Stretch Wrap Dispensers,stretch-wrap-dispensers,https://machrio.com/category/stretch-wrap-dispensers,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+516,14,seed_demand_capture_page,Stud Welders,stud-welders,https://machrio.com/category/stud-welders,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+517,14,seed_demand_capture_page,Tachometers,tachometers,https://machrio.com/category/tachometers,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+518,14,seed_demand_capture_page,Taper Lock Bushings,taper-lock-bushings,https://machrio.com/category/taper-lock-bushings,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+519,14,seed_demand_capture_page,Taper Pins,taper-pins,https://machrio.com/category/taper-pins,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+520,14,seed_demand_capture_page,Thread Mills,thread-mills,https://machrio.com/category/thread-mills,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+521,14,seed_demand_capture_page,Thumb Nuts,thumb-nuts,https://machrio.com/category/thumb-nuts,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+522,14,seed_demand_capture_page,Thumb Screws,thumb-screws,https://machrio.com/category/thumb-screws,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+523,14,seed_demand_capture_page,Top Sheeting,top-sheeting,https://machrio.com/category/top-sheeting,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+524,14,seed_demand_capture_page,Torsion Springs,torsion-springs,https://machrio.com/category/torsion-springs,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+525,14,seed_demand_capture_page,Trailer Accessories,trailer-accessories,https://machrio.com/category/trailer-accessories,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+526,14,seed_demand_capture_page,Trailer Pressure Washers,trailer-pressure-washers,https://machrio.com/category/trailer-pressure-washers,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+527,14,seed_demand_capture_page,Tree Grates,tree-grates,https://machrio.com/category/tree-grates,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+528,14,seed_demand_capture_page,Trench Covers,trench-covers,https://machrio.com/category/trench-covers,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+529,14,seed_demand_capture_page,U-Bolts,u-bolts,https://machrio.com/category/u-bolts,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+530,14,seed_demand_capture_page,Underground Utility Locators,underground-utility-locators,https://machrio.com/category/underground-utility-locators,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+531,14,seed_demand_capture_page,Universal Joints,universal-joints,https://machrio.com/category/universal-joints,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+532,14,seed_demand_capture_page,Vacuum Generators,vacuum-generators,https://machrio.com/category/vacuum-generators,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+533,14,seed_demand_capture_page,Vacuum Pressure Switches,vacuum-pressure-switches,https://machrio.com/category/vacuum-pressure-switches,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+534,14,seed_demand_capture_page,Vacuum Pumps,vacuum-pumps,https://machrio.com/category/vacuum-pumps,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+535,14,seed_demand_capture_page,Vacuum Regulators,vacuum-regulators,https://machrio.com/category/vacuum-regulators,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+536,14,seed_demand_capture_page,Vortex Tubes,vortex-tubes,https://machrio.com/category/vortex-tubes,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+537,14,seed_demand_capture_page,Walk-Through Metal Detectors,walk-through-metal-detectors,https://machrio.com/category/walk-through-metal-detectors,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+538,14,seed_demand_capture_page,Wall Calendars,wall-calendars,https://machrio.com/category/wall-calendars,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+539,14,fill_category_content,Watering Equipment & Irrigation Systems,watering-equipment-irrigation-systems,https://machrio.com/category/watering-equipment-irrigation-systems,0,0,0,0,1,1,true,1,true,2,true,true,false,true,true,true,false,false,false,false
+540,14,fill_category_content,"Weld Fixturing, Marking & Preparation",weld-fixturing-marking-preparation,https://machrio.com/category/weld-fixturing-marking-preparation,0,0,0,0,1,1,true,1,true,3,true,true,false,true,true,true,false,false,false,false
+541,14,seed_demand_capture_page,Welding Booths,welding-booths,https://machrio.com/category/welding-booths,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+542,14,seed_demand_capture_page,Welding Curtains,welding-curtains,https://machrio.com/category/welding-curtains,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+543,14,fill_category_content,Welding & Soldering Area Protection,welding-soldering-area-protection,https://machrio.com/category/welding-soldering-area-protection,0,0,0,0,1,1,true,1,true,5,true,true,false,true,true,true,false,false,false,false
+544,14,seed_demand_capture_page,Weld Studs,weld-studs,https://machrio.com/category/weld-studs,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+545,14,seed_demand_capture_page,Wheelbarrow Handles,wheelbarrow-handles,https://machrio.com/category/wheelbarrow-handles,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+546,14,seed_demand_capture_page,Wheelchair Ramps,wheelchair-ramps,https://machrio.com/category/wheelchair-ramps,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+547,14,seed_demand_capture_page,Wipe Dispensers,wipe-dispensers,https://machrio.com/category/wipe-dispensers,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+548,14,seed_demand_capture_page,Wire Mesh,wire-mesh,https://machrio.com/category/wire-mesh,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+549,14,seed_demand_capture_page,Woodturning Lathes,woodturning-lathes,https://machrio.com/category/woodturning-lathes,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+550,14,seed_demand_capture_page,Worm Gears,worm-gears,https://machrio.com/category/worm-gears,0,0,0,0,0,0,false,0,true,0,false,true,false,false,false,false,false,false,false,false
+551,12,fill_category_content,Companion Robot Dogs,companion-robot-dogs,https://machrio.com/category/companion-robot-dogs,0,0,0,0,1,1,true,1,true,0,true,true,true,false,false,true,false,false,false,false
+552,10,seed_demand_capture_page,"Air Compressors, Vacuum Pumps & Blowers",air-compressors-vacuum-pumps-blowers,https://machrio.com/category/air-compressors-vacuum-pumps-blowers,0,0,0,0,0,0,false,0,true,2,false,true,false,true,true,true,false,false,false,false
+553,10,seed_demand_capture_page,Auto Body Repair,auto-body-repair,https://machrio.com/category/auto-body-repair,0,0,0,0,0,0,false,0,true,3,false,true,false,true,true,true,false,false,false,false
+554,10,seed_demand_capture_page,Binders & Clipboards,binders-clipboards,https://machrio.com/category/binders-clipboards,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+555,10,seed_demand_capture_page,Breakroom & Food Service Disposables,breakroom-food-service-disposables,https://machrio.com/category/breakroom-food-service-disposables,0,0,0,0,0,0,false,0,true,2,false,true,false,true,true,true,false,false,false,false
+556,10,seed_demand_capture_page,Bushings,bushings,https://machrio.com/category/bushings,0,0,0,0,0,0,false,0,true,2,false,true,false,true,true,true,false,false,false,false
+557,10,seed_demand_capture_page,Business Forms & Recordkeeping Books,business-forms-recordkeeping-books,https://machrio.com/category/business-forms-recordkeeping-books,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+558,10,seed_demand_capture_page,Calculators,calculators,https://machrio.com/category/calculators,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+559,10,seed_demand_capture_page,Calendars & Planners,calendars-planners,https://machrio.com/category/calendars-planners,0,0,0,0,0,0,false,0,true,2,false,true,false,true,true,true,false,false,false,false
+560,10,seed_demand_capture_page,Cap Nuts,cap-nuts,https://machrio.com/category/cap-nuts,0,0,0,0,0,0,false,0,true,0,false,true,false,false,true,true,false,false,false,false
+561,10,seed_demand_capture_page,Chromatography,chromatography,https://machrio.com/category/chromatography,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+562,10,seed_demand_capture_page,"Clips, Push Pins, & Rubber Bands",clips-push-pins-rubber-bands,https://machrio.com/category/clips-push-pins-rubber-bands,0,0,0,0,0,0,false,0,true,2,false,true,false,true,true,true,false,false,false,false
+563,10,seed_demand_capture_page,"Concrete, Asphalt & Pavement Testing",concrete-asphalt-pavement-testing,https://machrio.com/category/concrete-asphalt-pavement-testing,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+564,10,seed_demand_capture_page,Desiccant Breathers & Breather Vents,desiccant-breathers-breather-vents,https://machrio.com/category/desiccant-breathers-breather-vents,0,0,0,0,0,0,false,0,true,2,false,true,false,true,true,true,false,false,false,false
+565,10,seed_demand_capture_page,Edge & Corner Protectors,edge-corner-protectors,https://machrio.com/category/edge-corner-protectors,0,0,0,0,0,0,false,0,true,2,false,true,false,true,true,true,false,false,false,false
+566,10,seed_demand_capture_page,Flags & Flag Poles,flags-flag-poles,https://machrio.com/category/flags-flag-poles,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+567,10,seed_demand_capture_page,Floor Cleaning Machines,floor-cleaning-machines,https://machrio.com/category/floor-cleaning-machines,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+568,10,seed_demand_capture_page,"Garden Fabrics, Erosion Control Blankets & Tree Care",garden-fabrics-erosion-control-blankets-tree-care,https://machrio.com/category/garden-fabrics-erosion-control-blankets-tree-care,0,0,0,0,0,0,false,0,true,3,false,true,false,true,true,true,false,false,false,false
+569,10,seed_demand_capture_page,Gearing,gearing,https://machrio.com/category/gearing,0,0,0,0,0,0,false,0,true,4,false,true,false,true,true,true,false,false,false,false
+570,10,seed_demand_capture_page,Graphite,graphite,https://machrio.com/category/graphite,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+571,10,seed_demand_capture_page,Grease,grease,https://machrio.com/category/grease,0,0,0,0,0,0,false,0,true,5,false,true,false,true,true,true,false,false,false,false
+572,10,seed_demand_capture_page,Grease Fittings for Equipment,grease-fittings-for-equipment,https://machrio.com/category/grease-fittings-for-equipment,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+573,10,seed_demand_capture_page,Heaters,heaters,https://machrio.com/category/heaters,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+574,10,seed_demand_capture_page,Hydraulic Motors & Replacement Parts,hydraulic-motors-replacement-parts,https://machrio.com/category/hydraulic-motors-replacement-parts,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+575,10,seed_demand_capture_page,Hydraulic Tools,hydraulic-tools,https://machrio.com/category/hydraulic-tools,0,0,0,0,0,0,false,0,true,3,false,true,false,true,true,true,false,false,false,false
+576,10,seed_demand_capture_page,Ink Stamps & Ink Pads,ink-stamps-ink-pads,https://machrio.com/category/ink-stamps-ink-pads,0,0,0,0,0,0,false,0,true,2,false,true,false,true,true,true,false,false,false,false
+577,10,seed_demand_capture_page,Joint & Back Support,joint-back-support,https://machrio.com/category/joint-back-support,0,0,0,0,0,0,false,0,true,2,false,true,false,true,true,true,false,false,false,false
+578,10,seed_demand_capture_page,Keys & Key Stock,keys-key-stock,https://machrio.com/category/keys-key-stock,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+579,10,seed_demand_capture_page,Lab Equipment,lab-equipment,https://machrio.com/category/lab-equipment,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+580,10,seed_demand_capture_page,Lecterns,lecterns,https://machrio.com/category/lecterns,0,0,0,0,0,0,false,0,true,0,false,true,false,false,true,true,false,false,false,false
+581,10,seed_demand_capture_page,Linear Motion,linear-motion,https://machrio.com/category/linear-motion,0,0,0,0,0,0,false,0,true,2,false,true,false,true,true,true,false,false,false,false
+582,10,seed_demand_capture_page,Lubricants & Penetrating Lubricants,lubricants-penetrating-lubricants,https://machrio.com/category/lubricants-penetrating-lubricants,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+583,10,seed_demand_capture_page,Lubrication,lubrication,https://machrio.com/category/lubrication,0,0,0,0,0,0,false,0,true,6,false,true,false,true,true,true,false,false,false,false
+584,10,seed_demand_capture_page,Machine-Mount Lubricators,machine-mount-lubricators,https://machrio.com/category/machine-mount-lubricators,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+585,10,seed_demand_capture_page,Machinery,machinery,https://machrio.com/category/machinery,0,0,0,0,0,0,false,0,true,4,false,true,false,true,true,true,false,false,false,false
+586,10,seed_demand_capture_page,Medical Supplies & Equipment,medical-supplies-equipment,https://machrio.com/category/medical-supplies-equipment,0,0,0,0,0,0,false,0,true,2,false,true,false,true,true,true,false,false,false,false
+587,10,seed_demand_capture_page,"Metal Detectors, Scanners & Accessories",metal-detectors-scanners-accessories,https://machrio.com/category/metal-detectors-scanners-accessories,0,0,0,0,0,0,false,0,true,2,false,true,false,true,true,true,false,false,false,false
+588,10,seed_demand_capture_page,Milling,milling,https://machrio.com/category/milling,0,0,0,0,0,0,false,0,true,2,false,true,false,true,true,true,false,false,false,false
+589,10,seed_demand_capture_page,Mobility Products,mobility-products,https://machrio.com/category/mobility-products,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+590,10,seed_demand_capture_page,Motor Capacitors,motor-capacitors,https://machrio.com/category/motor-capacitors,0,0,0,0,0,0,false,0,true,3,false,true,false,true,true,true,false,false,false,false
+591,10,seed_demand_capture_page,Motor Maintenance & Accessories,motor-maintenance-accessories,https://machrio.com/category/motor-maintenance-accessories,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+592,10,seed_demand_capture_page,Motors,motors,https://machrio.com/category/motors,0,0,0,0,0,0,false,0,true,2,false,true,false,true,true,true,false,false,false,false
+593,10,seed_demand_capture_page,Nails & Spikes,nails-spikes,https://machrio.com/category/nails-spikes,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+594,10,seed_demand_capture_page,Office Organizers,office-organizers,https://machrio.com/category/office-organizers,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+595,10,seed_demand_capture_page,Oils,oils,https://machrio.com/category/oils,0,0,0,0,0,0,false,0,true,3,false,true,false,true,true,true,false,false,false,false
+596,10,seed_demand_capture_page,"Paper Shredders, Paper Cutters and Paper Folding Machines",paper-shredders-paper-cutters-and-paper-folding-machines,https://machrio.com/category/paper-shredders-paper-cutters-and-paper-folding-machines,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+597,10,seed_demand_capture_page,Plasma Cutting,plasma-cutting,https://machrio.com/category/plasma-cutting,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+598,10,seed_demand_capture_page,Plastic Welding,plastic-welding,https://machrio.com/category/plastic-welding,0,0,0,0,0,0,false,0,true,3,false,true,false,true,true,true,false,false,false,false
+599,10,seed_demand_capture_page,Pneumatic Coolers & Air Knives,pneumatic-coolers-air-knives,https://machrio.com/category/pneumatic-coolers-air-knives,0,0,0,0,0,0,false,0,true,5,false,true,false,true,true,true,false,false,false,false
+600,10,seed_demand_capture_page,Pressure Washers,pressure-washers,https://machrio.com/category/pressure-washers,0,0,0,0,0,0,false,0,true,3,false,true,false,true,true,true,false,false,false,false
+601,10,seed_demand_capture_page,Projectors & Projector Screens,projectors-projector-screens,https://machrio.com/category/projectors-projector-screens,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+602,10,seed_demand_capture_page,Pump Accessories,pump-accessories,https://machrio.com/category/pump-accessories,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+603,10,seed_demand_capture_page,Pumps,pumps,https://machrio.com/category/pumps,0,0,0,0,0,0,false,0,true,2,false,true,false,true,true,true,false,false,false,false
+604,10,seed_demand_capture_page,Roller Chains & Sprockets,roller-chains-sprockets,https://machrio.com/category/roller-chains-sprockets,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+605,10,seed_demand_capture_page,Rotational Speed Testing,rotational-speed-testing,https://machrio.com/category/rotational-speed-testing,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+606,10,seed_demand_capture_page,Safes,safes,https://machrio.com/category/safes,0,0,0,0,0,0,false,0,true,3,false,true,false,true,true,true,false,false,false,false
+607,10,seed_demand_capture_page,Scales and Scale Accessories,scales-and-scale-accessories,https://machrio.com/category/scales-and-scale-accessories,0,0,0,0,0,0,false,0,true,5,false,true,false,true,true,true,false,false,false,false
+608,10,seed_demand_capture_page,Security & Access Doors,security-access-doors,https://machrio.com/category/security-access-doors,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+609,10,seed_demand_capture_page,Security Seals,security-seals,https://machrio.com/category/security-seals,0,0,0,0,0,0,false,0,true,2,false,true,false,true,true,true,false,false,false,false
+610,10,seed_demand_capture_page,Set Screws,set-screws,https://machrio.com/category/set-screws,0,0,0,0,0,0,false,0,true,0,false,true,false,false,true,true,false,false,false,false
+611,10,seed_demand_capture_page,Shaft Couplings & Universal Joints,shaft-couplings-universal-joints,https://machrio.com/category/shaft-couplings-universal-joints,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+612,10,seed_demand_capture_page,Spot Welding,spot-welding,https://machrio.com/category/spot-welding,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+613,10,seed_demand_capture_page,Sprayer & Washer Pumps,sprayer-washer-pumps,https://machrio.com/category/sprayer-washer-pumps,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+614,10,seed_demand_capture_page,Staplers & Hole Punches,staplers-hole-punches,https://machrio.com/category/staplers-hole-punches,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+615,10,seed_demand_capture_page,Stud Welding,stud-welding,https://machrio.com/category/stud-welding,0,0,0,0,0,0,false,0,true,2,false,true,false,true,true,true,false,false,false,false
+616,10,seed_demand_capture_page,Threading,threading,https://machrio.com/category/threading,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+617,10,seed_demand_capture_page,Towing & Trailer Equipment,towing-trailer-equipment,https://machrio.com/category/towing-trailer-equipment,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+618,10,seed_demand_capture_page,"Turning, Boring & Grooving",turning-boring-grooving,https://machrio.com/category/turning-boring-grooving,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+619,10,seed_demand_capture_page,Vacuum System Components,vacuum-system-components,https://machrio.com/category/vacuum-system-components,0,0,0,0,0,0,false,0,true,3,false,true,false,true,true,true,false,false,false,false
+620,10,seed_demand_capture_page,Vibrators,vibrators,https://machrio.com/category/vibrators,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+621,10,seed_demand_capture_page,Wall Clocks,wall-clocks,https://machrio.com/category/wall-clocks,0,0,0,0,0,0,false,0,true,2,false,true,false,true,true,true,false,false,false,false
+622,10,seed_demand_capture_page,Water Filtration & Purification Systems,water-filtration-purification-systems,https://machrio.com/category/water-filtration-purification-systems,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+623,10,seed_demand_capture_page,Water Testing Equipment & Meters,water-testing-equipment-meters,https://machrio.com/category/water-testing-equipment-meters,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+624,10,seed_demand_capture_page,Welding & Soldering Fume Extraction,welding-soldering-fume-extraction,https://machrio.com/category/welding-soldering-fume-extraction,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+625,10,seed_demand_capture_page,Weld Testing & Inspection,weld-testing-inspection,https://machrio.com/category/weld-testing-inspection,0,0,0,0,0,0,false,0,true,2,false,true,false,true,true,true,false,false,false,false
+626,10,seed_demand_capture_page,Wheelbarrows,wheelbarrows,https://machrio.com/category/wheelbarrows,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+627,10,seed_demand_capture_page,Wire Mesh & Accessories,wire-mesh-accessories,https://machrio.com/category/wire-mesh-accessories,0,0,0,0,0,0,false,0,true,1,false,true,false,true,true,true,false,false,false,false
+628,8,seed_demand_capture_page,3D Printing Accessories,3d-printing-accessories,https://machrio.com/category/3d-printing-accessories,0,2,0,99.5,0,0,false,0,true,0,false,true,true,true,true,true,false,false,false,false
+629,8,add_content_cluster,Abrasive Accessories,abrasive-accessories,https://machrio.com/category/abrasive-accessories,0,0,0,0,1,1,true,1,true,1,true,true,true,true,true,true,false,false,false,false
+630,6,add_content_cluster,ADA Warning Pads,ada-warning-pads,https://machrio.com/category/ada-warning-pads,0,0,0,0,2,2,true,2,true,0,true,true,true,true,true,true,false,false,false,false
+631,4,seed_demand_capture_page,3D Printing,3d-printing,https://machrio.com/category/3d-printing,0,0,0,0,0,0,false,0,true,2,false,true,true,true,true,true,false,false,false,false
+632,4,seed_demand_capture_page,Abrasive Blasting,abrasive-blasting,https://machrio.com/category/abrasive-blasting,0,0,0,0,0,0,false,0,true,1,false,true,true,true,true,true,false,false,false,false
+633,0,seed_demand_capture_page,3D Printing Resin,3d-printing-resin,https://machrio.com/category/3d-printing-resin,0,0,0,0,0,0,false,0,true,0,false,true,true,true,true,true,false,false,false,false
+634,0,seed_demand_capture_page,3-Ring Binders,3-ring-binders,https://machrio.com/category/3-ring-binders,0,0,0,0,0,0,false,0,true,0,false,true,true,true,true,true,false,false,false,false

@@ -127,6 +127,7 @@ interface CategoryRow {
   id: string
   name: string
   slug: string
+  status: string | null
   short_description: string | null
   intro_content: string | null
   description: unknown | null
@@ -159,8 +160,10 @@ async function getCategoryData(slug: string) {
 
   // 获取分类信息（包含所有 SEO 字段）
   const catResult = await pool.query<CategoryRow>(
-    `SELECT id, name, slug, short_description, intro_content, description, buying_guide, faq, seo_content, parent_id, display_order
-     FROM categories WHERE slug = $1`,
+    `SELECT id, name, slug, status, short_description, intro_content, description, buying_guide, faq, seo_content, parent_id, display_order
+     FROM categories
+     WHERE slug = $1
+       AND status = 'published'`,
     [slug]
   )
 
@@ -175,7 +178,10 @@ async function getCategoryData(slug: string) {
   let grandparent: { id: string; name: string; slug: string } | null = null
   if (category.parent_id) {
     const parentResult = await pool.query<{ id: string; name: string; slug: string; parent_id: string | null }>(
-      'SELECT id, name, slug, parent_id FROM categories WHERE id = $1::uuid',
+      `SELECT id, name, slug, parent_id
+       FROM categories
+       WHERE id = $1::uuid
+         AND status = 'published'`,
       [category.parent_id]
     )
     if (parentResult.rows[0]) {
@@ -184,7 +190,10 @@ async function getCategoryData(slug: string) {
       // 获取祖父分类
       if (parentResult.rows[0].parent_id) {
         const gpResult = await pool.query<{ id: string; name: string; slug: string }>(
-          'SELECT id, name, slug FROM categories WHERE id = $1::uuid',
+          `SELECT id, name, slug
+           FROM categories
+           WHERE id = $1::uuid
+             AND status = 'published'`,
           [parentResult.rows[0].parent_id]
         )
         if (gpResult.rows[0]) {
@@ -200,6 +209,7 @@ async function getCategoryData(slug: string) {
        SELECT id, name, slug, display_order
        FROM categories
        WHERE parent_id = $1::uuid
+         AND status = 'published'
      ),
      category_tree AS (
        SELECT dc.id, dc.id AS root_id
@@ -208,6 +218,7 @@ async function getCategoryData(slug: string) {
        SELECT c.id, ct.root_id
        FROM categories c
        INNER JOIN category_tree ct ON c.parent_id = ct.id
+       WHERE c.status = 'published'
      )
      SELECT dc.id, dc.name, dc.slug,
             COALESCE(COUNT(p.id), 0)::int AS "productCount"

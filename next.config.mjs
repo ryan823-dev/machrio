@@ -117,7 +117,7 @@ const nextConfig = {
       },
       {
         source: '/category/quick-coupler',
-        destination: '/category/hose-hose-fittings-and-hose-reels',
+        destination: '/category/hose-hose-fittings-hose-reels',
         permanent: true,
       },
       {
@@ -142,12 +142,12 @@ const nextConfig = {
       },
       {
         source: '/category/general-purpose-boots',
-        destination: '/category/footwear-and-footwear-accessories',
+        destination: '/category/footwear-footwear-accessories',
         permanent: true,
       },
       {
         source: '/category/cable-tag-wire-marker',
-        destination: '/category/signs-and-facility-identification-products',
+        destination: '/category/signs-facility-identification-products',
         permanent: true,
       },
       {
@@ -167,7 +167,7 @@ const nextConfig = {
       },
       {
         source: '/category/air-hose-connector',
-        destination: '/category/hose-hose-fittings-and-hose-reels',
+        destination: '/category/hose-hose-fittings-hose-reels',
         permanent: true,
       },
       {
@@ -182,7 +182,7 @@ const nextConfig = {
       },
       {
         source: '/category/label-dispenser',
-        destination: '/category/signs-and-facility-identification-products',
+        destination: '/category/signs-facility-identification-products',
         permanent: true,
       },
       {
@@ -277,7 +277,7 @@ const nextConfig = {
       },
       {
         source: '/category/packaging-shipping',
-        destination: '/category/packing-and-shipping-bags',
+        destination: '/category/packing-shipping-bags',
         permanent: true,
       },
       {
@@ -297,12 +297,12 @@ const nextConfig = {
       },
       {
         source: '/category/waders',
-        destination: '/category/footwear-and-footwear-accessories',
+        destination: '/category/footwear-footwear-accessories',
         permanent: true,
       },
       {
         source: '/category/barcode-label-roll',
-        destination: '/category/signs-and-facility-identification-products',
+        destination: '/category/signs-facility-identification-products',
         permanent: true,
       },
       {
@@ -327,7 +327,7 @@ const nextConfig = {
       },
       {
         source: '/category/foot-protection',
-        destination: '/category/footwear-and-footwear-accessories',
+        destination: '/category/footwear-footwear-accessories',
         permanent: true,
       },
       {
@@ -337,7 +337,7 @@ const nextConfig = {
       },
       {
         source: '/category/labels-identification-supplies',
-        destination: '/category/signs-and-facility-identification-products',
+        destination: '/category/signs-facility-identification-products',
         permanent: true,
       },
       {
@@ -377,7 +377,7 @@ const nextConfig = {
       },
       {
         source: '/category/gaskets',
-        destination: '/category/caulks-and-sealants',
+        destination: '/category/caulks-sealants',
         permanent: true,
       },
       {
@@ -387,7 +387,7 @@ const nextConfig = {
       },
       {
         source: '/category/direct-thermal-labels',
-        destination: '/category/signs-and-facility-identification-products',
+        destination: '/category/signs-facility-identification-products',
         permanent: true,
       },
       {
@@ -412,7 +412,7 @@ const nextConfig = {
       },
       {
         source: '/category/label-holder-plastic-pouch',
-        destination: '/category/signs-and-facility-identification-products',
+        destination: '/category/signs-facility-identification-products',
         permanent: true,
       },
       {
@@ -427,7 +427,7 @@ const nextConfig = {
       },
       {
         source: '/category/first-aid-medical',
-        destination: '/category/first-aid-and-wound-care',
+        destination: '/category/first-aid-wound-care',
         permanent: true,
       },
       {
@@ -442,7 +442,7 @@ const nextConfig = {
       },
       {
         source: '/category/polyurethane-caulks-sealants',
-        destination: '/category/caulks-and-sealants',
+        destination: '/category/caulks-sealants',
         permanent: true,
       },
       {
@@ -467,7 +467,7 @@ const nextConfig = {
       },
       {
         source: '/category/seals-gaskets',
-        destination: '/category/caulks-and-sealants',
+        destination: '/category/caulks-sealants',
         permanent: true,
       },
       {
@@ -522,12 +522,12 @@ const nextConfig = {
       },
       {
         source: '/category/general-purpose-safety-goggles',
-        destination: '/category/eyewash-equipment-and-safety-showers',
+        destination: '/category/eyewash-equipment-safety-showers',
         permanent: true,
       },
       {
         source: '/category/first-aid-kits',
-        destination: '/category/first-aid-and-wound-care',
+        destination: '/category/first-aid-wound-care',
         permanent: true,
       },
       {
@@ -550,12 +550,12 @@ const nextConfig = {
       // Redirect removed products to relevant categories to fix GSC "Crawled - not indexed" errors
       {
         source: '/product/label-protection-tape/t50-thermal-index-label-peach-pink-color-0-98in-by-1-10in-pkg-qty-100-5173.0',
-        destination: '/category/signs-and-facility-identification-products',
+        destination: '/category/signs-facility-identification-products',
         permanent: true,
       },
       {
         source: '/product/seals-gaskets/fkm-tc-skeleton-oil-seal-high-temperature-fluororubber-shaft-seal-for-industrial-594937',
-        destination: '/category/caulks-and-sealants',
+        destination: '/category/caulks-sealants',
         permanent: true,
       },
       {
@@ -565,7 +565,7 @@ const nextConfig = {
       },
       {
         source: '/product/leg-body-protection/rubber-half-body-waist-high-waders-black-gh2117779',
-        destination: '/category/footwear-and-footwear-accessories',
+        destination: '/category/footwear-footwear-accessories',
         permanent: true,
       },
       {
