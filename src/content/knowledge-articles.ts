@@ -859,7 +859,7 @@ export const builtinKnowledgeArticles: KnowledgeArticle[] = [
           'Use RFQ for repeat-volume packaging lines, multiple substrate types, or any case where process fit matters more than the lowest one-time unit price.',
       },
     ],
-    relatedCategorySlugs: ['hot-melt-adhesives', 'construction-adhesives', 'caulks-and-sealants'],
+    relatedCategorySlugs: ['hot-melt-adhesives', 'construction-adhesives', 'caulks-sealants'],
     content: richText(
       paragraph(
         'Hot melt adhesives are often bought too late in the decision process, after the applicator is already chosen and the line is already tuned. In reality, the adhesive itself is a process variable, and buyers get better results when they compare chemistry, open time, and viscosity before the first carton or assembly part reaches the station.'
@@ -1323,6 +1323,302 @@ export const builtinKnowledgeArticles: KnowledgeArticle[] = [
       paragraph(
         'Most buyers should not ask whether accessories are optional. They should ask which accessory setup makes the beam usable on the exact job they perform. That is the quickest way to turn a laser level purchase into a working solution instead of an incomplete tool order.'
       )
+    ),
+    source: 'builtin',
+  },
+  {
+    id: 'builtin-how-to-source-wire-cable-and-cordsets-for-industrial-maintenance',
+    title: 'How to Source Wire, Cable, and Cordsets for Industrial Maintenance',
+    slug: 'how-to-source-wire-cable-and-cordsets-for-industrial-maintenance',
+    excerpt:
+      'Compare wire, cable, and cordsets by voltage, conductor count, jacket, termination, approvals, and replacement workflow.',
+    category: 'buying-guide',
+    tags: ['wire cable cordsets', 'industrial cable', 'electrical maintenance'],
+    author: 'Machrio Team',
+    status: 'published',
+    publishedAt: '2026-05-15T00:00:00.000Z',
+    createdAt: '2026-05-15T00:00:00.000Z',
+    updatedAt: '2026-05-15T00:00:00.000Z',
+    metaTitle: 'How to Source Wire, Cable & Cordsets | Machrio',
+    metaDescription:
+      'Use voltage, conductor count, jacket material, approvals, length, and termination to compare industrial wire and cordsets.',
+    quickAnswer:
+      'Start with electrical rating and termination, then confirm jacket, approvals, exposure, and replacement workflow before comparing price.',
+    faq: [
+      {
+        question: 'What should buyers confirm before ordering cordsets?',
+        answer:
+          'Voltage, current, conductor count, gauge, jacket material, length, plug or connector style, and approvals should be confirmed first.',
+      },
+    ],
+    relatedCategorySlugs: ['wire-cable-cordsets', 'wire-cable-management', 'electrical'],
+    content: richText(
+      paragraph('Industrial wire and cordsets should be sourced from the equipment requirement backward. A correct shortlist starts with rating, conductor count, termination, and jacket exposure before unit price.'),
+      heading('h2', 'Start with Rating and Fit'),
+      bulletList(['Voltage and current rating', 'Conductor count and wire gauge', 'Plug, connector, or bare-lead termination', 'Length and routing constraints']),
+      heading('h2', 'Then Check the Environment'),
+      paragraph('Oil, abrasion, washdown, UV, flexing, and tray routing can all change jacket choice. A cordset that is electrically correct can still fail if the jacket is wrong for the site.'),
+      heading('h2', 'When to Use RFQ'),
+      paragraph('RFQ is the better path for substitute review, approval-sensitive replacements, custom lengths, bulk cuts, and mixed replenishment orders.')
+    ),
+    source: 'builtin',
+  },
+  {
+    id: 'builtin-how-to-choose-bearings-for-maintenance-and-replacement',
+    title: 'How to Choose Industrial Bearings for Maintenance and Replacement',
+    slug: 'how-to-choose-bearings-for-maintenance-and-replacement',
+    excerpt:
+      'Choose bearings by dimension, load, speed, misalignment, lubrication, contamination, and replacement urgency.',
+    category: 'buying-guide',
+    tags: ['bearings', 'spherical bearings', 'maintenance replacement'],
+    author: 'Machrio Team',
+    status: 'published',
+    publishedAt: '2026-05-15T00:00:00.000Z',
+    createdAt: '2026-05-15T00:00:00.000Z',
+    updatedAt: '2026-05-15T00:00:00.000Z',
+    metaTitle: 'How to Choose Industrial Bearings | Machrio',
+    metaDescription:
+      'Compare industrial bearings by size, load, speed, misalignment, lubrication, contamination, and replacement fit.',
+    quickAnswer:
+      'Do not choose bearings by bore alone. Match dimensions, load, speed, environment, lubrication, and failure mode.',
+    faq: [
+      {
+        question: 'When should buyers request bearing application support?',
+        answer:
+          'Use RFQ when the original part is unavailable, failure mode is unclear, or contamination, load, or misalignment could change the substitute.',
+      },
+    ],
+    relatedCategorySlugs: ['spherical-bearings', 'plain-bearings', 'bearings'],
+    content: richText(
+      paragraph('Bearing replacement works best when buyers document the application, not just the part size. Load, speed, alignment, contamination, and lubrication often decide whether a substitute is acceptable.'),
+      heading('h2', 'Build the Replacement Brief'),
+      bulletList(['Bore, outside diameter, width, and housing fit', 'Radial and thrust load', 'Speed and duty cycle', 'Lubrication and seal requirements']),
+      heading('h2', 'Treat Failure Mode as a Buying Signal'),
+      paragraph('Repeated bearing failures usually point to contamination, misalignment, lubrication, or load problems. Capture that context before approving a cross-reference.'),
+      heading('h2', 'When RFQ Helps'),
+      paragraph('RFQ is useful for cross-reference, recurring maintenance stock, substitute approval, and urgent replacements where downtime risk is high.')
+    ),
+    source: 'builtin',
+  },
+  {
+    id: 'builtin-how-to-specify-wireways-for-cable-routing-and-panel-work',
+    title: 'How to Specify Wireways for Cable Routing and Panel Work',
+    slug: 'how-to-specify-wireways-for-cable-routing-and-panel-work',
+    excerpt:
+      'Specify wireways by fill, material, enclosure rating, access style, route length, bends, and installation environment.',
+    category: 'buying-guide',
+    tags: ['wireways', 'cable routing', 'panel wiring'],
+    author: 'Machrio Team',
+    status: 'published',
+    publishedAt: '2026-05-15T00:00:00.000Z',
+    createdAt: '2026-05-15T00:00:00.000Z',
+    updatedAt: '2026-05-15T00:00:00.000Z',
+    metaTitle: 'How to Specify Wireways | Machrio',
+    metaDescription:
+      'Use fill, material, enclosure rating, access, routing, and fittings to source wireways for industrial electrical work.',
+    quickAnswer:
+      'Wireways should be sized for fill and service access, then matched to material, enclosure rating, cover style, and route layout.',
+    faq: [
+      {
+        question: 'When should wireways be quoted as a project?',
+        answer:
+          'Use RFQ when the layout includes multiple sections, fittings, bends, enclosure ratings, or repeat panel builds.',
+      },
+    ],
+    relatedCategorySlugs: ['wireways', 'wire-cable-management', 'wire-cable-cordsets'],
+    content: richText(
+      paragraph('Wireway selection is a routing and maintenance decision. The right product keeps wiring protected while leaving enough access for installation, inspection, and future changes.'),
+      heading('h2', 'Confirm Fill and Access'),
+      bulletList(['Current and future wire fill', 'Width and depth', 'Cover style', 'Access for service or inspection']),
+      heading('h2', 'Match the Environment'),
+      paragraph('Indoor, outdoor, washdown, dusty, and corrosive environments can all change material and enclosure rating. Confirm the installation site before building the bill of materials.'),
+      heading('h2', 'Plan the Route'),
+      paragraph('Bends, junctions, mounting surfaces, and panel clearance should be included in the RFQ when the job is more than one straight section.')
+    ),
+    source: 'builtin',
+  },
+  {
+    id: 'builtin-how-to-choose-industrial-air-filters-for-facilities',
+    title: 'How to Choose Industrial Air Filters for Facilities',
+    slug: 'how-to-choose-industrial-air-filters-for-facilities',
+    excerpt:
+      'Compare bag air filters by size, media, efficiency, airflow, pressure drop, pocket count, and replacement cadence.',
+    category: 'buying-guide',
+    tags: ['bag air filters', 'hvac filters', 'facility maintenance'],
+    author: 'Machrio Team',
+    status: 'published',
+    publishedAt: '2026-05-15T00:00:00.000Z',
+    createdAt: '2026-05-15T00:00:00.000Z',
+    updatedAt: '2026-05-15T00:00:00.000Z',
+    metaTitle: 'How to Choose Industrial Air Filters | Machrio',
+    metaDescription:
+      'Choose industrial air filters by dimensions, media, efficiency, airflow, pressure drop, and replacement planning.',
+    quickAnswer:
+      'Filter fit starts with dimensions, then performance depends on media, efficiency, airflow, pressure drop, and changeout schedule.',
+    faq: [
+      {
+        question: 'Why does pressure drop matter when buying bag filters?',
+        answer:
+          'Pressure drop affects airflow and energy use, so it should be checked alongside size and efficiency.',
+      },
+    ],
+    relatedCategorySlugs: ['bag-air-filters', 'compressed-air-filters', 'engine-air-filters'],
+    content: richText(
+      paragraph('Bag air filters are usually replacement-driven, but repeatable buying still requires more than a nominal size. Media, pocket count, pressure drop, and changeout schedule determine real operating fit.'),
+      heading('h2', 'Start with Physical Fit'),
+      bulletList(['Nominal and actual size', 'Pocket count', 'Frame style', 'Housing fit']),
+      heading('h2', 'Compare Performance'),
+      paragraph('Efficiency and pressure drop should be reviewed together because a filter can meet the capture target while creating airflow or energy problems.'),
+      heading('h2', 'Plan Replenishment'),
+      paragraph('RFQ is useful for multi-unit replacements, equivalent filter review, bulk changeouts, and recurring facility stock.')
+    ),
+    source: 'builtin',
+  },
+  {
+    id: 'builtin-how-to-buy-handrail-brackets-for-facility-projects',
+    title: 'How to Buy Handrail Brackets for Facility Projects',
+    slug: 'how-to-buy-handrail-brackets-for-facility-projects',
+    excerpt:
+      'Buy handrail brackets by rail size, projection, mounting substrate, finish, load requirement, and project quantity.',
+    category: 'buying-guide',
+    tags: ['handrail brackets', 'facility hardware', 'mounting hardware'],
+    author: 'Machrio Team',
+    status: 'published',
+    publishedAt: '2026-05-15T00:00:00.000Z',
+    createdAt: '2026-05-15T00:00:00.000Z',
+    updatedAt: '2026-05-15T00:00:00.000Z',
+    metaTitle: 'How to Buy Handrail Brackets | Machrio',
+    metaDescription:
+      'Compare handrail brackets by projection, rail size, wall substrate, finish, load requirement, and hardware needs.',
+    quickAnswer:
+      'Confirm rail size, projection, mounting substrate, finish, load requirement, and included hardware before ordering handrail brackets.',
+    faq: [
+      {
+        question: 'Why does projection matter for handrail brackets?',
+        answer:
+          'Projection affects clearance, code fit, and rail alignment, so it should be checked before finish or pack size.',
+      },
+    ],
+    relatedCategorySlugs: ['handrail-brackets', 'door-hardware', 'fasteners'],
+    content: richText(
+      paragraph('Handrail bracket buying starts with installation fit. Rail diameter, wall projection, substrate, finish, and load requirement should be documented before comparing pack quantity.'),
+      heading('h2', 'Confirm the Installation'),
+      bulletList(['Rail diameter or shape', 'Wall projection requirement', 'Mounting substrate', 'Indoor, outdoor, or public-facing exposure']),
+      heading('h2', 'Plan Hardware and Quantity'),
+      paragraph('Project orders should include bracket spacing, finish consistency, fastener expectations, and whether matching hardware is required.'),
+      heading('h2', 'When RFQ Helps'),
+      paragraph('RFQ is useful for multi-location projects, mixed finishes, replacement schedules, or freight-sensitive quantity buys.')
+    ),
+    source: 'builtin',
+  },
+  {
+    id: 'builtin-how-to-choose-floor-protection-mats-for-facilities',
+    title: 'How to Choose Floor Protection Mats for Facilities',
+    slug: 'how-to-choose-floor-protection-mats-for-facilities',
+    excerpt:
+      'Choose floor protection mats by traffic, material, size, exposure, edge profile, slip resistance, and cleaning method.',
+    category: 'buying-guide',
+    tags: ['floor protection mats', 'facility mats', 'anti fatigue mats'],
+    author: 'Machrio Team',
+    status: 'published',
+    publishedAt: '2026-05-15T00:00:00.000Z',
+    createdAt: '2026-05-15T00:00:00.000Z',
+    updatedAt: '2026-05-15T00:00:00.000Z',
+    metaTitle: 'How to Choose Floor Protection Mats | Machrio',
+    metaDescription:
+      'Compare floor protection mats by traffic, exposure, material, size, edge profile, slip resistance, and cleaning needs.',
+    quickAnswer:
+      'First decide what the mat protects against, then compare material, size, thickness, edge profile, and cleaning routine.',
+    faq: [
+      {
+        question: 'Are floor protection mats and anti-fatigue mats the same?',
+        answer:
+          'Not always. Some mats protect floors from traffic or spills, while anti-fatigue mats primarily support standing workers.',
+      },
+    ],
+    relatedCategorySlugs: ['floor-protection-mats', 'floor-mats'],
+    content: richText(
+      paragraph('Floor mats are often bought broadly, but the job is usually specific: protect a surface, reduce slip risk, capture debris, drain liquids, or support standing workers.'),
+      heading('h2', 'Define the Mat Job'),
+      bulletList(['Cart or foot traffic', 'Water, oil, chemicals, or debris', 'Standing comfort', 'Surface protection']),
+      heading('h2', 'Compare Fit and Upkeep'),
+      paragraph('Material, thickness, edge profile, size, and cleaning method should fit the actual facility routine. Custom lengths or repeated zones are good RFQ candidates.'),
+      heading('h2', 'Build the Buying Brief'),
+      paragraph('List floor type, traffic, exposure, size, and cleaning process before asking for substitutes or bulk pricing.')
+    ),
+    source: 'builtin',
+  },
+  {
+    id: 'builtin-how-to-source-abrasive-blasting-media',
+    title: 'How to Source Abrasive Blasting Media',
+    slug: 'how-to-source-abrasive-blasting-media',
+    excerpt:
+      'Choose abrasive blasting media by substrate, target profile, grit size, hardness, dust limits, reclaim plan, and packaging.',
+    category: 'buying-guide',
+    tags: ['abrasive blasting media', 'surface prep', 'blast media'],
+    author: 'Machrio Team',
+    status: 'published',
+    publishedAt: '2026-05-15T00:00:00.000Z',
+    createdAt: '2026-05-15T00:00:00.000Z',
+    updatedAt: '2026-05-15T00:00:00.000Z',
+    metaTitle: 'How to Source Abrasive Blasting Media | Machrio',
+    metaDescription:
+      'Compare abrasive blasting media by substrate, finish profile, grit, hardness, dust behavior, reclaimability, and packaging.',
+    quickAnswer:
+      'Match blasting media to the substrate, finish target, equipment, dust constraints, reclaim plan, and packaging requirement.',
+    faq: [
+      {
+        question: 'Why should buyers avoid choosing blasting media only by price?',
+        answer:
+          'The wrong media can increase labor, dust, substrate damage, or rework, which can cost more than the unit-price savings.',
+      },
+    ],
+    relatedCategorySlugs: ['abrasive-blasting-media'],
+    content: richText(
+      paragraph('Abrasive blasting media should be selected by process fit. Substrate, finish profile, equipment, dust control, reclaimability, and disposal all affect the best choice.'),
+      heading('h2', 'Start with the Surface'),
+      bulletList(['Substrate material', 'Coating or contamination type', 'Target profile', 'Damage tolerance']),
+      heading('h2', 'Compare Media Behavior'),
+      paragraph('Grit size, hardness, shape, dust, and reclaimability affect cycle time and cleanup. RFQ helps when testing or substitute approval is needed.'),
+      heading('h2', 'Plan Packaging and Freight'),
+      paragraph('Blasting media can be freight-sensitive. Include bag size, pallet quantity, and repeat volume in the buying brief.')
+    ),
+    source: 'builtin',
+  },
+  {
+    id: 'builtin-how-to-buy-asphalt-hand-tools-for-maintenance-crews',
+    title: 'How to Buy Asphalt Hand Tools for Maintenance Crews',
+    slug: 'how-to-buy-asphalt-hand-tools-for-maintenance-crews',
+    excerpt:
+      'Build an asphalt hand-tool list around crew size, patching workflow, rake or lute style, handles, blades, and replacement cadence.',
+    category: 'buying-guide',
+    tags: ['asphalt hand tools', 'paving tools', 'maintenance crews'],
+    author: 'Machrio Team',
+    status: 'published',
+    publishedAt: '2026-05-15T00:00:00.000Z',
+    createdAt: '2026-05-15T00:00:00.000Z',
+    updatedAt: '2026-05-15T00:00:00.000Z',
+    metaTitle: 'How to Buy Asphalt Hand Tools | Machrio',
+    metaDescription:
+      'Choose asphalt hand tools by crew workflow, rake or lute style, blade size, handle material, heat exposure, and replenishment needs.',
+    quickAnswer:
+      'Start with the crew workflow, then match tool type, blade size, handle material, heat exposure, and replacement cadence.',
+    faq: [
+      {
+        question: 'When should asphalt hand tools go through RFQ?',
+        answer:
+          'Use RFQ for crew kits, municipal replenishment, mixed tool orders, or freight-sensitive project quantities.',
+      },
+    ],
+    relatedCategorySlugs: ['asphalt-hand-tools'],
+    content: richText(
+      paragraph('Asphalt tools should be bought as a crew workflow, not as isolated tools. Spreading, leveling, tamping, cleanup, and transport all drive the shortlist.'),
+      heading('h2', 'Map the Crew Workflow'),
+      bulletList(['Patching and spreading', 'Raking or lute work', 'Tamping and edge cleanup', 'Transport and storage']),
+      heading('h2', 'Compare Tool Construction'),
+      paragraph('Head width, blade material, handle material, heat exposure, and user preference affect durability and daily productivity.'),
+      heading('h2', 'Use RFQ for Kits'),
+      paragraph('RFQ is useful when buying consistent crew kits, recurring replacements, or mixed asphalt-tool orders.')
     ),
     source: 'builtin',
   },

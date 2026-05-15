@@ -250,7 +250,7 @@ function actionFor(row, perf, signals) {
   if (perf.impressions >= 10 && perf.ctr < 0.01) return 'improve_ctr_title_meta'
   if (perf.impressions > 0 && row.subtree_product_count > 0) return 'strengthen_conversion'
   if (row.subtree_product_count === 0) return 'seed_demand_capture_page'
-  if (!row.has_intro || !row.has_buying_guide || !row.has_faq) return 'fill_category_content'
+  if (!row.has_seo_framework) return 'fill_category_content'
   if (!signals.guideSlugs.has(row.slug) && !signals.overrideSlugs.has(row.slug)) return 'add_content_cluster'
   return 'monitor'
 }
@@ -474,6 +474,7 @@ async function main() {
         has_related_knowledge_article: signals.guideSlugs.has(category.slug),
         is_redirect_source: CATEGORY_REDIRECT_SOURCES.has(category.slug),
       }
+      row.has_seo_framework = row.has_seo_framework || row.has_seo_override
       row.action = actionFor(row, perf, signals)
       return row
     })

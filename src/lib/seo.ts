@@ -156,6 +156,46 @@ const GUIDE_LIBRARY: Record<string, SeoGuideLink> = {
     title: 'How to Choose Oil Seals',
     excerpt: 'Use shaft size, lip design, elastomer, temperature, and contamination exposure to compare industrial oil seals.',
   },
+  'how-to-source-wire-cable-and-cordsets-for-industrial-maintenance': {
+    slug: 'how-to-source-wire-cable-and-cordsets-for-industrial-maintenance',
+    title: 'How to Source Wire, Cable & Cordsets',
+    excerpt: 'Compare voltage, conductor count, jacket material, approvals, and replacement workflow before buying wire and cordsets.',
+  },
+  'how-to-choose-bearings-for-maintenance-and-replacement': {
+    slug: 'how-to-choose-bearings-for-maintenance-and-replacement',
+    title: 'How to Choose Industrial Bearings',
+    excerpt: 'Use load, speed, shaft fit, housing conditions, lubrication, and replacement urgency to narrow bearing choices.',
+  },
+  'how-to-specify-wireways-for-cable-routing-and-panel-work': {
+    slug: 'how-to-specify-wireways-for-cable-routing-and-panel-work',
+    title: 'How to Specify Wireways',
+    excerpt: 'Match wireways to fill, access, material, enclosure rating, bend path, and panel or machine routing requirements.',
+  },
+  'how-to-choose-industrial-air-filters-for-facilities': {
+    slug: 'how-to-choose-industrial-air-filters-for-facilities',
+    title: 'How to Choose Industrial Air Filters',
+    excerpt: 'Compare bag filters by size, media, efficiency, airflow, pressure drop, and replacement cadence.',
+  },
+  'how-to-buy-handrail-brackets-for-facility-projects': {
+    slug: 'how-to-buy-handrail-brackets-for-facility-projects',
+    title: 'How to Buy Handrail Brackets',
+    excerpt: 'Confirm projection, rail size, mounting substrate, finish, load needs, and project quantity before sourcing brackets.',
+  },
+  'how-to-choose-floor-protection-mats-for-facilities': {
+    slug: 'how-to-choose-floor-protection-mats-for-facilities',
+    title: 'How to Choose Floor Protection Mats',
+    excerpt: 'Separate anti-fatigue, drainage, entrance, and surface-protection mats by material, size, exposure, and cleaning routine.',
+  },
+  'how-to-source-abrasive-blasting-media': {
+    slug: 'how-to-source-abrasive-blasting-media',
+    title: 'How to Source Abrasive Blasting Media',
+    excerpt: 'Choose abrasive media by substrate, finish profile, reclaim plan, dust constraints, hardness, and packaging.',
+  },
+  'how-to-buy-asphalt-hand-tools-for-maintenance-crews': {
+    slug: 'how-to-buy-asphalt-hand-tools-for-maintenance-crews',
+    title: 'How to Buy Asphalt Hand Tools',
+    excerpt: 'Build an asphalt hand-tool shortlist around crew size, patching workflow, handle material, blade format, and replacement cadence.',
+  },
 }
 
 const CATEGORY_GUIDES: Record<string, string[]> = {
@@ -175,6 +215,14 @@ const CATEGORY_GUIDES: Record<string, string[]> = {
   'plastic-perforated-sheets': ['how-to-buy-plastic-perforated-sheets-for-guards-panels-and-fabrication'],
   'shaft-grounding-rings': ['how-to-specify-shaft-grounding-rings-for-vfd-motors'],
   'plain-bearings': ['how-to-choose-oil-seals-for-rotating-equipment'],
+  'wire-cable-cordsets': ['how-to-source-wire-cable-and-cordsets-for-industrial-maintenance'],
+  'spherical-bearings': ['how-to-choose-bearings-for-maintenance-and-replacement'],
+  'wireways': ['how-to-specify-wireways-for-cable-routing-and-panel-work'],
+  'bag-air-filters': ['how-to-choose-industrial-air-filters-for-facilities'],
+  'handrail-brackets': ['how-to-buy-handrail-brackets-for-facility-projects'],
+  'floor-protection-mats': ['how-to-choose-floor-protection-mats-for-facilities'],
+  'abrasive-blasting-media': ['how-to-source-abrasive-blasting-media'],
+  'asphalt-hand-tools': ['how-to-buy-asphalt-hand-tools-for-maintenance-crews'],
 }
 
 const CATEGORY_OVERRIDES: Record<string, SeoCategoryOverride> = {
@@ -647,6 +695,413 @@ const CATEGORY_OVERRIDES: Record<string, SeoCategoryOverride> = {
           'Use RFQ for multi-location projects, mixed finishes, replacement schedules, or jobs where bracket quantity and freight need to be planned together.',
       },
     ],
+    guideSlugs: ['how-to-buy-handrail-brackets-for-facility-projects'],
+    priorityLinksHeading: 'Plan the Hardware Around the Installation',
+    priorityLinksDescription:
+      'Handrail bracket buyers often need nearby hardware categories when the job includes retrofit or site-standard work.',
+    priorityLinks: [
+      {
+        slug: 'door-hardware',
+        name: 'Door Hardware',
+        description: 'Review adjacent facility hardware when handrail work is part of a broader access or safety upgrade.',
+      },
+      {
+        slug: 'fasteners',
+        name: 'Fasteners',
+        description: 'Confirm anchors, screws, and mounting hardware against the bracket and wall substrate.',
+      },
+    ],
+  },
+  'wire-cable-cordsets': {
+    metaTitle: 'Wire, Cable & Cordsets for Industrial Power and Controls',
+    metaDescription:
+      'Source wire, cable, and cordsets by voltage, conductor count, jacket material, approvals, length, plug style, and replacement workflow.',
+    summary:
+      'Wire, cable, and cordsets are high-value procurement pages because buyers usually arrive with a replacement, project, or control-panel requirement already in mind. The page needs to guide voltage, conductor count, jacket, termination, approvals, and RFQ routing before buyers fall into generic cable browsing.',
+    buyingFactors: [
+      'Confirm voltage, amperage, conductor count, gauge, and jacket material before comparing price or length.',
+      'Check plug, connector, or bare-lead termination requirements against the installed equipment and control panel.',
+      'Review approvals, oil or chemical exposure, flexing, and indoor or outdoor routing before selecting substitutes.',
+    ],
+    applications: [
+      'Machine power, control wiring, replacement cordsets, and panel maintenance',
+      'Facility electrical work where jacket and approval requirements matter',
+      'MRO replenishment for recurring cable, cord, and lead replacement',
+    ],
+    procurementChecklist: [
+      'Record voltage, current, conductor count, gauge, length, and termination style.',
+      'List exposure conditions: oil, abrasion, washdown, UV, flexing, or tray routing.',
+      'Use RFQ for substitutes, bulk cuts, mixed cordsets, or approval-sensitive replacements.',
+    ],
+    faq: [
+      {
+        question: 'What specs should buyers confirm before ordering wire, cable, or cordsets?',
+        answer:
+          'Voltage, current, conductor count, wire gauge, jacket material, length, termination style, and approvals are the minimum checks for a reliable shortlist.',
+      },
+      {
+        question: 'When should cordsets go through RFQ instead of direct checkout?',
+        answer:
+          'Use RFQ when replacement compatibility, approval markings, custom length, or multi-SKU replenishment needs confirmation before release.',
+      },
+      {
+        question: 'Why does jacket material matter for industrial cable selection?',
+        answer:
+          'The jacket determines how well the cable handles oil, abrasion, temperature, washdown, UV, and flexing. A cable can match electrically and still fail mechanically if the jacket is wrong.',
+      },
+    ],
+    guideSlugs: ['how-to-source-wire-cable-and-cordsets-for-industrial-maintenance'],
+    priorityLinksHeading: 'Continue Into Cable Management and Electrical Workflows',
+    priorityLinks: [
+      {
+        slug: 'wire-cable-management',
+        name: 'Wire & Cable Management',
+        description: 'Route, identify, protect, and organize cables after the electrical requirements are defined.',
+      },
+      {
+        slug: 'computer-cables',
+        name: 'Computer Cables',
+        description: 'Separate data and office cable requirements from industrial power and control cordsets.',
+      },
+      {
+        slug: 'electrical',
+        name: 'Electrical',
+        description: 'Use the broader electrical hub for adjacent panel, testing, and installation items.',
+      },
+    ],
+  },
+  'spherical-bearings': {
+    metaTitle: 'Spherical Bearings for Misalignment and Maintenance Replacement',
+    metaDescription:
+      'Compare spherical bearings by bore size, load, misalignment angle, housing fit, lubrication, seal style, and replacement urgency.',
+    summary:
+      'Spherical bearings should be bought around fit and failure mode. Buyers need to match bore, outside diameter, load, misalignment, lubrication, and seal requirements before choosing a replacement or substitute.',
+    buyingFactors: [
+      'Start with bore size, outside diameter, width, and whether the bearing is a direct replacement or a new design choice.',
+      'Compare radial load, thrust load, misalignment angle, speed, and lubrication access against the real operating condition.',
+      'Check seal style, corrosion exposure, and housing fit before approving substitute bearings.',
+    ],
+    applications: [
+      'Linkages, pivots, actuators, conveyors, and rotating maintenance points',
+      'Replacement work where misalignment and shock load drive early failures',
+      'MRO programs that need cross-reference review before bulk replenishment',
+    ],
+    procurementChecklist: [
+      'Record dimensions, load direction, operating speed, and misalignment requirement.',
+      'Confirm lubrication path, seal style, and contamination exposure.',
+      'Use RFQ for cross-reference, repeated maintenance stock, or uncertain substitutes.',
+    ],
+    faq: [
+      {
+        question: 'What matters most when buying spherical bearings?',
+        answer:
+          'Dimensions, load, misalignment angle, lubrication, seal style, and environment are the main checks. Matching only the bore size is not enough for a reliable replacement.',
+      },
+      {
+        question: 'When should buyers request help with spherical bearing substitutes?',
+        answer:
+          'Request support when the original part number is unavailable, the failure mode is unclear, or the application has shock, contamination, or alignment issues.',
+      },
+      {
+        question: 'Are spherical bearings and plain bearings interchangeable?',
+        answer:
+          'No. They can be adjacent in maintenance workflows, but spherical bearings are selected specifically for misalignment and pivoting motion, while plain bearings cover broader sliding or rotating contact.',
+      },
+    ],
+    guideSlugs: ['how-to-choose-bearings-for-maintenance-and-replacement'],
+    priorityLinks: [
+      {
+        slug: 'plain-bearings',
+        name: 'Plain Bearings',
+        description: 'Compare adjacent bearing and seal options when the maintenance problem is broader than misalignment.',
+      },
+      {
+        slug: 'bearings',
+        name: 'Bearings',
+        description: 'Use the broader bearing hub for cross-category replacement and reliability planning.',
+      },
+    ],
+  },
+  'wireways': {
+    metaTitle: 'Wireways for Cable Routing, Panels and Machine Wiring',
+    metaDescription:
+      'Select wireways by fill, material, access style, enclosure rating, length, bend path, and panel or machine routing requirements.',
+    summary:
+      'Wireways are usually selected for routing discipline and service access. Buyers need to balance wire fill, enclosure rating, material, cover style, bend path, and installation environment before ordering.',
+    buyingFactors: [
+      'Confirm wire fill, number of circuits, and future access needs before choosing width and depth.',
+      'Match material and enclosure rating to indoor, outdoor, washdown, dust, or corrosion exposure.',
+      'Check cover style, bends, junctions, mounting method, and panel clearance before building the bill of materials.',
+    ],
+    applications: [
+      'Control panels, machine wiring, facility routing, and retrofit cable organization',
+      'Industrial electrical runs where access and protection matter together',
+      'Projects that need repeatable routing hardware across multiple panels or lines',
+    ],
+    procurementChecklist: [
+      'Record fill requirement, route length, bends, junctions, and mounting surface.',
+      'Confirm enclosure rating, material, cover style, and grounding expectations.',
+      'Use RFQ for multi-section layouts, mixed fittings, or approval-sensitive installs.',
+    ],
+    faq: [
+      {
+        question: 'How should buyers size wireways?',
+        answer:
+          'Start with wire fill and service access, then choose width, depth, and cover style. Undersized wireways make maintenance and future additions harder even if the first install fits.',
+      },
+      {
+        question: 'When is metal wireway better than nonmetallic wireway?',
+        answer:
+          'Metal is often preferred for durability, grounding, and industrial panel work. Nonmetallic options can help in corrosion-sensitive or lighter-duty environments.',
+      },
+      {
+        question: 'When should wireways be quoted as a project instead of bought one section at a time?',
+        answer:
+          'Use RFQ when the route includes fittings, bends, multiple enclosure ratings, or repeated panel builds where compatibility and freight need review.',
+      },
+    ],
+    guideSlugs: ['how-to-specify-wireways-for-cable-routing-and-panel-work'],
+    priorityLinks: [
+      {
+        slug: 'wire-cable-management',
+        name: 'Wire & Cable Management',
+        description: 'Use cable management categories when the job also needs ties, labels, guards, and routing accessories.',
+      },
+      {
+        slug: 'wire-cable-cordsets',
+        name: 'Wire, Cable & Cordsets',
+        description: 'Pair routing hardware with the wire and cordsets being protected or organized.',
+      },
+    ],
+  },
+  'bag-air-filters': {
+    metaTitle: 'Bag Air Filters for HVAC and Industrial Air Handling',
+    metaDescription:
+      'Buy bag air filters by nominal size, media, efficiency, pocket count, airflow, pressure drop, frame style, and replacement schedule.',
+    summary:
+      'Bag air filters are replacement-driven products where dimensional fit and airflow performance matter more than broad catalog browsing. Buyers need to confirm size, media, pocket count, efficiency, pressure drop, and changeout cadence.',
+    buyingFactors: [
+      'Match nominal and actual filter dimensions to the existing housing before comparing media or efficiency.',
+      'Compare pocket count, media type, MERV or efficiency target, airflow, and initial pressure drop.',
+      'Check replacement frequency, stocking quantity, and whether the site is standardizing filters across units.',
+    ],
+    applications: [
+      'HVAC units, industrial air handlers, prefiltration, and facility maintenance stock',
+      'Manufacturing and warehouse environments with recurring filter changeouts',
+      'Projects where pressure drop and energy use affect operating cost',
+    ],
+    procurementChecklist: [
+      'Record nominal size, actual dimensions, pocket count, frame style, and efficiency target.',
+      'Confirm airflow, pressure drop, dust load, and replacement interval.',
+      'Use RFQ for multi-site replenishment, equivalent filters, or bulk changeout planning.',
+    ],
+    faq: [
+      {
+        question: 'What specs matter most for bag air filters?',
+        answer:
+          'Size, pocket count, media, efficiency, airflow, pressure drop, and frame style are the key specs because they determine both fit and system performance.',
+      },
+      {
+        question: 'Why should buyers check pressure drop before ordering bag filters?',
+        answer:
+          'Pressure drop affects airflow and energy use. A filter with the right size but the wrong resistance can reduce system performance or increase operating cost.',
+      },
+      {
+        question: 'When should bag air filters go through RFQ?',
+        answer:
+          'Use RFQ for recurring replenishment, multi-unit replacements, equivalent filter review, or orders where freight and changeout timing matter.',
+      },
+    ],
+    guideSlugs: ['how-to-choose-industrial-air-filters-for-facilities'],
+    priorityLinks: [
+      {
+        slug: 'compressed-air-filters',
+        name: 'Compressed Air Filters',
+        description: 'Move here when the filtration requirement is for compressed-air systems rather than HVAC air handling.',
+      },
+      {
+        slug: 'engine-air-filters',
+        name: 'Engine Air Filters',
+        description: 'Use engine air filters for mobile equipment, generators, and engine intake replacement work.',
+      },
+    ],
+  },
+  'electrical-lockout-devices': {
+    metaTitle: 'Electrical Lockout Devices for Breakers, Plugs and Panels',
+    metaDescription:
+      'Source electrical lockout devices by breaker type, plug size, lock point, shackle fit, insulation needs, and OSHA LOTO workflow.',
+    summary:
+      'Electrical lockout devices are a direct bridge between compliance and installed hardware. Buyers need to identify breaker style, plug format, panel clearance, lock point, and padlock compatibility before choosing a device.',
+    buyingFactors: [
+      'Identify the electrical isolation point first: breaker, plug, switch, panel, or multi-point electrical setup.',
+      'Confirm device fit against breaker dimensions, plug size, cord diameter, and available panel clearance.',
+      'Match shackle diameter, padlock count, and insulated hardware requirements to the site LOTO procedure.',
+    ],
+    applications: [
+      'Breaker lockout, plug lockout, panel shutdowns, and electrical maintenance procedures',
+      'Manufacturing, facilities, contractors, and machine-maintenance teams',
+      'LOTO standardization projects where padlocks and electrical devices must work together',
+    ],
+    procurementChecklist: [
+      'Record breaker or plug dimensions, lock points, and required number of locks.',
+      'Confirm padlock shackle diameter, color/keying policy, and insulation needs.',
+      'Use RFQ for site rollouts, mixed breaker families, or compatibility review.',
+    ],
+    faq: [
+      {
+        question: 'How should buyers choose electrical lockout devices?',
+        answer:
+          'Start with the exact isolation point and dimensions, then check padlock compatibility and procedure requirements. Breaker, plug, and panel lockouts solve different fit problems.',
+      },
+      {
+        question: 'Do electrical lockout devices need special padlocks?',
+        answer:
+          'They often need padlocks with compatible shackle diameter, clearance, keying policy, and sometimes nonconductive bodies depending on the site procedure.',
+      },
+      {
+        question: 'When is RFQ useful for electrical lockout?',
+        answer:
+          'RFQ is useful when multiple breaker styles, departments, or contractors are involved and the site needs a consistent LOTO standard.',
+      },
+    ],
+    guideSlugs: ['how-to-choose-lockout-tagout-kits-buying-guide'],
+    priorityLinks: [
+      {
+        slug: 'lockout-padlocks',
+        name: 'Lockout Padlocks',
+        description: 'Match electrical lockout devices to padlock shackle, color, body, and keying requirements.',
+      },
+      {
+        slug: 'lockout-tagout',
+        name: 'Lockout Tagout',
+        description: 'Use the broader LOTO hub for tags, hasps, lock boxes, and full procedure planning.',
+      },
+      {
+        slug: 'valve-lockout-devices',
+        name: 'Valve Lockout Devices',
+        description: 'Coordinate electrical and valve isolation when shutdown procedures include multiple energy sources.',
+      },
+    ],
+  },
+  'floor-protection-mats': {
+    metaTitle: 'Floor Protection Mats for Carts, Workstations and Facilities',
+    metaDescription:
+      'Compare floor protection mats by surface type, traffic, mat size, material, oil or water exposure, cleaning method, and edge profile.',
+    summary:
+      'Floor protection mat searches usually indicate a facility problem: carts, wet traffic, workstation wear, or surface damage. The page should help buyers match mat material, thickness, size, edge profile, and cleaning routine to the actual floor condition.',
+    buyingFactors: [
+      'Identify whether the mat is protecting floors from carts, standing work, water, oils, chemicals, or entrance traffic.',
+      'Compare material, thickness, edge profile, surface texture, and slip resistance against the real facility exposure.',
+      'Check mat size, cleaning method, and whether the site needs repeated station coverage or one-off protection.',
+    ],
+    applications: [
+      'Cart paths, workstations, maintenance areas, entrances, and surface-protection zones',
+      'Facilities where floor wear, slip risk, or cleaning load affects operations',
+      'Recurring replacement programs for mats across multiple departments',
+    ],
+    procurementChecklist: [
+      'Record floor type, traffic type, exposure, required size, and edge preference.',
+      'Confirm water, oil, chemical, heat, or cleaning constraints before buying.',
+      'Use RFQ for custom lengths, multi-zone projects, or bulk replenishment.',
+    ],
+    faq: [
+      {
+        question: 'How should buyers choose floor protection mats?',
+        answer:
+          'Start with what the mat protects against: carts, standing fatigue, moisture, oils, or entrance debris. Then compare material, thickness, size, and cleaning method.',
+      },
+      {
+        question: 'Are floor protection mats the same as anti-fatigue mats?',
+        answer:
+          'Not always. Some protect the floor from traffic or spills, while anti-fatigue mats primarily protect the worker during standing tasks.',
+      },
+      {
+        question: 'When should floor mats be quoted?',
+        answer:
+          'Use RFQ for custom dimensions, facility-wide replacement, mixed mat types, or orders where freight affects total cost.',
+      },
+    ],
+    guideSlugs: ['how-to-choose-floor-protection-mats-for-facilities'],
+  },
+  'abrasive-blasting-media': {
+    metaTitle: 'Abrasive Blasting Media for Surface Prep and Cleaning',
+    metaDescription:
+      'Source abrasive blasting media by substrate, profile target, hardness, grit size, reclaim plan, dust constraints, and packaging needs.',
+    summary:
+      'Abrasive blasting media is a process-fit purchase. Buyers need to match substrate, desired profile, hardness, dust limits, reclaim requirements, and packaging before comparing media options.',
+    buyingFactors: [
+      'Start with substrate and finish target: cleaning, paint removal, profiling, deburring, or peening.',
+      'Compare grit size, hardness, media shape, dust behavior, and whether the media can be reclaimed.',
+      'Check blast equipment compatibility, containment, disposal, and packaging before repeat orders.',
+    ],
+    applications: [
+      'Surface preparation, coating removal, fabrication cleanup, and maintenance blasting',
+      'Repair shops, production cells, field crews, and contained blast rooms',
+      'Procurement workflows where media performance affects labor and rework',
+    ],
+    procurementChecklist: [
+      'Define substrate, coating, target profile, equipment type, and containment setup.',
+      'Confirm grit size, hardness, dust constraints, and reclaim or disposal plan.',
+      'Use RFQ for repeat volume, mixed media tests, or freight-sensitive packaging.',
+    ],
+    faq: [
+      {
+        question: 'What matters most when choosing abrasive blasting media?',
+        answer:
+          'Substrate, target finish, grit size, hardness, dust limits, reclaimability, and equipment compatibility are the core buying checks.',
+      },
+      {
+        question: 'Why should buyers avoid choosing blasting media only by price?',
+        answer:
+          'Media that cuts too slowly, creates too much dust, or damages the substrate can cost more in labor and rework than it saves in unit price.',
+      },
+      {
+        question: 'When is RFQ useful for blasting media?',
+        answer:
+          'RFQ helps when volume, freight, packaging, media testing, or substitution risk matters more than a one-off bag price.',
+      },
+    ],
+    guideSlugs: ['how-to-source-abrasive-blasting-media'],
+  },
+  'asphalt-hand-tools': {
+    metaTitle: 'Asphalt Hand Tools for Patching, Spreading and Crew Work',
+    metaDescription:
+      'Buy asphalt hand tools by crew workflow, rake or lute style, handle material, blade size, tamping need, heat exposure, and replacement cadence.',
+    summary:
+      'Asphalt hand tools should be selected around the crew and patching workflow. Buyers need to plan spreading, leveling, tamping, cleanup, handle durability, and replacement cadence instead of ordering one generic tool at a time.',
+    buyingFactors: [
+      'Map the job: patching, spreading, leveling, raking, tamping, edge cleanup, or truck and paver support.',
+      'Compare blade style, head width, handle material, heat exposure, and crew preference for repeated use.',
+      'Check whether the order is a single replacement or a crew kit that needs consistent tools across shifts.',
+    ],
+    applications: [
+      'Road repair, parking-lot maintenance, pothole patching, and paving support',
+      'Municipal, contractor, and facility-maintenance crews',
+      'Crew kits where tool consistency affects speed and replacement planning',
+    ],
+    procurementChecklist: [
+      'List tool types, crew count, handle preference, and replacement frequency.',
+      'Confirm blade width, head material, heat exposure, and storage or transport needs.',
+      'Use RFQ for crew kits, recurring replacement, or mixed asphalt-tool orders.',
+    ],
+    faq: [
+      {
+        question: 'How should buyers build an asphalt hand-tool list?',
+        answer:
+          'Start with the workflow: spreading, leveling, tamping, cleanup, and transport. Then choose tool sizes and handles that match the crew and jobsite conditions.',
+      },
+      {
+        question: 'Why does handle material matter for asphalt tools?',
+        answer:
+          'Handle material affects heat tolerance, weight, durability, and operator comfort. It can matter as much as head shape on repeated crew work.',
+      },
+      {
+        question: 'When should asphalt hand tools go through RFQ?',
+        answer:
+          'Use RFQ for crew kits, municipal replenishment, mixed tool orders, or projects where availability and freight need planning.',
+      },
+    ],
+    guideSlugs: ['how-to-buy-asphalt-hand-tools-for-maintenance-crews'],
   },
   'mop-sinks': {
     metaTitle: '24x24 Stainless Steel Mop Sinks & Service Sinks',
@@ -1229,7 +1684,7 @@ const ARTICLE_TOPIC_CLUSTERS: Record<
         description: 'Compare adjacent adhesive families when the application needs a non-hot-melt bonding path.',
       },
       {
-        slug: 'caulks-and-sealants',
+        slug: 'caulks-sealants',
         name: 'Caulks and Sealants',
         description: 'Review adjacent sealant options when flexibility, weathering, or joint sealing matters more than hot-melt speed.',
       },

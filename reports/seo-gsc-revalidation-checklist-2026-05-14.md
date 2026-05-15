@@ -9,14 +9,7 @@
 
 ## Open Issues To Fix Before Revalidation
 
-| area | issue | url | action |
-| --- | --- | --- | --- |
-| products | Published product has non-indexable category: missing | /product/missing/other-100w-5000k-10000-lm-ae1303682 | Remap product to a published category or unpublish product. |
-| products | Published product has non-indexable category: missing | /product/missing/other-ac2207397 | Remap product to a published category or unpublish product. |
-| products | Published product has non-indexable category: missing | /product/missing/other-pvc-300v-10a-pvc-ac2207438 | Remap product to a published category or unpublish product. |
-| products | Published product has non-indexable category: missing | /product/missing/sma-female-right-angle-connector-0-481-hole-spacing-weld-mount-2-hole-flange-ae5591610 | Remap product to a published category or unpublish product. |
-| products | Published product has non-indexable category: missing | /product/missing/steel-m20-thread-hydraulic-shock-absorber-for-automation-pkg-qty-2-fv4508 | Remap product to a published category or unpublish product. |
-| products | Published product has non-indexable category: missing | /product/missing/steel-shank-padlock-1-5-wide-1-shackle-clearance-pkg-qty-20-ac3892103 | Remap product to a published category or unpublish product. |
+None found.
 
 ## Clean / Fixed Checks
 
